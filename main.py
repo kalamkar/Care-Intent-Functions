@@ -1,3 +1,4 @@
+import config
 import json
 import os
 
@@ -73,6 +74,19 @@ def resolve_intent(event, context):
     #
     # text_input = dialogflow.types.TextInput(text=text, language_code='en-US')
     # response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
+
+
+def handle_auth(request):
+    state = request.args.get('state')
+    personid = request.cookies.get('id')
+    data = {'client_id': config.DEXCOM_ID,
+            'client_secret': config.DEXCOM_SECRET,
+            'code': request.args.get('code'),
+            'grant_type': 'authorization_code',
+            'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth?provider=dexcom'}
+    import requests
+    response = requests.post('https://sandbox-api.dexcom.com/v2/oauth2/token', data=data)
+    print(response)
 
 
 ALLOW_HEADERS = 'Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Authorization, ' \
