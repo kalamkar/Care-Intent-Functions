@@ -88,3 +88,4 @@ def handle_auth(request):
     import requests
     response = requests.post('https://sandbox-api.dexcom.com/v2/oauth2/token', data=data)
     print(response)
+    return state['personid']
