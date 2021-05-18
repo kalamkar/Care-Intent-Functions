@@ -77,33 +77,14 @@ def resolve_intent(event, context):
 
 
 def handle_auth(request):
-    state = request.args.get('state')
-    personid = request.cookies.get('id')
+    import cipher
+    state = cipher.parse_auth_token(request.args.get('state'))
+    print(state)
     data = {'client_id': config.DEXCOM_ID,
             'client_secret': config.DEXCOM_SECRET,
             'code': request.args.get('code'),
             'grant_type': 'authorization_code',
-            'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth?provider=dexcom'}
+            'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'}
     import requests
     response = requests.post('https://sandbox-api.dexcom.com/v2/oauth2/token', data=data)
     print(response)
-
-
-ALLOW_HEADERS = 'Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Authorization, ' \
-                'Cookie, Access-Control-Request-Method, Access-Control-Request-Headers, ' \
-                'Access-Control-Allow-Credentials, Cache-Control, Pragma, Expires'
-
-
-def make_response(request, methods='GET'):
-    import flask
-    response = flask.make_response()
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    origin = request.headers.get('origin')
-    response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
-
-    if request.method == 'OPTIONS':
-        response.headers['Access-Control-Allow-Methods'] = methods
-        response.headers['Access-Control-Allow-Headers'] = ALLOW_HEADERS
-        response.status_code = 204
-
-    return response
