@@ -79,7 +79,7 @@ def resolve_intent(event, context):
 def short_url(request):
     from google.cloud import firestore
     db = firestore.Client()
-    url = db.collection('urls').document(request.script_root[1:]).get()
+    url = db.collection('urls').document(request.path[1:]).get()
     import flask
     response = flask.make_response()
     if not url or not url.get('redirect'):
