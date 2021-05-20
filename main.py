@@ -86,7 +86,7 @@ def short_url(request):
         response.status_code = 404
         return response
 
-    flask.redirect(url.get('redirect'), 302)
+    return flask.redirect(url.get('redirect'), 302)
 
 
 def handle_auth(request):
