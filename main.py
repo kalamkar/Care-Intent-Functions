@@ -25,20 +25,37 @@ def on_sms(request):
     return 'OK'
 
 
+def send_sms(event, context):
+    """Triggered from a message on a Cloud Pub/Sub topic.
+    Args:
+         event (dict): Event payload.
+         context (google.cloud.functions.Context): Metadata for the event.
+    """
+    import base64
+    message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
+    print(message)
+
+
 def save_message(event, context):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          event (dict): Event payload.
          context (google.cloud.functions.Context): Metadata for the event.
     """
-
     import base64
+    data = base64.b64decode(event['data']).decode('utf-8')
+    message = json.loads(data)
+
+    # import dialogflow_v2 as dialogflow
+    # df_client = dialogflow.SessionsClient()
+    # session = df_client.session_path(PROJECT_ID, phone_number)
+    #
+    # text_input = dialogflow.types.TextInput(text=text, language_code='en-US')
+    # response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
+
     from google.cloud import firestore
     db = firestore.Client()
-    data = base64.b64decode(event['data']).decode('utf-8')
-
     message_ref = db.collection('messages').document(context.event_id)
-    message = json.loads(data)
     message['timestamp'] = context.timestamp
     message_ref.set(message)
 
@@ -56,24 +73,20 @@ def on_fs_message_write(event, context):
     print(str(event))
 
 
-def resolve_intent(event, context):
-    """Triggered by a change to a Firestore document.
-    Args:
-         event (dict): Event payload.
-         context (google.cloud.functions.Context): Metadata for the event.
-    """
-    resource_string = context.resource
-    # print out the resource string that triggered the function
-    print(f"Function triggered by change to: {resource_string}.")
-    # now print out the entire event object
-    print(str(event))
+def save_data(event, context):
+    """Triggered from a message on a Cloud Pub/Sub topic.
+        Args:
+             event (dict): Event payload.
+             context (google.cloud.functions.Context): Metadata for the event.
+        """
 
-    # import dialogflow_v2 as dialogflow
-    # df_client = dialogflow.SessionsClient()
-    # session = df_client.session_path(PROJECT_ID, phone_number)
-    #
-    # text_input = dialogflow.types.TextInput(text=text, language_code='en-US')
-    # response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
+    import base64
+    data = json.loads(base64.b64decode(event['data']).decode('utf-8'))
+    print(data)
+
+
+def handle_task(request):
+    print(request.json)
 
 
 def short_url(request):
