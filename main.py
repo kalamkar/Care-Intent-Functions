@@ -76,6 +76,19 @@ def resolve_intent(event, context):
     # response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
 
 
+def short_url(request):
+    from google.cloud import firestore
+    db = firestore.Client()
+    url = db.collection('urls').document(request.script_root[1:]).get()
+    import flask
+    response = flask.make_response()
+    if not url or not url.get('redirect'):
+        response.status_code = 404
+        return response
+
+    flask.redirect(url.get('redirect'), 302)
+
+
 def handle_auth(request):
     import cipher
     state = cipher.parse_auth_token(request.args.get('state'))
