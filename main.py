@@ -9,7 +9,7 @@ class IdType(object):
     phone = 'phone'
 
 
-def on_sms(request):
+def twilio(request):
     from google.cloud import pubsub_v1
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path('careintent', 'message')
@@ -25,14 +25,9 @@ def on_sms(request):
     return 'OK'
 
 
-def send_sms(event, context):
-    """Triggered from a message on a Cloud Pub/Sub topic.
-    Args:
-         event (dict): Event payload.
-         context (google.cloud.functions.Context): Metadata for the event.
-    """
+def send_sms(request):
     import base64
-    message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
+    message = json.loads(base64.b64decode(request.json['message']['data']).decode('utf-8'))
     print(message)
 
 
@@ -58,6 +53,10 @@ def save_message(event, context):
     message_ref = db.collection('messages').document(context.event_id)
     message['timestamp'] = context.timestamp
     message_ref.set(message)
+
+    if 'dexcom auth' in message['content']:
+        # Create short url, and send msg to the sender
+        pass
 
 
 def on_fs_message_write(event, context):
@@ -88,6 +87,10 @@ def save_data(event, context):
 def handle_task(request):
     print(request.json)
 
+    if 'repeat-secs' in request.json:
+        import utils
+        utils.create_dexcom_polling(request.json, request.json['repeat-secs'])
+
 
 def short_url(request):
     from google.cloud import firestore
@@ -114,4 +117,9 @@ def handle_auth(request):
     import requests
     response = requests.post('https://sandbox-api.dexcom.com/v2/oauth2/token', data=data)
     print(response.content)
-    return state['person-id']
+
+    import utils
+    utils.create_dexcom_polling(state, 5 * 60)
+
+    import flask
+    return flask.redirect('https://www.careintent.com', 302)
