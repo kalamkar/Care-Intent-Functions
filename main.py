@@ -2,7 +2,7 @@ import config
 import json
 import os
 
-PROJECT_ID = os.environ.get('GCP_PROJECT')
+PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')
 
 
 class IdType(object):
@@ -12,7 +12,7 @@ class IdType(object):
 def twilio(request):
     from google.cloud import pubsub_v1
     publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path('careintent', 'message')
+    topic_path = publisher.topic_path(PROJECT_ID, 'message')
 
     data = {
         'sender': {'type': IdType.phone, 'value': request.form['From']},
@@ -28,6 +28,11 @@ def twilio(request):
 def send_sms(request):
     import base64
     message = json.loads(base64.b64decode(request.json['message']['data']).decode('utf-8'))
+    import config
+    from twilio.rest import Client
+    client = Client(config.TWILIO_ACCOUNT_SID, config.TWILIO_AUTH_TOKEN)
+    client.messages.create(to=message['receiver']['value'], from_=message['sender']['value'],
+                           body=message['content'])
     print(message)
     return 'OK'
 
@@ -38,16 +43,10 @@ def save_message(event, context):
          event (dict): Event payload.
          context (google.cloud.functions.Context): Metadata for the event.
     """
+    print(os.environ)
     import base64
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
-
-    # import dialogflow_v2 as dialogflow
-    # df_client = dialogflow.SessionsClient()
-    # session = df_client.session_path(PROJECT_ID, phone_number)
-    #
-    # text_input = dialogflow.types.TextInput(text=text, language_code='en-US')
-    # response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
 
     from google.cloud import firestore
     db = firestore.Client()
@@ -68,7 +67,14 @@ def save_message(event, context):
     else:
         person_id = persons[0].id
 
-    if 'auth' in message['content']:
+    import dialogflow_v2 as dialogflow
+    df_client = dialogflow.SessionsClient()
+    session = df_client.session_path(PROJECT_ID, person_id)
+
+    text_input = dialogflow.types.TextInput(text=message['content'], language_code='en-US')
+    response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
+
+    if response.query_result.intent.display_name == 'conncet.dexcom':
         import utils
         import uuid
         short_code = str(uuid.uuid4())
@@ -79,7 +85,7 @@ def save_message(event, context):
 
         from google.cloud import pubsub_v1
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path('careintent', 'message')
+        topic_path = publisher.topic_path(PROJECT_ID, 'message')
 
         data = {
             'sender': message['receiver'],
