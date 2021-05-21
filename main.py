@@ -54,9 +54,22 @@ def save_message(event, context):
     message['timestamp'] = context.timestamp
     message_ref.set(message)
 
-    if 'dexcom auth' in message['content']:
-        # Create short url, and send msg to the sender
-        pass
+    message['sender']['active'] = True
+    person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
+    persons = list(person_ref.get())
+    if len(persons) == 0:
+        import uuid
+        message['sender']['active'] = True
+        person_id = str(uuid.uuid4())
+        db.collection('persons').document(person_id).set({
+            'identifiers': [message['sender']]
+        })
+    else:
+        person_id = persons[0].id
+
+    if 'auth' in message['content']:
+        import utils
+        utils.create_dexcom_auth_url(person_id)
 
 
 def on_fs_message_write(event, context):
