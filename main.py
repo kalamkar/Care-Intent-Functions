@@ -86,7 +86,7 @@ def save_message(event, context):
             'content-type': 'text/plain',
             'content': 'Visit {}'.format(short_url)
         }
-        publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send=True)
+        publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
 
 
 def on_fs_message_write(event, context):
