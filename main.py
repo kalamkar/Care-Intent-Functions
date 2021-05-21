@@ -127,6 +127,8 @@ def handle_task(request):
         import utils
         utils.create_dexcom_polling(request.json, request.json['repeat-secs'])
 
+    return 'OK'
+
 
 def short_url(request):
     from google.cloud import firestore
