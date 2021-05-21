@@ -69,7 +69,24 @@ def save_message(event, context):
 
     if 'auth' in message['content']:
         import utils
-        utils.create_dexcom_auth_url(person_id)
+        import uuid
+        short_code = str(uuid.uuid4())
+        db.collection('urls').document(short_code).set({
+            'redirect': utils.create_dexcom_auth_url(person_id)
+        })
+        short_url = 'https://us-central1-careintent.cloudfunctions.net/u/' + short_code
+
+        from google.cloud import pubsub_v1
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path('careintent', 'message')
+
+        data = {
+            'sender': message['receiver'],
+            'receiver': message['sender'],
+            'content-type': 'text/plain',
+            'content': 'Visit {}'.format(short_url)
+        }
+        publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send=True)
 
 
 def on_fs_message_write(event, context):
