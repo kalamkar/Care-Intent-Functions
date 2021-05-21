@@ -29,6 +29,7 @@ def send_sms(request):
     import base64
     message = json.loads(base64.b64decode(request.json['message']['data']).decode('utf-8'))
     print(message)
+    return 'OK'
 
 
 def save_message(event, context):
