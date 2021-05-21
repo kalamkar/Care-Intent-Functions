@@ -43,7 +43,6 @@ def save_message(event, context):
          event (dict): Event payload.
          context (google.cloud.functions.Context): Metadata for the event.
     """
-    print(os.environ)
     import base64
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
@@ -74,7 +73,7 @@ def save_message(event, context):
     text_input = dialogflow.types.TextInput(text=message['content'], language_code='en-US')
     response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
 
-    if response.query_result.intent.display_name == 'conncet.dexcom':
+    if response.query_result.intent.display_name == 'connect.dexcom':
         import utils
         import uuid
         short_code = str(uuid.uuid4())
