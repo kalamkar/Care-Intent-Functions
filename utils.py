@@ -48,6 +48,7 @@ def create_dexcom_polling(payload, repeat_secs):
         'http_request': {  # Specify the type of request.
             'http_method': tasks_v2.HttpMethod.POST,
             'url': 'https://us-central1-careintent.cloudfunctions.net/process-task',
+            'oidc_token': {'service_account_email': 'careintent@appspot.gserviceaccount.com'},
             'headers': {"Content-type": "application/json"},
             'body': json.dumps(payload).encode()
         },
