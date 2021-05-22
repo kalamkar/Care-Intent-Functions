@@ -130,7 +130,9 @@ def handle_task(request):
     provider = provider_ref.get().to_dict()
     import datetime
     import utils
-    if 'expires' not in provider or provider['expires'] < datetime.datetime.utcnow():
+    import pytz
+    if 'expires' not in provider or\
+            provider['expires'] < datetime.datetime.utcnow().astimezone(pytz.UTC):
         provider = utils.get_dexcom_access(provider['refresh_token'])
     last_sync = provider['last_sync'] if 'last_sync' in provider else None
     data = utils.get_dexcom_egvs(provider['access_token'], last_sync)
