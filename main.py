@@ -123,6 +123,12 @@ def save_data(event, context):
 def handle_task(request):
     print(request.json)
 
+    from google.cloud import firestore
+    db = firestore.Client()
+    person_ref = db.collection('persons').document(request.json['person-id'])
+    provider_ref = person_ref.collection('providers').document(request.json['provider'])
+    print(provider_ref.get())
+
     if 'repeat-secs' in request.json:
         import utils
         utils.create_dexcom_polling(request.json, request.json['repeat-secs'])
@@ -146,7 +152,7 @@ def short_url(request):
 def handle_auth(request):
     import cipher
     state = cipher.parse_auth_token(request.args.get('state'))
-    print(state)
+
     data = {'client_id': config.DEXCOM_ID,
             'client_secret': config.DEXCOM_SECRET,
             'code': request.args.get('code'),
@@ -155,6 +161,12 @@ def handle_auth(request):
     import requests
     response = requests.post('https://sandbox-api.dexcom.com/v2/oauth2/token', data=data)
     print(response.content)
+
+    from google.cloud import firestore
+    db = firestore.Client()
+    person_ref = db.collection('persons').document(state['person-id'])
+    provider_ref = person_ref.collection('providers').document(state['provider'])
+    provider_ref.set(response.json())
 
     import utils
     utils.create_dexcom_polling(state, 5 * 60)
