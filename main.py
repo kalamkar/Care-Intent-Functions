@@ -131,7 +131,7 @@ def handle_task(request):
     db = firestore.Client()
     person_ref = db.collection('persons').document(request.json['person-id'])
     provider_ref = person_ref.collection('providers').document(request.json['provider'])
-    provider = provider_ref.get()
+    provider = provider_ref.get().to_dict()
     import dateutil.parser
     import datetime
     import utils
