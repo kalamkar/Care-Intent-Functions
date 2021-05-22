@@ -123,27 +123,25 @@ def save_data(event, context):
 def handle_task(request):
     print(request.json)
 
-    if 'repeat-secs' in request.json:
-        import utils
-        utils.create_dexcom_polling(request.json, request.json['repeat-secs'])
-
     from google.cloud import firestore
     db = firestore.Client()
     person_ref = db.collection('persons').document(request.json['person-id'])
     provider_ref = person_ref.collection('providers').document(request.json['provider'])
     provider = provider_ref.get().to_dict()
-    import dateutil.parser
     import datetime
     import utils
-    if 'expires' not in provider or\
-            dateutil.parser.parse(provider['expires']) < datetime.datetime.utcnow():
+    if 'expires' not in provider or provider['expires'] < datetime.datetime.utcnow():
         provider = utils.get_dexcom_access(provider['refresh_token'])
     last_sync = provider['last_sync'] if 'last_sync' in provider else None
     data = utils.get_dexcom_egvs(provider['access_token'], last_sync)
     if data:
         provider['last_sync'] = datetime.datetime.utcnow().isoformat()
-
     provider_ref.set(provider)
+
+    if 'repeat-secs' in request.json:
+        import utils
+        utils.create_dexcom_polling(request.json, request.json['repeat-secs'])
+
     return 'OK'
 
 
