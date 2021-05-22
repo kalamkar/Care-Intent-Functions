@@ -137,8 +137,8 @@ def handle_task(request):
     last_sync = provider['last_sync'] if 'last_sync' in provider else None
     data = utils.get_dexcom_egvs(provider['access_token'], last_sync)
     if data:
-        provider['last_sync'] = datetime.datetime.utcnow()
-        print(data)
+        import dateutil.parser
+        provider['last_sync'] = dateutil.parser.parse(data['egvs'][0]['systemTime'])
     provider_ref.set(provider)
 
     if 'repeat-secs' in request.json:

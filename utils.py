@@ -65,7 +65,9 @@ def get_dexcom_egvs(access_token, last_sync):
     url = 'https://sandbox-api.dexcom.com/v2/users/self/egvs?startDate=%s&endDate=%s'\
           % (start.isoformat(), end.isoformat())
     import requests
+    print(url)
     response = requests.get(url, headers={'Authorization': 'Bearer ' + access_token})
+    print(response.content)
     return response.json() if response.status_code == 200 else None
 
 
