@@ -137,6 +137,9 @@ def handle_task(request):
     last_sync = provider['last_sync'] if 'last_sync' in provider else None
     data = utils.get_dexcom_egvs(provider['access_token'], last_sync)
     if data:
+        from google.cloud import pubsub_v1
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(PROJECT_ID, 'data')
         latest = None
         for reading in data['egvs']:
             row = {
@@ -148,10 +151,6 @@ def handle_task(request):
                 if k not in ['systemTime', 'displayTime']:
                     row['data'].append({'name': k, 'value' if type(v) == str else 'number': v})
             latest = max(row['time'], latest) if latest else row['time']
-
-            from google.cloud import pubsub_v1
-            publisher = pubsub_v1.PublisherClient()
-            topic_path = publisher.topic_path(PROJECT_ID, 'data')
             publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
 
         if latest:
