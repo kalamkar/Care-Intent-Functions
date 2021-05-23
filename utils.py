@@ -63,7 +63,7 @@ def get_dexcom_egvs(access_token, last_sync):
     end = datetime.datetime.utcnow()
     start = last_sync if last_sync else (end - datetime.timedelta(days=90))
     url = 'https://sandbox-api.dexcom.com/v2/users/self/egvs?startDate=%s&endDate=%s'\
-          % (start.isoformat(), end.isoformat())
+          % (start.strftime('%Y-%m-%dT%H:%M:%S'), end.strftime('%Y-%m-%dT%H:%M:%S'))
     import requests
     print(url)
     response = requests.get(url, headers={'Authorization': 'Bearer ' + access_token})
