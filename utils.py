@@ -61,7 +61,7 @@ def create_dexcom_polling(payload, repeat_secs):
 def get_dexcom_egvs(access_token, last_sync):
     import datetime
     end = datetime.datetime.utcnow()
-    start = last_sync if last_sync else (end - datetime.timedelta(days=90))
+    start = (last_sync + datetime.timedelta(seconds=1)) if last_sync else (end - datetime.timedelta(days=90))
     url = 'https://sandbox-api.dexcom.com/v2/users/self/egvs?startDate=%s&endDate=%s'\
           % (start.strftime('%Y-%m-%dT%H:%M:%S'), end.strftime('%Y-%m-%dT%H:%M:%S'))
     import requests
