@@ -117,7 +117,16 @@ def save_data(event, context):
 
     import base64
     data = json.loads(base64.b64decode(event['data']).decode('utf-8'))
+    import dateutil.parser
+    data['time'] = dateutil.parser.parse(data['time'])
     print(data)
+
+    from google.cloud import bigquery
+    client = bigquery.Client()
+    table_id = '%s.live.tsdatav1' % PROJECT_ID
+    errors = client.insert_rows_json(table_id, [data])
+    if errors:
+        print(errors)
 
 
 def handle_task(request):
