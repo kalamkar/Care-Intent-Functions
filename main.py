@@ -137,18 +137,16 @@ def handle_task(request):
     last_sync = provider['last_sync'] if 'last_sync' in provider else None
     data = utils.get_dexcom_egvs(provider['access_token'], last_sync)
     if data:
-        import dateutil.parser
         latest = None
         for reading in data['egvs']:
             row = {
-                'time': dateutil.parser.parse(reading['systemTime']),
+                'time': reading['systemTime'],
                 'source': {'type': 'dexcom', 'id': person_ref.id},
-                'data': [{'name': 'value', 'number': reading['value']},
-                         {'name': 'realtimeValue', 'number': reading['realtimeValue']},
-                         {'name': 'smoothedValue', 'number': reading['smoothedValue']},
-                         {'name': 'trend', 'value': reading['trend']},
-                         {'name': 'trendRate', 'number': reading['trendRate']}]
+                'data': []
             }
+            for k, v in reading.items():
+                if k not in ['systemTime', 'displayTime']:
+                    row['data'].append({'name': k, 'value' if type(v) == str else 'number': v})
             latest = max(row['time'], latest) if latest else row['time']
 
             from google.cloud import pubsub_v1
