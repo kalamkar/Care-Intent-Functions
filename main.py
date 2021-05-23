@@ -117,8 +117,6 @@ def save_data(event, context):
 
     import base64
     data = json.loads(base64.b64decode(event['data']).decode('utf-8'))
-    import dateutil.parser
-    data['time'] = dateutil.parser.parse(data['time'])
     print(data)
 
     from google.cloud import bigquery
