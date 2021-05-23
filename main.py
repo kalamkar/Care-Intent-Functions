@@ -150,6 +150,7 @@ def handle_task(request):
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(PROJECT_ID, 'data')
         latest = None
+        import dateutil.parser
         for reading in data['egvs']:
             row = {
                 'time': reading['systemTime'],
@@ -159,7 +160,8 @@ def handle_task(request):
             for k, v in reading.items():
                 if k not in ['systemTime', 'displayTime']:
                     row['data'].append({'name': k, 'value' if type(v) == str else 'number': v})
-            latest = max(row['time'], latest) if latest else row['time']
+            row_time = dateutil.parser.parse(row['time'])
+            latest = max(row_time, latest) if latest else row_time
             publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
 
         if latest:
