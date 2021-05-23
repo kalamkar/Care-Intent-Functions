@@ -138,7 +138,27 @@ def handle_task(request):
     data = utils.get_dexcom_egvs(provider['access_token'], last_sync)
     if data:
         import dateutil.parser
-        provider['last_sync'] = dateutil.parser.parse(data['egvs'][0]['systemTime'])
+        latest = None
+        for reading in data['egvs']:
+            row = {
+                'time': dateutil.parser.parse(reading['systemTime']),
+                'source': {'type': 'dexcom', 'id': person_ref.id},
+                'data': [{'name': 'value', 'number': reading['value']},
+                         {'name': 'realtimeValue', 'number': reading['realtimeValue']},
+                         {'name': 'smoothedValue', 'number': reading['smoothedValue']},
+                         {'name': 'trend', 'value': reading['trend']},
+                         {'name': 'trendRate', 'number': reading['trendRate']}]
+            }
+            latest = max(row['time'], latest) if latest else row['time']
+
+            from google.cloud import pubsub_v1
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(PROJECT_ID, 'data')
+            publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
+
+        if latest:
+            provider['last_sync'] = latest
+
     provider_ref.set(provider)
 
     if 'repeat-secs' in request.json:
