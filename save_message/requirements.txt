@@ -1,0 +1,5 @@
+# Function dependencies, for example:
+# package>=version
+dialogflow
+google-cloud-firestore
+PyCryptodome
