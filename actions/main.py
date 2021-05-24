@@ -30,7 +30,7 @@ def process(event, context):
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
 
-    if message['type'] == 'intent.connect.dexcom':
+    if 'type' in message and message['type'] == 'intent.connect.dexcom':
         db = firestore.Client()
         message['sender']['active'] = True
         person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
