@@ -1,5 +1,6 @@
 # Function dependencies, for example:
 # package>=version
+python-dateutil
 google-cloud-firestore
 google-cloud-pubsub
 google-cloud-tasks

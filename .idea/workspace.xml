@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ac1b92e2-046c-4505-95ad-7fb72304f442" name="Default Changelist" comment="Refactored cipher into subdirectories">
+    <list default="true" id="ac1b92e2-046c-4505-95ad-7fb72304f442" name="Default Changelist" comment="Restored task handle code to poll dexcom data">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/cipher.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tasks/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -36,6 +34,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/save_message" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -343,7 +342,14 @@
       <option name="project" value="LOCAL" />
       <updated>1621893047607</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="Restored task handle code to poll dexcom data">
+      <created>1621893942962</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1621893942962</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -360,7 +366,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Fixed pubsub publish attribute, needs string" />
     <MESSAGE value="Fixed send_sms method to return response" />
     <MESSAGE value="Added sending sms thru twilio and resolving intent thru dialog flow" />
     <MESSAGE value="Fixed typo in intent name" />
@@ -385,6 +390,7 @@
     <MESSAGE value="Refactored functions into separate directories" />
     <MESSAGE value="Refactored config and utils into subdirectories" />
     <MESSAGE value="Refactored cipher into subdirectories" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactored cipher into subdirectories" />
+    <MESSAGE value="Restored task handle code to poll dexcom data" />
+    <option name="LAST_COMMIT_MESSAGE" value="Restored task handle code to poll dexcom data" />
   </component>
 </project>
