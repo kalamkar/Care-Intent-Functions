@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ac1b92e2-046c-4505-95ad-7fb72304f442" name="Default Changelist" comment="Refactored functions into separate directories">
-      <change afterPath="$PROJECT_DIR$/tasks/dexcom.py" afterDir="false" />
+    <list default="true" id="ac1b92e2-046c-4505-95ad-7fb72304f442" name="Default Changelist" comment="Refactored config and utils into subdirectories">
+      <change afterPath="$PROJECT_DIR$/save_message/cipher.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tasks/cipher.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/auth/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/save_message/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/save_message/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/send_sms/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/send_sms/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/auth/dexcom.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cipher.py" beforeDir="false" afterPath="$PROJECT_DIR$/auth/cipher.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,10 +35,11 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/tasks" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/save_message" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/save_message" />
       <recent name="$PROJECT_DIR$/tasks" />
       <recent name="$PROJECT_DIR$/auth" />
       <recent name="$PROJECT_DIR$" />
@@ -332,7 +329,14 @@
       <option name="project" value="LOCAL" />
       <updated>1621890889275</updated>
     </task>
-    <option name="localTasksCounter" value="37" />
+    <task id="LOCAL-00037" summary="Refactored config and utils into subdirectories">
+      <created>1621892452134</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1621892452134</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -349,7 +353,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Updated save message function to create a Person from sender" />
     <MESSAGE value="Replying sms with short url if original sms contained auth request" />
     <MESSAGE value="Fixed pubsub publish attribute, needs string" />
     <MESSAGE value="Fixed send_sms method to return response" />
@@ -374,6 +377,7 @@
     <MESSAGE value="Fixed last sync time str vs datetime" />
     <MESSAGE value="Fixed bigquery insert json" />
     <MESSAGE value="Refactored functions into separate directories" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactored functions into separate directories" />
+    <MESSAGE value="Refactored config and utils into subdirectories" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactored config and utils into subdirectories" />
   </component>
 </project>
