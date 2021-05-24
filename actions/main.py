@@ -4,6 +4,7 @@ import json
 import uuid
 
 from google.cloud import firestore
+from google.cloud import pubsub_v1
 from urllib.parse import urlencode
 
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
@@ -43,7 +44,6 @@ def process(event, context):
         })
         short_url = 'https://us-central1-careintent.cloudfunctions.net/u/' + short_code
 
-        from google.cloud import pubsub_v1
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(PROJECT_ID, 'message')
 
