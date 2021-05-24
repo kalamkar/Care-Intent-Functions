@@ -1,9 +1,8 @@
 import cipher
-import config
 import datetime
+import dexcom
 import flask
 import requests
-import utils
 
 from google.cloud import firestore
 
@@ -13,8 +12,8 @@ PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 def handle_auth(request):
     state = cipher.parse_auth_token(request.args.get('state'))
 
-    data = {'client_id': config.DEXCOM_ID,
-            'client_secret': config.DEXCOM_SECRET,
+    data = {'client_id': dexcom.DEXCOM_ID,
+            'client_secret': dexcom.DEXCOM_SECRET,
             'code': request.args.get('code'),
             'grant_type': 'authorization_code',
             'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'}
@@ -28,6 +27,6 @@ def handle_auth(request):
     provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
     provider_ref.set(provider)
 
-    utils.create_dexcom_polling(state, 5 * 60)
+    dexcom.create_dexcom_polling(state, 5 * 60)
 
     return flask.redirect('https://www.careintent.com', 302)

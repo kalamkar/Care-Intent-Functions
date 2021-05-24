@@ -1,6 +1,5 @@
 import base64
 import cipher
-import config
 import dialogflow_v2 as dialogflow
 import json
 import uuid
@@ -9,11 +8,12 @@ from google.cloud import firestore
 from urllib.parse import urlencode
 
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
+DEXCOM_ID = 'cfz2ttzaLK164vTJ3lkt02n7ih0YMBHg'
 
 
 def create_dexcom_auth_url(person_id):
     return 'https://sandbox-api.dexcom.com/v2/oauth2/login?' + urlencode({
-        'client_id': config.DEXCOM_ID,
+        'client_id': DEXCOM_ID,
         'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth',
         'response_type': 'code',
         'scope': 'offline_access',

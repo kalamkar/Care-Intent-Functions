@@ -1,4 +1,3 @@
-import config
 import datetime
 import json
 import requests
@@ -6,6 +5,9 @@ import requests
 from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
 from urllib.parse import urlencode
+
+DEXCOM_ID = 'cfz2ttzaLK164vTJ3lkt02n7ih0YMBHg'
+DEXCOM_SECRET = 'NZ4sTh0n4X6AT0XE'
 
 
 def create_dexcom_polling(payload, repeat_secs):
@@ -44,8 +46,8 @@ def get_dexcom_egvs(access_token, last_sync):
 def get_dexcom_access(refresh):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     body = urlencode({
-        'client_id': config.DEXCOM_ID,
-        'client_secret': config.DEXCOM_SECRET,
+        'client_id': DEXCOM_ID,
+        'client_secret': DEXCOM_SECRET,
         'refresh_token': refresh,
         'grant_type': 'refresh_token',
         'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'

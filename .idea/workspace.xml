@@ -1,28 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ac1b92e2-046c-4505-95ad-7fb72304f442" name="Default Changelist" comment="Fixed bigquery insert json">
-      <change afterPath="$PROJECT_DIR$/auth/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/auth/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/firestore_change/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/firestore_change/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/save_data/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/save_data/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/save_message/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/save_message/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/send_sms/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/send_sms/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/short_url/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/short_url/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tasks/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tasks/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/twilio/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/twilio/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="ac1b92e2-046c-4505-95ad-7fb72304f442" name="Default Changelist" comment="Refactored functions into separate directories">
+      <change afterPath="$PROJECT_DIR$/tasks/dexcom.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/auth/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/save_message/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/save_message/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/send_sms/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/send_sms/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/auth/dexcom.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,10 +39,12 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/tasks" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/tasks" />
+      <recent name="$PROJECT_DIR$/auth" />
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
@@ -329,7 +318,21 @@
       <option name="project" value="LOCAL" />
       <updated>1621733877816</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="Refactored functions into separate directories">
+      <created>1621890853668</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1621890853668</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Refactored functions into separate directories">
+      <created>1621890889275</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1621890889275</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -346,7 +349,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Creating repeated polling task and renamed on_sms to twilio" />
     <MESSAGE value="Updated save message function to create a Person from sender" />
     <MESSAGE value="Replying sms with short url if original sms contained auth request" />
     <MESSAGE value="Fixed pubsub publish attribute, needs string" />
@@ -371,6 +373,7 @@
     <MESSAGE value="Added bigquery insert in save_data" />
     <MESSAGE value="Fixed last sync time str vs datetime" />
     <MESSAGE value="Fixed bigquery insert json" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed bigquery insert json" />
+    <MESSAGE value="Refactored functions into separate directories" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactored functions into separate directories" />
   </component>
 </project>
