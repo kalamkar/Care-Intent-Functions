@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ac1b92e2-046c-4505-95ad-7fb72304f442" name="Default Changelist" comment="Added missing pubsub requirement for actions">
+    <list default="true" id="ac1b92e2-046c-4505-95ad-7fb72304f442" name="Default Changelist" comment="Fixed actions handler to handle missing 'type' in message">
+      <change afterPath="$PROJECT_DIR$/actions/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/actions/generic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/actions/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/actions/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -370,7 +373,14 @@
       <option name="project" value="LOCAL" />
       <updated>1621899043432</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="Fixed actions handler to handle missing 'type' in message">
+      <created>1621899318040</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1621899318040</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -387,7 +397,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Added app engine service account as oidc token for polling task" />
     <MESSAGE value="Added return statement to handle task" />
     <MESSAGE value="Adding providers sub collection to person and retrieving it in task processing" />
     <MESSAGE value="Getting dexcom data and updating access token if expired" />
@@ -412,6 +421,7 @@
     <MESSAGE value="Added python-dateutil for tasks requirements" />
     <MESSAGE value="Resolving intent in twilio fn and handling actions in a new separate actions function (not in save message)" />
     <MESSAGE value="Added missing pubsub requirement for actions" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added missing pubsub requirement for actions" />
+    <MESSAGE value="Fixed actions handler to handle missing 'type' in message" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed actions handler to handle missing 'type' in message" />
   </component>
 </project>
