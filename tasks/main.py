@@ -1,13 +1,20 @@
+import config
 import datetime
-import dexcom
+import dateutil.parser
+import providers
 import json
 import pytz
-import dateutil.parser
+import requests
 
 from google.cloud import firestore
 from google.cloud import pubsub_v1
+from google.cloud import tasks_v2
+from google.protobuf import timestamp_pb2
+from urllib.parse import urlencode
 
-PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
+
+PROVIDERS = {'dexcom': providers.get_dexcom_data,
+             'google': providers.get_google_data}
 
 
 def handle_task(request):
@@ -19,32 +26,60 @@ def handle_task(request):
     provider = provider_ref.get().to_dict()
     if 'expires' not in provider or \
             provider['expires'] < datetime.datetime.utcnow().astimezone(pytz.UTC):
-        provider = dexcom.get_dexcom_access(provider['refresh_token'])
-    last_sync = provider['last_sync'] if 'last_sync' in provider else None
-    data = dexcom.get_dexcom_egvs(provider['access_token'], last_sync)
-    if data:
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(PROJECT_ID, 'data')
-        latest = None
-        for reading in data['egvs']:
-            row = {
-                'time': reading['systemTime'],
-                'source': {'type': 'dexcom', 'id': person_ref.id},
-                'data': []
-            }
-            for k, v in reading.items():
-                if k not in ['systemTime', 'displayTime']:
-                    row['data'].append({'name': k, 'value' if type(v) == str else 'number': v})
-            row_time = dateutil.parser.parse(row['time'])
-            latest = max(row_time, latest) if latest else row_time
-            publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
+        provider = get_access_token(provider['refresh_token'], request.json['provider'])
 
-        if latest:
-            provider['last_sync'] = latest
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
+    last_sync = provider['last_sync'] if 'last_sync' in provider else None
+    for row in PROVIDERS[request.json['provider']](provider['access_token'], last_sync, person_ref.id):
+        row_time = dateutil.parser.parse(row['time'])
+        last_sync = max(row_time, last_sync) if last_sync else row_time
+        publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
+
+    if last_sync:
+        provider['last_sync'] = last_sync
 
     provider_ref.set(provider)
 
     if 'repeat-secs' in request.json:
-        dexcom.create_dexcom_polling(request.json, request.json['repeat-secs'])
+        create_polling(request.json)
 
     return 'OK'
+
+
+def create_polling(payload):
+    client = tasks_v2.CloudTasksClient()
+    queue = client.queue_path(config.PROJECT_ID, 'us-central1', payload['provider'])
+
+    timestamp = timestamp_pb2.Timestamp()
+    timestamp.FromDatetime(datetime.datetime.utcnow() + datetime.timedelta(seconds=payload['repeat-secs']))
+
+    task = {
+        'http_request': {  # Specify the type of request.
+            'http_method': tasks_v2.HttpMethod.POST,
+            'url': 'https://us-central1-%s.cloudfunctions.net/process-task' % config.PROJECT_ID,
+            'oidc_token': {'service_account_email': '%s@appspot.gserviceaccount.com' % config.PROJECT_ID},
+            'headers': {"Content-type": "application/json"},
+            'body': json.dumps(payload).encode()
+        },
+        'schedule_time': timestamp
+    }
+    response = client.create_task(request={'parent': queue, 'task': task})
+    print("Created task {}".format(response.name))
+
+
+def get_access_token(refresh, provider_name):
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    body = urlencode({
+        'client_id': config.PROVIDERS[provider_name]['client_id'],
+        'client_secret': config.PROVIDERS[provider_name]['client_secret'],
+        'refresh_token': refresh,
+        'grant_type': 'refresh_token',
+        'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'
+    })
+    response = requests.post(config.PROVIDERS[provider_name]['url'], body, headers=headers)
+    if response.status_code > 299:
+        return None
+    provider = response.json()
+    provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
+    return provider
