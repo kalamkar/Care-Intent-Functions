@@ -24,3 +24,6 @@ def process(event, context):
     if 'type' in message and message['type'] == 'intent.connect.dexcom':
         OAuthMessage(receiver=message['sender'], sender=message['receiver'],
                      person_id=persons[0].id, provider='dexcom').process()
+    elif 'type' in message and message['type'] == 'intent.connect.google':
+        OAuthMessage(receiver=message['sender'], sender=message['receiver'],
+                     person_id=persons[0].id, provider='google').process()

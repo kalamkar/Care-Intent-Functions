@@ -18,18 +18,21 @@ def create_dexcom_auth_url(person_id):
         'redirect_uri': 'https://us-central1-%s.cloudfunctions.net/auth' % config.PROJECT_ID,
         'response_type': 'code',
         'scope': 'offline_access',
-        'state': cipher.create_auth_token({'person-id': person_id, 'provider': 'dexcom'})
+        'state': cipher.create_auth_token(
+            {'person-id': person_id, 'provider': 'dexcom', 'repeat-secs': 5 * 60})
     })
 
 
-def create_google_auth_url(_):
+def create_google_auth_url(person_id):
     return 'https://accounts.google.com/o/oauth2/v2/auth?' + urlencode({
         'prompt': 'consent',
         'response_type': 'code',
         'client_id': '749186156527-hl1f7u9o2cssle1n80nl09bej2bjfg97.apps.googleusercontent.com',
         'scope': 'https://www.googleapis.com/auth/fitness.activity.read',
         'access_type': 'offline',
-        'redirect_uri': 'https://us-central1-%s.cloudfunctions.net/auth' % config.PROJECT_ID
+        'redirect_uri': 'https://us-central1-%s.cloudfunctions.net/auth' % config.PROJECT_ID,
+        'state': cipher.create_auth_token(
+            {'person-id': person_id, 'provider': 'google', 'repeat-secs': 60 * 60})
     })
 
 
