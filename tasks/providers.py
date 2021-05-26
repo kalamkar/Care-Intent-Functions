@@ -1,4 +1,6 @@
 import datetime
+import json
+
 import requests
 
 
@@ -26,4 +28,38 @@ def get_dexcom_data(access_token, last_sync, source_id):
 
 
 def get_google_data(access_token, last_sync, source_id):
-    return []
+    end = datetime.datetime.utcnow()
+    start = (last_sync + datetime.timedelta(seconds=1)) if last_sync else (end - datetime.timedelta(days=90))
+    headers = {'Authorization': 'Bearer ' + access_token,
+               'Content-type': 'application/json'}
+    url = 'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate'
+    body = json.dumps({
+        'aggregateBy': [{
+            'dataTypeName': 'com.google.step_count.delta',
+            'dataSourceId': 'derived:com.google.step_count.delta:com.google.android.gms:estimated_steps'
+        }],
+        'bucketByTime': {'durationMillis': 60 * 60 * 1000},  # 60 mins
+        'startTimeMillis': int(start.strftime('%s')) * 1000,
+        'endTimeMillis': int(end.strftime('%s')) * 1000
+    })
+    response = requests.post(url, body, headers=headers)
+    print(response.content)
+    if response.status_code > 299 or not response.content or 'bucket' not in response.json():
+        return []
+
+    rows = []
+    for bucket in response.json()['bucket']:
+        points = bucket['dataset'][0]['point'] if len(bucket['dataset']) > 0 else []
+        if len(points) > 0 and 'startTimeNanos' in points[0] and 'value' in points[0]\
+                and len(points[0]['value']) > 0 and 'intVal' in points[0]['value'][0]\
+                and 'dataTypeName' in points[0] and points[0]['dataTypeName'] == 'com.google.step_count.delta':
+            start = datetime.datetime.utcfromtimestamp(int(points[0]['startTimeNanos']) / 1000000000)
+            end = datetime.datetime.utcfromtimestamp(int(points[0]['endTimeNanos']) / 1000000000)
+            duration = end - start
+            rows.append({
+                'time': start.isoformat(),
+                'source': {'type': 'gfit', 'id': source_id},
+                'data': [{'name': 'steps', 'number': points[0]['value'][0]['intVal']},
+                         {'name': 'duration.seconds', 'number': duration.total_seconds()}]
+        })
+    return rows
