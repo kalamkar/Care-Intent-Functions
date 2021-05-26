@@ -32,7 +32,7 @@ def handle_task(request):
     topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
     last_sync = provider['last_sync'] if 'last_sync' in provider else None
     for row in PROVIDERS[request.json['provider']](provider['access_token'], last_sync, person_ref.id):
-        row_time = dateutil.parser.parse(row['time'])
+        row_time = dateutil.parser.parse(row['time']).astimezone(pytz.UTC)
         last_sync = max(row_time, last_sync) if last_sync else row_time
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
 
