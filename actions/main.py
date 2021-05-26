@@ -2,7 +2,7 @@ import base64
 import json
 
 from google.cloud import firestore
-from generic import DexcomAuth
+from generic import OAuthMessage
 
 
 def process(event, context):
@@ -22,5 +22,5 @@ def process(event, context):
         return 500, 'Not ready'
 
     if 'type' in message and message['type'] == 'intent.connect.dexcom':
-        DexcomAuth(receiver=message['sender'], sender=message['receiver'],
-                   person_id=persons[0].id).process()
+        OAuthMessage(receiver=message['sender'], sender=message['receiver'],
+                     person_id=persons[0].id, provider='dexcom').process()
