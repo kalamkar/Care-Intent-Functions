@@ -1,8 +1,33 @@
 import base64
 import json
+import re
 
 from google.cloud import firestore
 from generic import OAuthMessage
+
+
+ACTIONS = {'OAuthMessage': OAuthMessage}
+
+ACTION_DATA = [
+    {
+        'type': 'OAuthMessage',
+        'rules': [{'name': 'message.type', 'value': 'intent.connect.dexcom', 'compare': 'str', 'weight': 100}],
+        'params': [{
+            'receiver': '$message.sender',
+            'sender': '$message.receiver',
+            'person_id': '$sender.id',
+            'provider': 'dexcom'}]
+    },
+    {
+        'type': 'OAuthMessage',
+        'rules': [{'name': 'message.type', 'value': 'intent.connect.google', 'compare': 'str', 'weight': 100}],
+        'params': [{
+            'receiver': '$message.sender',
+            'sender': '$message.receiver',
+            'person_id': '$sender.id',
+            'provider': 'google'}]
+    },
+]
 
 
 def process(event, context):
@@ -21,9 +46,70 @@ def process(event, context):
     if len(persons) == 0:
         return 500, 'Not ready'
 
-    if 'type' in message and message['type'] == 'intent.connect.dexcom':
-        OAuthMessage(receiver=message['sender'], sender=message['receiver'],
-                     person_id=persons[0].id, provider='dexcom').process()
-    elif 'type' in message and message['type'] == 'intent.connect.google':
-        OAuthMessage(receiver=message['sender'], sender=message['receiver'],
-                     person_id=persons[0].id, provider='google').process()
+    context = Context()
+    context.set('message', message)
+    context.set('sender', persons[0].to_dict())
+    context.set('sender.id', persons[0].id)
+
+    matched = []
+    for action in ACTION_DATA:
+        score = 0
+        for rule in action['rules']:
+            if rule['compare'] == 'str' and context.get(rule['name']) == rule['value']:
+                score = rule['weight']
+            elif rule['compare'] == 'regex':
+                matches = re.findall(rule['value'], context.get(rule['name']))
+                if matches:
+                    context.set(rule['name'] + '_match', matches)
+                    score = rule['weight']
+            elif rule['compare'] == 'number' and context.get(rule['name']) == float(rule['value']):
+                score = rule['weight']
+
+        if score:
+            action['score'] = score
+            matched.append(action)
+
+    if not matched:
+        return
+
+    for action in matched:
+        params = {}
+        for name, value in action['params']:
+            params[name] = context.get(value[1:]) if value.startswith('$') else value
+
+        if action['type'] in ACTIONS:
+            ACTIONS[action['type']](**params).process()
+
+    # if 'type' in message and message['type'] == 'intent.connect.dexcom':
+    #     OAuthMessage(receiver=context.get('message.sender'),
+    #                  sender=context.get('message.receiver'),
+    #                  person_id=context.get('sender.id'),
+    #                  provider='dexcom').process()
+    # elif 'type' in message and message['type'] == 'intent.connect.google':
+    #     OAuthMessage(receiver=context.get('message.sender'),
+    #                  sender=context.get('message.receiver'),
+    #                  person_id=context.get('sender.id'),
+    #                  provider='google').process()
+
+
+class Context(object):
+    def __init__(self):
+        self.data = {}
+
+    def set(self, name, value):
+        self.data[name] = value
+
+    def get(self, name):
+        tokens = name.split('.') if name else []
+        try:
+            if len(tokens) == 1:
+                return self.data[tokens[0]]
+            elif len(tokens) == 2:
+                return self.data[tokens[0]][tokens[1]]
+            elif len(tokens) == 3:
+                return self.data[tokens[0]][tokens[1]][tokens[2]]
+            elif len(tokens) == 4:
+                return self.data[tokens[0]][tokens[1]][tokens[2]][tokens[3]]
+        except KeyError:
+            return None
+        return None
