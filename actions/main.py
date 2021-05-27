@@ -8,27 +8,6 @@ from generic import OAuthMessage
 
 ACTIONS = {'OAuthMessage': OAuthMessage}
 
-ACTION_DATA = [
-    {
-        'type': 'OAuthMessage',
-        'rules': [{'name': 'message.type', 'value': 'intent.connect.dexcom', 'compare': 'str', 'weight': 100}],
-        'params': {
-            'receiver': '$message.sender',
-            'sender': '$message.receiver',
-            'person_id': '$sender.id',
-            'provider': 'dexcom'}
-    },
-    {
-        'type': 'OAuthMessage',
-        'rules': [{'name': 'message.type', 'value': 'intent.connect.google', 'compare': 'str', 'weight': 100}],
-        'params': {
-            'receiver': '$message.sender',
-            'sender': '$message.receiver',
-            'person_id': '$sender.id',
-            'provider': 'google'}
-    },
-]
-
 
 def process(event, context):
     """Triggered from a message on a Cloud Pub/Sub topic.
@@ -52,7 +31,8 @@ def process(event, context):
     context.set('sender.id', persons[0].id)
 
     matched = []
-    for action in ACTION_DATA:
+    for doc in db.collection('actions').stream():
+        action = doc.to_dict()
         score = 0
         for rule in action['rules']:
             if rule['compare'] == 'str' and context.get(rule['name']) == rule['value']:
@@ -79,17 +59,6 @@ def process(event, context):
 
         if action['type'] in ACTIONS:
             ACTIONS[action['type']](**params).process()
-
-    # if 'type' in message and message['type'] == 'intent.connect.dexcom':
-    #     OAuthMessage(receiver=context.get('message.sender'),
-    #                  sender=context.get('message.receiver'),
-    #                  person_id=context.get('sender.id'),
-    #                  provider='dexcom').process()
-    # elif 'type' in message and message['type'] == 'intent.connect.google':
-    #     OAuthMessage(receiver=context.get('message.sender'),
-    #                  sender=context.get('message.receiver'),
-    #                  person_id=context.get('sender.id'),
-    #                  provider='google').process()
 
 
 class Context(object):
