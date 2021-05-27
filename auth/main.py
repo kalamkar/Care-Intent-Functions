@@ -46,9 +46,6 @@ def create_polling(payload):
     client = tasks_v2.CloudTasksClient()
     queue = client.queue_path('careintent', 'us-central1', payload['provider'])
 
-    timestamp = timestamp_pb2.Timestamp()
-    timestamp.FromDatetime(datetime.datetime.utcnow() + datetime.timedelta(seconds=payload['repeat-secs']))
-
     task = {
         'http_request': {  # Specify the type of request.
             'http_method': tasks_v2.HttpMethod.POST,
@@ -56,8 +53,7 @@ def create_polling(payload):
             'oidc_token': {'service_account_email': 'careintent@appspot.gserviceaccount.com'},
             'headers': {"Content-type": "application/json"},
             'body': json.dumps(payload).encode()
-        },
-        'schedule_time': timestamp
+        }
     }
     response = client.create_task(request={'parent': queue, 'task': task})
     print("Created task {}".format(response.name))
