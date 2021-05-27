@@ -12,20 +12,20 @@ ACTION_DATA = [
     {
         'type': 'OAuthMessage',
         'rules': [{'name': 'message.type', 'value': 'intent.connect.dexcom', 'compare': 'str', 'weight': 100}],
-        'params': [{
+        'params': {
             'receiver': '$message.sender',
             'sender': '$message.receiver',
             'person_id': '$sender.id',
-            'provider': 'dexcom'}]
+            'provider': 'dexcom'}
     },
     {
         'type': 'OAuthMessage',
         'rules': [{'name': 'message.type', 'value': 'intent.connect.google', 'compare': 'str', 'weight': 100}],
-        'params': [{
+        'params': {
             'receiver': '$message.sender',
             'sender': '$message.receiver',
             'person_id': '$sender.id',
-            'provider': 'google'}]
+            'provider': 'google'}
     },
 ]
 
@@ -74,7 +74,7 @@ def process(event, context):
 
     for action in matched:
         params = {}
-        for name, value in action['params']:
+        for name, value in action['params'].items():
             params[name] = context.get(value[1:]) if value.startswith('$') else value
 
         if action['type'] in ACTIONS:
