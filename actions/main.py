@@ -1,7 +1,9 @@
 import base64
+import config
 import json
 import re
 
+import dialogflow_v2 as dialogflow
 from google.cloud import firestore
 from generic import OAuthMessage
 
@@ -29,6 +31,18 @@ def process(event, context):
     context.set('message', message)
     context.set('sender', persons[0].to_dict())
     context.set('sender.id', persons[0].id)
+
+    if message['content-type'] == 'text/plain':
+        df_client = dialogflow.SessionsClient()
+        session = df_client.session_path(config.PROJECT_ID, persons[0].id)
+        text_input = dialogflow.types.TextInput(text=message['content'], language_code='en-US')
+        response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
+        context.set('dialogflow', {
+            'intent': response.query_result.intent.display_name,
+            'fulfillment-text': response.query_result.fulfillment_text,
+            'confidence': int(response.query_result.intent_detection_confidence * 100),
+            'params': response.query_result.parameters
+        })
 
     matched = []
     for doc in db.collection('actions').stream():
