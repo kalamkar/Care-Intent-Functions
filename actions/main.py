@@ -57,7 +57,7 @@ def process(event, context):
             expected_value = rule['value']
             if rule['compare'] == 'str' and context_value == expected_value:
                 score = rule['weight']
-            elif rule['compare'] == 'regex':
+            elif rule['compare'] == 'regex' and context_value:
                 matches = re.findall(expected_value, context_value)
                 if matches:
                     context.set(rule['name'] + '_match', matches)
