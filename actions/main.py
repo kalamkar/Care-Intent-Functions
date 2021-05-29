@@ -46,6 +46,8 @@ def process(event, context):
             'params': response.query_result.parameters
         })
 
+    print(context.data)
+
     matched = []
     for doc in db.collection('actions').stream():
         action = doc.to_dict()
