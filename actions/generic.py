@@ -12,6 +12,25 @@ class Action(object):
     pass
 
 
+class Message(Action):
+    def __init__(self, receiver=None, sender=None, content=None):
+        self.receiver = receiver
+        self.sender = sender
+        self.content = None
+
+    def process(self):
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+
+        data = {
+            'sender': self.sender,
+            'receiver': self.receiver,
+            'content-type': 'text/plain',
+            'content': self.content
+        }
+        publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
+
+
 def create_dexcom_auth_url(person_id):
     return 'https://sandbox-api.dexcom.com/v2/oauth2/login?' + urlencode({
         'client_id': config.DEXCOM_ID,
@@ -40,14 +59,11 @@ PROVIDER_URLS = {'dexcom': create_dexcom_auth_url,
                  'google': create_google_auth_url}
 
 
-class OAuthMessage(Action):
+class OAuthMessage(Message):
     def __init__(self, receiver=None, sender=None, person_id=None, provider=None):
-        self.receiver = receiver
-        self.sender = sender
         self.person_id = person_id
         self.provider = provider
 
-    def process(self):
         short_code = str(uuid.uuid4())
         db = firestore.Client()
         db.collection('urls').document(short_code).set({
@@ -55,13 +71,4 @@ class OAuthMessage(Action):
         })
         short_url = ('https://us-central1-%s.cloudfunctions.net/u/' % config.PROJECT_ID) + short_code
 
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
-
-        data = {
-            'sender': self.sender,
-            'receiver': self.receiver,
-            'content-type': 'text/plain',
-            'content': 'Visit {}'.format(short_url)
-        }
-        publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
+        super().__init__(receiver=receiver, sender=sender, content='Visit {}'.format(short_url))

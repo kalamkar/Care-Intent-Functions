@@ -1,14 +1,15 @@
 import base64
 import config
 import json
+import generic
 import re
 
 import dialogflow_v2 as dialogflow
 from google.cloud import firestore
-from generic import OAuthMessage
 
 
-ACTIONS = {'OAuthMessage': OAuthMessage}
+ACTIONS = {'Message': generic.Message,
+           'OAuthMessage': generic.OAuthMessage}
 
 
 def process(event, context):
