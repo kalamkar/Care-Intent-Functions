@@ -53,14 +53,16 @@ def process(event, context):
         action = doc.to_dict()
         score = 0
         for rule in action['rules']:
-            if rule['compare'] == 'str' and context.get(rule['name']) == rule['value']:
+            context_value = context.get(rule['name'])
+            expected_value = rule['value']
+            if rule['compare'] == 'str' and context_value == expected_value:
                 score = rule['weight']
             elif rule['compare'] == 'regex':
-                matches = re.findall(rule['value'], context.get(rule['name']))
+                matches = re.findall(expected_value, context_value)
                 if matches:
                     context.set(rule['name'] + '_match', matches)
                     score = rule['weight']
-            elif rule['compare'] == 'number' and context.get(rule['name']) == float(rule['value']):
+            elif rule['compare'] == 'number' and context_value == float(expected_value):
                 score = rule['weight']
 
         if score:
