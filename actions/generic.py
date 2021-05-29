@@ -16,7 +16,7 @@ class Message(Action):
     def __init__(self, receiver=None, sender=None, content=None):
         self.receiver = receiver
         self.sender = sender
-        self.content = None
+        self.content = content
 
     def process(self):
         publisher = pubsub_v1.PublisherClient()
