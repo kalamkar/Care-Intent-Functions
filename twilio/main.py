@@ -18,6 +18,7 @@ def twilio(request):
         'timestamp': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': IdType.phone, 'value': request.form['From']},
         'receiver': {'type': IdType.phone, 'value': request.form['To']},
+        'status': 'received',
         'content-type': 'text/plain',
         'content': request.form['Body']
     }

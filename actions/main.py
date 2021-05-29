@@ -33,7 +33,7 @@ def process(event, context):
     context.set('sender', persons[0].to_dict())
     context.set('sender.id', persons[0].id)
 
-    if message['content-type'] == 'text/plain':
+    if 'status' in message and message['status'] == 'received':
         df_client = dialogflow.SessionsClient()
         session = df_client.session_path(config.PROJECT_ID, persons[0].id)
         text_input = dialogflow.types.TextInput(text=message['content'], language_code='en-US')
