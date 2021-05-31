@@ -12,26 +12,32 @@ ACTIONS = {'Message': generic.Message,
            'OAuthMessage': generic.OAuthMessage}
 
 
-def process(event, context):
+def process(event, metadata):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          event (dict): Event payload.
          context (google.cloud.functions.Context): Metadata for the event.
     """
+    db = firestore.Client()
+    context = Context()
+
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
 
-    message['sender']['active'] = True
-    db = firestore.Client()
-    person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
-    persons = list(person_ref.get())
-    if len(persons) == 0:
-        return 500, 'Not ready'
+    print(metadata)
 
-    context = Context()
-    context.set('message', message)
-    context.set('sender', persons[0].to_dict())
-    context.set('sender.id', persons[0].id)
+    if 'sender' in message:
+        message['sender']['active'] = True
+        person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
+        persons = list(person_ref.get())
+        if len(persons) == 0:
+            return 500, 'Not ready'
+
+        context.set('message', message)
+        context.set('sender', persons[0].to_dict())
+        context.set('sender.id', persons[0].id)
+    else:
+        context.set('data', message)
 
     if 'status' in message and message['status'] == 'received':
         df_client = dialogflow.SessionsClient()
