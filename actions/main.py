@@ -48,6 +48,8 @@ def process(event, context):
 
     print(context.data)
 
+    # TODO: Make action execution chained.
+    #  Also action creating output that is added to context for next ones, in chain, to use.
     matched = []
     for doc in db.collection('actions').stream():
         action = doc.to_dict()
