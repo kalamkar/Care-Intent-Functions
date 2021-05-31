@@ -39,7 +39,7 @@ def handle_task(request):
     if last_sync:
         provider['last_sync'] = last_sync
 
-    provider_ref.set(provider)
+    provider_ref.update(provider)
 
     if 'repeat-secs' in request.json:
         create_polling(request.json)
@@ -81,7 +81,5 @@ def get_access_token(refresh, provider_name):
     if response.status_code > 299:
         return None
     provider = response.json()
-    if 'refresh_token' not in provider:
-        provider['refresh_token'] = refresh
     provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
     return provider
