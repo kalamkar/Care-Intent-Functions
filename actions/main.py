@@ -26,7 +26,7 @@ def process(event, metadata):
 
     print(metadata)
 
-    if 'sender' in message:
+    if metadata.resource['name'].endswith('/message'):
         message['sender']['active'] = True
         person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
         persons = list(person_ref.get())
@@ -36,7 +36,7 @@ def process(event, metadata):
         context.set('message', message)
         context.set('sender', persons[0].to_dict())
         context.set('sender.id', persons[0].id)
-    else:
+    elif metadata.resource['name'].endswith('/data'):
         context.set('data', message)
 
     if 'status' in message and message['status'] == 'received':
