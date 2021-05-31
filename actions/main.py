@@ -88,7 +88,15 @@ class Context(object):
         self.data = {}
 
     def set(self, name, value):
-        self.data[name] = value
+        tokens = name.split('.') if name else []
+        if len(tokens) == 1:
+            self.data[name] = value
+        elif len(tokens) == 2:
+            self.data[tokens[0]][tokens[1]] = value
+        elif len(tokens) == 3:
+            self.data[tokens[0]][tokens[1]][tokens[2]] = value
+        elif len(tokens) == 4:
+            self.data[tokens[0]][tokens[1]][tokens[2]][tokens[3]] = value
 
     def get(self, name):
         tokens = name.split('.') if name else []
