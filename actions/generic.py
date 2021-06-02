@@ -1,15 +1,22 @@
 import cipher
 import config
+import dateutil.parser
 import json
+import pytz
 import uuid
 
+from google.cloud import bigquery
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 from urllib.parse import urlencode
 
 
 class Action(object):
-    pass
+    def __init__(self):
+        self.output = {}
+
+    def process(self):
+        pass
 
 
 class Message(Action):
@@ -17,6 +24,7 @@ class Message(Action):
         self.receiver = receiver
         self.sender = sender
         self.content = content
+        super().__init__()
 
     def process(self):
         publisher = pubsub_v1.PublisherClient()
@@ -72,3 +80,32 @@ class OAuthMessage(Message):
         short_url = ('https://us-central1-%s.cloudfunctions.net/u/' % config.PROJECT_ID) + short_code
 
         super().__init__(receiver=receiver, sender=sender, content='Visit {}'.format(short_url))
+
+
+class SimplePatternCheck(Action):
+    def __init__(self, person_id=None, name=None, seconds=None, min_threshold=None, max_threshold=None):
+        self.person_id = person_id
+        self.name = name
+        self.seconds = seconds
+        self.min_threshold = min_threshold
+        self.max_threshold = max_threshold
+        super().__init__()
+
+    def process(self):
+        client = bigquery.Client()
+        query = 'SELECT DISTINCT time, number FROM careintent.live.tsdatav1, UNNEST(data) ' \
+                'WHERE source.id = "{source}" AND name = "{name}" ' \
+                'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
+                'ORDER BY time'.\
+            format(source=self.person_id, name=self.name, seconds=self.seconds)
+        data = []
+        for row in client.query(query):
+            data.append((dateutil.parser.parse(row['time']).astimezone(pytz.UTC), row['number']))
+
+        if len(data) < 2:
+            return
+        seconds = (data[-1][0] - data[0][0]).total_seconds()
+        hour_rate = (data[-1][0] - data[0][0]) * (60 * 60) / (seconds if seconds else 1)
+        if (self.min_threshold and hour_rate < self.min_threshold) or\
+           (self.max_threshold and hour_rate > self.max_threshold):
+            self.output['data'] = {'pattern': 'slope', 'rate-hour': hour_rate, 'name': self.name}

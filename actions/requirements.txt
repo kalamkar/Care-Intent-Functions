@@ -1,6 +1,8 @@
 # Function dependencies, for example:
 # package>=version
 dialogflow
+google-cloud-bigquery
 google-cloud-firestore
 google-cloud-pubsub
+python-dateutil
 PyCryptodome

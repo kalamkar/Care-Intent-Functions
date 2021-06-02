@@ -9,7 +9,8 @@ from google.cloud import firestore
 
 
 ACTIONS = {'Message': generic.Message,
-           'OAuthMessage': generic.OAuthMessage}
+           'OAuthMessage': generic.OAuthMessage,
+           'SimplePatternCheck': generic.SimplePatternCheck}
 
 
 def process(event, metadata):
@@ -54,10 +55,9 @@ def process(event, metadata):
 
     print(context.data)
 
-    # TODO: Make action execution chained.
-    #  Also action creating output that is added to context for next ones, in chain, to use.
-    matched = []
-    for doc in db.collection('actions').stream():
+    actions = list(db.collection('actions').get())
+    actions.sort(key=lambda a: a.get('priority'), reverse=True)
+    for doc in actions:
         action = doc.to_dict()
         score = 0
         for rule in action['rules']:
@@ -73,20 +73,17 @@ def process(event, metadata):
             elif rule['compare'] == 'number' and context_value == float(expected_value):
                 score = rule['weight']
 
-        if score:
+        if score and action['type'] in ACTIONS:
             action['score'] = score
-            matched.append(action)
+            params = {}
+            for name, value in action['params'].items():
+                params[name] = context.get(value[1:]) if value.startswith('$') else value
 
-    if not matched:
-        return
-
-    for action in matched:
-        params = {}
-        for name, value in action['params'].items():
-            params[name] = context.get(value[1:]) if value.startswith('$') else value
-
-        if action['type'] in ACTIONS:
-            ACTIONS[action['type']](**params).process()
+            print(action['type'])
+            action_object = ACTIONS[action['type']](**params)
+            action_object.process()
+            print(action_object.output)
+            context.update(action_object.output)
 
 
 class Context(object):
@@ -118,3 +115,6 @@ class Context(object):
         except KeyError:
             return None
         return None
+
+    def update(self, patch):
+        self.data.update(patch)
