@@ -77,7 +77,7 @@ def process(event, metadata):
             action['score'] = score
             params = {}
             for name, value in action['params'].items():
-                params[name] = context.get(value[1:]) if value.startswith('$') else value
+                params[name] = context.get(value[1:]) if type(value) == str and value.startswith('$') else value
 
             print(action['type'])
             action_object = ACTIONS[action['type']](**params)
