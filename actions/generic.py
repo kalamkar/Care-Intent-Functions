@@ -1,6 +1,5 @@
 import cipher
 import config
-import dateutil.parser
 import json
 import pytz
 import uuid
@@ -100,7 +99,7 @@ class SimplePatternCheck(Action):
             format(source=self.person_id, name=self.name, seconds=self.seconds)
         data = []
         for row in client.query(query):
-            data.append((dateutil.parser.parse(row['time']).astimezone(pytz.UTC), row['number']))
+            data.append((row['time'], row['number']))
 
         if len(data) < 2:
             return
