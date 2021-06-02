@@ -26,7 +26,7 @@ def handle_task(request):
     provider = provider_ref.get().to_dict()
     if 'expires' not in provider or \
             provider['expires'] < datetime.datetime.utcnow().astimezone(pytz.UTC):
-        provider = get_access_token(provider['refresh_token'], request.json['provider'])
+        provider.update(get_access_token(provider['refresh_token'], request.json['provider']))
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
@@ -79,7 +79,7 @@ def get_access_token(refresh, provider_name):
     })
     response = requests.post(config.PROVIDERS[provider_name]['url'], body, headers=headers)
     if response.status_code > 299:
-        return None
+        return {}
     provider = response.json()
     provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
     return provider
