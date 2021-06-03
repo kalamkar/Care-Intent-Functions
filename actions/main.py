@@ -64,7 +64,7 @@ def process(event, metadata):
     client = bigquery.Client()
     actions = list(db.collection('actions').get())
     actions.sort(key=lambda a: a.get('priority'), reverse=True)
-    print([action['type'] for action in actions])
+    print([action.get('type') for action in actions])
     for action_doc in actions:
         action = action_doc.to_dict()
         score = 0
