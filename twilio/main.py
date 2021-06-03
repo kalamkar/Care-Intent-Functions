@@ -19,7 +19,7 @@ def twilio(request):
         'sender': {'type': IdType.phone, 'value': request.form['From']},
         'receiver': {'type': IdType.phone, 'value': request.form['To']},
         'status': 'received',
-        'content-type': 'text/plain',
+        'content_type': 'text/plain',
         'content': request.form['Body']
     }
 

@@ -2,6 +2,7 @@ import base64
 import json
 import uuid
 
+from google.cloud import bigquery
 from google.cloud import firestore
 
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
@@ -16,11 +17,14 @@ def save_message(event, context):
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
 
-    db = firestore.Client()
-    message_ref = db.collection('messages').document(context.event_id)
-    message_ref.set(message)
+    client = bigquery.Client()
+    table_id = '%s.live.messages' % PROJECT_ID
+    errors = client.insert_rows_json(table_id, [message])
+    if errors:
+        print(errors)
 
     message['sender']['active'] = True
+    db = firestore.Client()
     person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
     persons = list(person_ref.get())
     if len(persons) == 0:

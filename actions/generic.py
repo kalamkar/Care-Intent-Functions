@@ -37,7 +37,7 @@ class Message(Action):
         data = {
             'sender': self.sender,
             'receiver': self.receiver,
-            'content-type': 'text/plain',
+            'content_type': 'text/plain',
             'content': self.content
         }
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
