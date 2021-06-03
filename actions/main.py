@@ -1,6 +1,8 @@
 import base64
 import datetime
 
+import pytz
+
 import config
 import json
 import generic
@@ -82,6 +84,14 @@ def process(event, metadata):
                 score = rule['weight']
 
         if score and action['type'] in ACTIONS:
+            if 'repeat-secs' in action:
+                latest_run_time = get_latest_run_time(action_doc.id, person_id)
+                threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['repeat-secs'])
+                if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
+                    print('Skipping {action} recently run at {runtime}'.format(action=action['type'],
+                                                                               runtime=latest_run_time))
+                    continue
+
             action['score'] = score
             params = {}
             for name, value in action['params'].items():
@@ -100,16 +110,23 @@ def process(event, metadata):
                 print(errors)
 
 
-# def get_latest_run_time(action_id, source_id):
-#     client = bigquery.Client()
-#     query = 'SELECT time FROM careintent.live.log, UNNEST(resources) ' \
-#             'WHERE type = "action" AND id = "{action_id}" ' \
-#             'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
-#             'ORDER BY time'. \
-#         format(source=self.person_id, name=self.name, seconds=self.seconds)
-#     data = []
-#     for row in client.query(query):
-#         data.append((row['time'], row['number']))
+def get_latest_run_time(action_id, person_id):
+    client = bigquery.Client()
+    query = '''SELECT time FROM(
+        SELECT time,
+            (SELECT id FROM UNNEST(resources) 
+                WHERE type = "action") AS action,
+            (SELECT id FROM UNNEST(resources) 
+                WHERE type = "person") AS person
+        FROM `careintent.live.log`
+        WHERE type = "action.run"
+    )
+    WHERE action = "{action_id}" AND person = "{person_id}"
+    ORDER BY time DESC LIMIT 1'''.format(person_id=person_id, action_id=action_id)
+    latest_run_time = None
+    for row in client.query(query):
+        latest_run_time = row['time']
+    return latest_run_time
 
 
 class Context(object):
