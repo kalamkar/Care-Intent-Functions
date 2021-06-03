@@ -66,7 +66,6 @@ def process(event, metadata):
     client = bigquery.Client()
     actions = list(db.collection('actions').get())
     actions.sort(key=lambda a: a.get('priority'), reverse=True)
-    print([action.get('type') for action in actions])
     for action_doc in actions:
         action = action_doc.to_dict()
         score = 0
@@ -97,7 +96,6 @@ def process(event, metadata):
             for name, value in action['params'].items():
                 params[name] = context.get(value[1:]) if type(value) == str and value.startswith('$') else value
 
-            print(action['type'])
             action_object = ACTIONS[action['type']](**params)
             action_object.process()
             print(action_object.output)
