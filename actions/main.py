@@ -1,10 +1,13 @@
 import base64
+import datetime
+
 import config
 import json
 import generic
 import re
 
 import dialogflow_v2 as dialogflow
+from google.cloud import bigquery
 from google.cloud import firestore
 
 
@@ -27,6 +30,7 @@ def process(event, metadata):
 
     print(metadata)
 
+    person_id = None
     if metadata.resource['name'].endswith('/message'):
         message['sender']['active'] = True
         person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
@@ -34,11 +38,13 @@ def process(event, metadata):
         if len(persons) == 0:
             return 500, 'Not ready'
 
+        person_id = persons[0].id
         context.set('message', message)
         context.set('sender', persons[0].to_dict())
         context.set('sender.id', persons[0].id)
     elif metadata.resource['name'].endswith('/data'):
         context.set('data', message)
+        person_id = message['source']['id']
 
     if 'status' in message and message['status'] == 'received':
         df_client = dialogflow.SessionsClient()
@@ -55,10 +61,12 @@ def process(event, metadata):
 
     print(context.data)
 
+    client = bigquery.Client()
     actions = list(db.collection('actions').get())
     actions.sort(key=lambda a: a.get('priority'), reverse=True)
-    for doc in actions:
-        action = doc.to_dict()
+    print([action['type'] for action in actions])
+    for action_doc in actions:
+        action = action_doc.to_dict()
         score = 0
         for rule in action['rules']:
             context_value = context.get(rule['name'])
@@ -84,6 +92,24 @@ def process(event, metadata):
             action_object.process()
             print(action_object.output)
             context.update(action_object.output)
+            log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
+                   'resources': [{'type': 'person', 'id': person_id},
+                                 {'type': 'action', 'id': action_doc.id}]}
+            errors = client.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
+            if errors:
+                print(errors)
+
+
+# def get_latest_run_time(action_id, source_id):
+#     client = bigquery.Client()
+#     query = 'SELECT time FROM careintent.live.log, UNNEST(resources) ' \
+#             'WHERE type = "action" AND id = "{action_id}" ' \
+#             'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
+#             'ORDER BY time'. \
+#         format(source=self.person_id, name=self.name, seconds=self.seconds)
+#     data = []
+#     for row in client.query(query):
+#         data.append((row['time'], row['number']))
 
 
 class Context(object):
