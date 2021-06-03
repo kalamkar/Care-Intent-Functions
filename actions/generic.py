@@ -1,7 +1,7 @@
 import cipher
 import config
+import datetime
 import json
-import pytz
 import uuid
 
 from google.cloud import bigquery
@@ -35,6 +35,7 @@ class Message(Action):
         topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
         data = {
+            'time': datetime.datetime.utcnow().isoformat(),
             'sender': self.sender,
             'receiver': self.receiver,
             'content_type': 'text/plain',
