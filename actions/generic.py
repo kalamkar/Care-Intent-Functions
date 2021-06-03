@@ -105,7 +105,6 @@ class SimplePatternCheck(Action):
             return
         seconds = (data[-1][0] - data[0][0]).total_seconds()
         hour_rate = (data[-1][1] - data[0][1]) * (60 * 60) / (seconds if seconds else 1)
-        print(hour_rate)
         if (self.min_threshold and hour_rate < self.min_threshold) or\
            (self.max_threshold and hour_rate > self.max_threshold):
             self.output['data'] = {'pattern': 'slope', 'rate-hour': hour_rate, 'name': self.name}
