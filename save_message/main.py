@@ -16,6 +16,10 @@ def save_message(event, context):
     """
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
+    if 'active' in message['receiver']:
+        del message['receiver']['active']
+    if 'active' in message['sender']:
+        del message['sender']['active']
 
     client = bigquery.Client()
     table_id = '%s.live.messages' % PROJECT_ID
