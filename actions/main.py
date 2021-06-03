@@ -32,25 +32,27 @@ def process(event, metadata):
 
     print(metadata)
 
-    person_id = None
+    person = None
     if metadata.resource['name'].endswith('/message'):
+        context.set('message', message)
         message['sender']['active'] = True
         person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
         persons = list(person_ref.get())
-        if len(persons) == 0:
-            return 500, 'Not ready'
-
-        person_id = persons[0].id
-        context.set('message', message)
-        context.set('sender', persons[0].to_dict())
-        context.set('sender.id', persons[0].id)
+        if len(persons) > 0:
+            person = persons[0]
     elif metadata.resource['name'].endswith('/data'):
         context.set('data', message)
-        person_id = message['source']['id']
+        person = db.collection('persons').document(message['source']['id']).get()
+
+    if not person:
+        return 500, 'Not ready'
+
+    context.set('sender', person.to_dict())
+    context.set('sender.id', person.id)
 
     if 'status' in message and message['status'] == 'received':
         df_client = dialogflow.SessionsClient()
-        session = df_client.session_path(config.PROJECT_ID, persons[0].id)
+        session = df_client.session_path(config.PROJECT_ID, person.id)
         text_input = dialogflow.types.TextInput(text=message['content'], language_code='en-US')
         response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
         context.set('dialogflow', {
@@ -84,7 +86,7 @@ def process(event, metadata):
 
         if score and action['type'] in ACTIONS:
             if 'repeat-secs' in action:
-                latest_run_time = get_latest_run_time(action_doc.id, person_id)
+                latest_run_time = get_latest_run_time(action_doc.id, person.id)
                 threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['repeat-secs'])
                 if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
                     print('Skipping {action} recently run at {runtime}'.format(action=action['type'],
@@ -101,7 +103,7 @@ def process(event, metadata):
             print(action_object.output)
             context.update(action_object.output)
             log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
-                   'resources': [{'type': 'person', 'id': person_id},
+                   'resources': [{'type': 'person', 'id': person.id},
                                  {'type': 'action', 'id': action_doc.id}]}
             errors = client.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
             if errors:
