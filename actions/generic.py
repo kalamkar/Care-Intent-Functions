@@ -20,7 +20,12 @@ class Action(object):
 
 class Message(Action):
     def __init__(self, receiver=None, sender=None, content=None):
-        self.receiver = receiver
+        if receiver and 'type' in receiver and 'id' in receiver:
+            self.receiver = receiver
+        elif receiver and 'identifiers' in receiver and len(receiver['identifiers']):
+            self.receiver = receiver['identifiers'][0]
+        else:
+            self.receiver = receiver
         self.sender = sender
         self.content = content
         super().__init__()
