@@ -15,7 +15,7 @@ def twilio(request):
     topic_path = publisher.topic_path(PROJECT_ID, 'message')
 
     data = {
-        'timestamp': datetime.datetime.utcnow().isoformat(),
+        'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': IdType.phone, 'value': request.form['From']},
         'receiver': {'type': IdType.phone, 'value': request.form['To']},
         'status': 'received',
