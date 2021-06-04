@@ -27,6 +27,9 @@ def save_message(event, context):
     if errors:
         print(errors)
 
+    if not message['sender']:
+        return
+
     message['sender']['active'] = True
     db = firestore.Client()
     person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
