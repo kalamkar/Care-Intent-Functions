@@ -16,9 +16,9 @@ def save_message(event, context):
     """
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
-    if 'active' in message['receiver']:
+    if message['receiver'] and 'active' in message['receiver']:
         del message['receiver']['active']
-    if 'active' in message['sender']:
+    if message['sender'] and 'active' in message['sender']:
         del message['sender']['active']
 
     client = bigquery.Client()
