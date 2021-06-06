@@ -16,11 +16,10 @@ RESOURCES = ['persons', 'relations', 'orgs', 'actions', 'content']
 
 def api(request):
     response = flask.make_response()
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    origin = request.headers.get('origin')
-    response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
-
     if request.method == 'OPTIONS':
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        origin = request.headers.get('origin')
+        response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PATCH,DELETE'
         response.headers['Access-Control-Allow-Headers'] = ', '.join(ALLOW_HEADERS)
         response.status_code = 204
@@ -38,7 +37,7 @@ def api(request):
         db = firestore.Client()
         collection = db.collection(tokens[2])
         if request.method == 'GET':
-            response.content = flask.jsonify(collection.document(tokens[3]).get().to_dict())
+            response = flask.jsonify(collection.document(tokens[3]).get().to_dict())
         elif request.method == 'POST':
             doc_ref = collection.document(str(uuid.uuid4()))
             doc_ref.set(request.json)
@@ -56,6 +55,10 @@ def api(request):
         for row in bq.query(query):
             data.append((row['time'], row['number'] or row['value']))
 
-        response.content = flask.jsonify({'data': data})
+        response = flask.jsonify({'data': data})
+
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    origin = request.headers.get('origin')
+    response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
 
     return response
