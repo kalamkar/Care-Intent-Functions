@@ -27,6 +27,7 @@ def api(request):
         return response
 
     tokens = request.path.split('/')
+    print(tokens)
     if len(tokens) < 3:
         response.status_code = 404
         return response
