@@ -30,24 +30,24 @@ def api(request):
 
     # TODO: Check authentication and authorization
 
-    if len(tokens) >= 3 and tokens[2] in RESOURCES:
+    if len(tokens) >= 2 and tokens[1] in RESOURCES:
         db = firestore.Client()
-        collection = db.collection(tokens[2])
-        if request.method == 'GET':
-            response = flask.jsonify(collection.document(tokens[3]).get().to_dict())
+        collection = db.collection(tokens[1])
+        if request.method == 'GET' and len(tokens) >= 3:
+            response = flask.jsonify(collection.document(tokens[2]).get().to_dict())
         elif request.method == 'POST':
             doc_ref = collection.document(str(uuid.uuid4()))
             doc_ref.set(request.json)
-        elif request.method == 'PATCH':
-            doc_ref = collection.document(tokens[3])
+        elif request.method == 'PATCH' and len(tokens) >= 3:
+            doc_ref = collection.document(tokens[2])
             doc_ref.update(request.json)
-    elif len(tokens) >= 5 and tokens[2] == 'data':
+    elif len(tokens) >= 4 and tokens[1] == 'data':
         bq = bigquery.Client()
         query = 'SELECT time, number, value FROM careintent.live.tsdatav1, UNNEST(data) ' \
                 'WHERE source.id = "{source}" AND name = "{name}" ' \
                 'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
                 'ORDER BY time'. \
-            format(source=tokens[3], name=tokens[4], seconds=request.args.get('seconds', '86400'))
+            format(source=tokens[2], name=tokens[3], seconds=request.args.get('seconds', '86400'))
         print(query)
         data = []
         for row in bq.query(query):
