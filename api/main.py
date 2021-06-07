@@ -27,13 +27,10 @@ def api(request):
 
     tokens = request.path.split('/')
     print(tokens)
-    if len(tokens) < 3:
-        response.status_code = 404
-        return response
 
     # TODO: Check authentication and authorization
 
-    if tokens[2] in RESOURCES:
+    if len(tokens) >= 3 and tokens[2] in RESOURCES:
         db = firestore.Client()
         collection = db.collection(tokens[2])
         if request.method == 'GET':
@@ -44,18 +41,21 @@ def api(request):
         elif request.method == 'PATCH':
             doc_ref = collection.document(tokens[3])
             doc_ref.update(request.json)
-    if tokens[2] == 'data' and len(tokens) >= 5:
+    elif len(tokens) >= 5 and tokens[2] == 'data':
         bq = bigquery.Client()
         query = 'SELECT time, number, value FROM careintent.live.tsdatav1, UNNEST(data) ' \
                 'WHERE source.id = "{source}" AND name = "{name}" ' \
                 'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
                 'ORDER BY time'. \
             format(source=tokens[3], name=tokens[4], seconds=request.args.get('seconds', '86400'))
+        print(query)
         data = []
         for row in bq.query(query):
             data.append((row['time'], row['number'] or row['value']))
 
         response = flask.jsonify({'data': data})
+    else:
+        response.status_code = 404
 
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     origin = request.headers.get('origin')
