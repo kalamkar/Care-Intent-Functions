@@ -49,13 +49,13 @@ def api(request):
                 'ORDER BY time'. \
             format(source=tokens[2], name=tokens[3], seconds=request.args.get('seconds', '86400'))
         print(query)
-        data = []
+        rows = []
         for row in bq.query(query):
-            data.append({'time': row['time'].isoformat(),
+            rows.append({'time': row['time'].isoformat(),
                          'number': row['number'],
                          'value': row['value']})
 
-        response = flask.jsonify({'data': data})
+        response = flask.jsonify({'rows': rows})
     else:
         response.status_code = 404
 
