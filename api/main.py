@@ -41,13 +41,14 @@ def api(request):
         elif request.method == 'PATCH' and len(tokens) >= 3:
             doc_ref = collection.document(tokens[2])
             doc_ref.update(request.json)
-    elif len(tokens) >= 4 and tokens[1] == 'data':
+    elif len(tokens) >= 3 and tokens[1] == 'data':
         bq = bigquery.Client()
-        query = 'SELECT time, number, value FROM careintent.live.tsdatav1, UNNEST(data) ' \
-                'WHERE source.id = "{source}" AND name = "{name}" ' \
+        names = request.args.getlist('name')
+        query = 'SELECT time, name, number, value FROM careintent.live.tsdatav1, UNNEST(data) ' \
+                'WHERE source.id = "{source}" AND name IN {names} ' \
                 'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
                 'ORDER BY time'. \
-            format(source=tokens[2], name=tokens[3], seconds=request.args.get('seconds', '86400'))
+            format(source=tokens[2], names=names, seconds=request.args.get('seconds', '86400'))
         print(query)
         rows = []
         for row in bq.query(query):
