@@ -36,7 +36,7 @@ def handle_task(request):
         last_sync = max(row_time, last_sync) if last_sync else row_time
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
 
-    if not provider['last_sync'] or (last_sync and provider['last_sync'] < last_sync):
+    if 'last_sync' not in provider or not provider['last_sync'] or (last_sync and provider['last_sync'] < last_sync):
         provider['last_sync'] = last_sync
 
     provider_ref.update(provider)
