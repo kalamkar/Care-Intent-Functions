@@ -51,7 +51,9 @@ def api(request):
         print(query)
         data = []
         for row in bq.query(query):
-            data.append((row['time'], row['number'] or row['value']))
+            data.append({'time': row['time'].isoformat(),
+                         'number': row['number'],
+                         'value': row['value']})
 
         response = flask.jsonify({'data': data})
     else:
