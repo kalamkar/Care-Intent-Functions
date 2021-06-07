@@ -51,7 +51,7 @@ def api(request):
                 'ORDER BY time'. \
             format(project=PROJECT_ID, source=tokens[2], names=str(names)[1:-1], seconds=seconds)
         print(query)
-        response = flask.jsonify({'rows': bq.query(query).result()})
+        response = flask.jsonify({'rows': [row for row in bq.query(query)]})
     else:
         response.status_code = 404
 
