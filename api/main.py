@@ -44,19 +44,14 @@ def api(request):
     elif len(tokens) >= 3 and tokens[1] == 'data':
         bq = bigquery.Client()
         names = request.args.getlist('name')
-        query = 'SELECT time, name, number, value FROM careintent.live.tsdatav1, UNNEST(data) ' \
-                'WHERE source.id = "{source}" AND name IN ({names}) ' \
+        seconds = request.args.get('seconds', '86400')
+        query = 'SELECT FORMAT_DATETIME("%FT%T UTC", time), name, number, value ' \
+                'FROM {project}.live.tsdatav1, UNNEST(data) WHERE source.id = "{source}" AND name IN ({names}) ' \
                 'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
                 'ORDER BY time'. \
-            format(source=tokens[2], names=str(names)[1:-1], seconds=request.args.get('seconds', '86400'))
+            format(project=PROJECT_ID, source=tokens[2], names=str(names)[1:-1], seconds=seconds)
         print(query)
-        rows = []
-        for row in bq.query(query):
-            rows.append({'time': row['time'].isoformat(),
-                         'number': row['number'],
-                         'value': row['value']})
-
-        response = flask.jsonify({'rows': rows})
+        response = flask.jsonify({'rows': bq.query(query)})
     else:
         response.status_code = 404
 
