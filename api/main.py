@@ -45,13 +45,19 @@ def api(request):
         bq = bigquery.Client()
         names = request.args.getlist('name')
         seconds = request.args.get('seconds', '86400')
-        query = 'SELECT FORMAT_DATETIME("%FT%T UTC", time), name, number, value ' \
+        query = 'SELECT time, name, number, value ' \
                 'FROM {project}.live.tsdatav1, UNNEST(data) WHERE source.id = "{source}" AND name IN ({names}) ' \
                 'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
                 'ORDER BY time'. \
             format(project=PROJECT_ID, source=tokens[2], names=str(names)[1:-1], seconds=seconds)
         print(query)
-        response = flask.jsonify({'rows': [row for row in bq.query(query)]})
+        rows = []
+        for row in bq.query(query):
+            rows.append({'time': row['time'].isoformat(),
+                         'name': row['name'],
+                         'number': row['number'],
+                         'value': row['value']})
+        response = flask.jsonify({'rows': rows})
     else:
         response.status_code = 404
 
