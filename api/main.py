@@ -45,10 +45,10 @@ def api(request):
         bq = bigquery.Client()
         names = request.args.getlist('name')
         query = 'SELECT time, name, number, value FROM careintent.live.tsdatav1, UNNEST(data) ' \
-                'WHERE source.id = "{source}" AND name IN {names} ' \
+                'WHERE source.id = "{source}" AND name IN ({names}) ' \
                 'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
                 'ORDER BY time'. \
-            format(source=tokens[2], names=names, seconds=request.args.get('seconds', '86400'))
+            format(source=tokens[2], names=str(names)[1:-1], seconds=request.args.get('seconds', '86400'))
         print(query)
         rows = []
         for row in bq.query(query):
