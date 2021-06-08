@@ -58,6 +58,25 @@ def api(request):
                          'number': row['number'],
                          'value': row['value']})
         response = flask.jsonify({'rows': rows})
+    elif len(tokens) >= 3 and tokens[1] == 'messages':
+        bq = bigquery.Client()
+        db = firestore.Client()
+        person_ref = db.collection('persons').document(tokens[2]).get()
+        values = [i['value'] for i in filter(lambda i: i['active'], person_ref.get('identifiers'))]
+        seconds = request.args.get('seconds', '86400')
+        query = 'SELECT time, status, content, content_type ' \
+                'FROM {project}.live.messages WHERE sender.value IN ({values}) ' \
+                'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
+                'ORDER BY time'. \
+            format(project=PROJECT_ID, values=str(values)[1:-1], seconds=seconds)
+        print(query)
+        rows = []
+        for row in bq.query(query):
+            rows.append({'time': row['time'].isoformat(),
+                         'status': row['status'],
+                         'content': row['content'],
+                         'content_type': row['content_type']})
+        response = flask.jsonify({'rows': rows})
     else:
         response.status_code = 404
 
