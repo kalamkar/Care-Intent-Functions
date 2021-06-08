@@ -6,7 +6,7 @@ import requests
 
 def get_dexcom_data(access_token, last_sync, source_id):
     end = datetime.datetime.utcnow()
-    start = (last_sync + datetime.timedelta(seconds=1)) if last_sync else (end - datetime.timedelta(days=90))
+    start = (last_sync + datetime.timedelta(seconds=1)) if last_sync else (end - datetime.timedelta(days=7))
     url = 'https://sandbox-api.dexcom.com/v2/users/self/egvs?startDate=%s&endDate=%s'\
           % (start.strftime('%Y-%m-%dT%H:%M:%S'), end.strftime('%Y-%m-%dT%H:%M:%S'))
     print(url)
@@ -29,7 +29,7 @@ def get_dexcom_data(access_token, last_sync, source_id):
 
 def get_google_data(access_token, last_sync, source_id):
     end = datetime.datetime.utcnow()
-    start = (last_sync + datetime.timedelta(seconds=1)) if last_sync else (end - datetime.timedelta(days=90))
+    start = (last_sync + datetime.timedelta(seconds=1)) if last_sync else (end - datetime.timedelta(days=7))
     headers = {'Authorization': 'Bearer ' + access_token,
                'Content-type': 'application/json'}
     url = 'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate'

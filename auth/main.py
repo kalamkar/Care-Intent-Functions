@@ -6,7 +6,6 @@ import requests
 
 from google.cloud import firestore
 from google.cloud import tasks_v2
-from google.protobuf import timestamp_pb2
 
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 

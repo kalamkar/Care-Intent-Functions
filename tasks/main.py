@@ -79,7 +79,8 @@ def get_access_token(refresh, provider_name):
     })
     response = requests.post(config.PROVIDERS[provider_name]['url'], body, headers=headers)
     if response.status_code > 299:
-        return {}
+        print(response.content)
+        return response.json()
     provider = response.json()
     provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
     return provider
