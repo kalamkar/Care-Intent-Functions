@@ -114,3 +114,16 @@ class SimplePatternCheck(Action):
         if (self.min_threshold and hour_rate < self.min_threshold) or\
            (self.max_threshold and hour_rate > self.max_threshold):
             self.output['data'] = {'pattern': 'slope', 'rate-hour': hour_rate, 'name': self.name}
+
+
+class Update(Action):
+    def __init__(self, identifier=None, collection=None, content=None):
+        self.identifier = identifier
+        self.collection = collection
+        self.content = content
+        super().__init__()
+
+    def process(self):
+        db = firestore.Client()
+        doc_ref = db.collection(self.collection).document(self.identifier)
+        doc_ref.update(json.loads(self.content))

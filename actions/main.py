@@ -15,7 +15,8 @@ from google.cloud import firestore
 
 ACTIONS = {'Message': generic.Message,
            'OAuthMessage': generic.OAuthMessage,
-           'SimplePatternCheck': generic.SimplePatternCheck}
+           'SimplePatternCheck': generic.SimplePatternCheck,
+           'Update': generic.Update}
 
 
 def process(event, metadata):
