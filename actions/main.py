@@ -58,7 +58,7 @@ def process(event, metadata):
         query_params = dialogflow.types.QueryParameters()
         df_data = person.get('dialogflow')
         if df_data and 'context' in df_data:
-            query_params.context = [get_df_context(df_data['context'], person.id)]
+            query_params.contexts = [get_df_context(df_data['context'], person.id)]
             if 'lifespan' in df_data['context']:
                 df_data['context']['lifespan'] -= 1
                 if df_data['context']['lifespan'] < 1:
