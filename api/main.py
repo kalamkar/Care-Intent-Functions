@@ -45,7 +45,7 @@ def api(request):
         bq = bigquery.Client()
         names = request.args.getlist('name')
         seconds = request.args.get('seconds', '86400')
-        query = 'SELECT time, name, number, value ' \
+        query = 'SELECT time, duration, name, number, value ' \
                 'FROM {project}.live.tsdatav1, UNNEST(data) WHERE source.id = "{source}" AND name IN ({names}) ' \
                 'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
                 'ORDER BY time'. \
@@ -54,6 +54,7 @@ def api(request):
         rows = []
         for row in bq.query(query):
             rows.append({'time': row['time'].isoformat(),
+                         'duration': row['duration'],
                          'name': row['name'],
                          'number': row['number'],
                          'value': row['value']})
