@@ -55,7 +55,19 @@ def process(event, metadata):
         df_client = dialogflow.SessionsClient()
         session = df_client.session_path(config.PROJECT_ID, person.id)
         text_input = dialogflow.types.TextInput(text=message['content'], language_code='en-US')
-        response = df_client.detect_intent(session=session, query_input=dialogflow.types.QueryInput(text=text_input))
+        query_params = dialogflow.types.QueryParameters()
+        df_data = person.get('dialogflow')
+        if df_data and 'context' in df_data:
+            query_params.context = [get_df_context(df_data['context'], person.id)]
+            if 'lifespan' in df_data['context']:
+                df_data['context']['lifespan'] -= 1
+                if df_data['context']['lifespan'] < 1:
+                    person_dict = person.to_dict()
+                    del person_dict['dialogflow']['context']
+                    person_ref = db.collection('persons').document(person.id)
+                    person_ref.update(person_dict)
+        query = dialogflow.types.QueryInput(text=text_input)
+        response = df_client.detect_intent(session=session, query_input=query, query_params=query_params)
         context.set('dialogflow', {
             'intent': response.query_result.intent.display_name,
             'action': response.query_result.action,
@@ -162,3 +174,16 @@ class Context(object):
 
     def update(self, patch):
         self.data.update(patch)
+
+
+def get_df_context(context, session_id):
+    context_name = "projects/" + config.PROJECT_ID + "/agent/sessions/" + session_id + "/contexts/" +\
+                   context['name'].lower()
+    parameters = dialogflow.types.struct_pb2.Struct()
+    if 'params' in context:
+        parameters.update(context['params'])
+    return dialogflow.types.context_pb2.Context(
+        name=context_name,
+        lifespan_count=context['lifespan'] if 'lifespan' in context else 1,
+        parameters=parameters
+    )
