@@ -58,8 +58,8 @@ def get_google_data(access_token, last_sync, source_id):
             duration = end - start
             rows.append({
                 'time': start.isoformat(),
+                'duration': duration.total_seconds(),
                 'source': {'type': 'gfit', 'id': source_id},
-                'data': [{'name': 'steps', 'number': points[0]['value'][0]['intVal']},
-                         {'name': 'duration.seconds', 'number': duration.total_seconds()}]
+                'data': [{'name': 'steps', 'number': points[0]['value'][0]['intVal']}]
         })
     return rows
