@@ -52,30 +52,8 @@ def process(event, metadata):
     context.set('sender', person.to_dict())
     context.set('sender.id', person.id)
 
-    if 'status' in message and message['status'] == 'received':
-        df_client = dialogflow.SessionsClient()
-        session = df_client.session_path(config.PROJECT_ID, person.id)
-        text_input = dialogflow.types.TextInput(text=message['content'], language_code='en-US')
-        query_params = None
-        person_dict = person.to_dict()
-        if 'dialogflow' in person_dict and 'context' in person_dict['dialogflow']:
-            df_context = person_dict['dialogflow']['context']
-            query_params = dialogflow.types.QueryParameters(contexts=[get_df_context(df_context, person.id)])
-            if 'lifespan' in df_context:
-                df_context['lifespan'] -= 1
-                if df_context['lifespan'] < 1:
-                    del person_dict['dialogflow']['context']
-                person_ref = db.collection('persons').document(person.id)
-                person_ref.update(person_dict)
-        query = dialogflow.types.QueryInput(text=text_input)
-        response = df_client.detect_intent(session=session, query_input=query, query_params=query_params)
-        context.set('dialogflow', {
-            'intent': response.query_result.intent.display_name,
-            'action': response.query_result.action,
-            'fulfillment-text': response.query_result.fulfillment_text,
-            'confidence': int(response.query_result.intent_detection_confidence * 100),
-            'params': response.query_result.parameters
-        })
+    if 'dialogflow' in message :
+        context.set('dialogflow', message['dialogflow'])
 
     print(context.data)
 
@@ -175,16 +153,3 @@ class Context(object):
 
     def update(self, patch):
         self.data.update(patch)
-
-
-def get_df_context(context, session_id):
-    context_name = "projects/" + config.PROJECT_ID + "/agent/sessions/" + session_id + "/contexts/" +\
-                   context['name'].lower()
-    parameters = dialogflow.types.struct_pb2.Struct()
-    if 'params' in context:
-        parameters.update(context['params'])
-    return dialogflow.types.context_pb2.Context(
-        name=context_name,
-        lifespan_count=context['lifespan'] if 'lifespan' in context else 1,
-        parameters=parameters
-    )
