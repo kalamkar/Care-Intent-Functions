@@ -17,8 +17,7 @@ def save_message(event, context):
 
     row = {
         'time': message['time'],
-        'receiver': {'type': message['receiver']['type'], 'value': message['receiver']['value']},
-        'status': message['status'],
+        'status': message['status'] if 'status' in message else None,
         'content_type': message['content_type'],
         'content': message['content'],
     }
