@@ -5,6 +5,7 @@ import uuid
 import dialogflow_v2 as dialogflow
 from google.cloud import firestore
 from google.cloud import pubsub_v1
+from google.protobuf.json_format import MessageToDict
 
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 
@@ -61,7 +62,7 @@ def twilio(request):
             'action': response.query_result.action,
             'fulfillment-text': response.query_result.fulfillment_text,
             'confidence': int(response.query_result.intent_detection_confidence * 100),
-            'params': response.query_result.parameters
+            'params': MessageToDict(response.query_result.parameters)
         }
     }
 
