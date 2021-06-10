@@ -36,8 +36,9 @@ def process(event, metadata):
     person = None
     if metadata.resource['name'].endswith('/message'):
         context.set('message', message)
-        message['sender']['active'] = True
-        person_ref = db.collection('persons').where('identifiers', 'array_contains', message['sender'])
+        person_id = {'active': True}
+        person_id.update(message['sender'] if 'sender' in message else message['receiver'])
+        person_ref = db.collection('persons').where('identifiers', 'array_contains', person_id)
         persons = list(person_ref.get())
         if len(persons) > 0:
             person = persons[0]
@@ -56,13 +57,13 @@ def process(event, metadata):
         session = df_client.session_path(config.PROJECT_ID, person.id)
         text_input = dialogflow.types.TextInput(text=message['content'], language_code='en-US')
         query_params = None
-        df_data = person.get('dialogflow')
-        if df_data and 'context' in df_data:
-            query_params = dialogflow.types.QueryParameters(contexts=[get_df_context(df_data['context'], person.id)])
-            if 'lifespan' in df_data['context']:
-                df_data['context']['lifespan'] -= 1
-                if df_data['context']['lifespan'] < 1:
-                    person_dict = person.to_dict()
+        person_dict = person.to_dict()
+        if 'dialogflow' in person_dict and 'context' in person_dict['dialogflow']:
+            df_context = person_dict['dialogflow']['context']
+            query_params = dialogflow.types.QueryParameters(contexts=[get_df_context(df_context, person.id)])
+            if 'lifespan' in df_context:
+                df_context['lifespan'] -= 1
+                if df_context['lifespan'] < 1:
                     del person_dict['dialogflow']['context']
                     person_ref = db.collection('persons').document(person.id)
                     person_ref.update(person_dict)
