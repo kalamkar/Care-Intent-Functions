@@ -31,7 +31,7 @@ def process(event, metadata):
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
 
-    print(metadata)
+    print(metadata, message)
 
     person = None
     if metadata.resource['name'].endswith('/message'):
@@ -65,8 +65,8 @@ def process(event, metadata):
                 df_context['lifespan'] -= 1
                 if df_context['lifespan'] < 1:
                     del person_dict['dialogflow']['context']
-                    person_ref = db.collection('persons').document(person.id)
-                    person_ref.update(person_dict)
+                person_ref = db.collection('persons').document(person.id)
+                person_ref.update(person_dict)
         query = dialogflow.types.QueryInput(text=text_input)
         response = df_client.detect_intent(session=session, query_input=query, query_params=query_params)
         context.set('dialogflow', {
