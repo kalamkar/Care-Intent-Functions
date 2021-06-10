@@ -8,7 +8,6 @@ import json
 import generic
 import re
 
-import dialogflow_v2 as dialogflow
 from google.cloud import bigquery
 from google.cloud import firestore
 
