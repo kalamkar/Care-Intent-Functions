@@ -66,6 +66,8 @@ def twilio(request):
         }
     }
 
+    print(data)
+
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
     return 'OK'
 
