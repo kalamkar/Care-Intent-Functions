@@ -1,3 +1,4 @@
+import base64
 import datetime
 import json
 import uuid
@@ -28,7 +29,7 @@ def twilio(request):
     persons = list(person_ref.get())
     if len(persons) == 0:
         # Create new person since it doesn't exist
-        person_id = str(uuid.uuid4())
+        person_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
         person = {'identifiers': [contact]}
         db.collection('persons').document(person_id).set(person)
     else:
