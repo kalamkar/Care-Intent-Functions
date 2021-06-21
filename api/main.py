@@ -1,3 +1,5 @@
+import datetime
+
 import flask
 import json
 import uuid
@@ -44,12 +46,12 @@ def api(request):
     elif len(tokens) >= 3 and tokens[1] == 'data':
         bq = bigquery.Client()
         names = request.args.getlist('name')
-        seconds = request.args.get('seconds', '86400')
+        start_time, end_time = get_start_end_times(request)
         query = 'SELECT time, duration, name, number, value ' \
                 'FROM {project}.live.tsdatav1, UNNEST(data) WHERE source.id = "{source}" AND name IN ({names}) ' \
-                'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
+                'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
                 'ORDER BY time'. \
-            format(project=PROJECT_ID, source=tokens[2], names=str(names)[1:-1], seconds=seconds)
+            format(project=PROJECT_ID, source=tokens[2], names=str(names)[1:-1], start=start_time, end=end_time)
         print(query)
         rows = []
         for row in bq.query(query):
@@ -64,12 +66,12 @@ def api(request):
         db = firestore.Client()
         person_ref = db.collection('persons').document(tokens[2]).get()
         values = [i['value'] for i in filter(lambda i: i['active'], person_ref.get('identifiers'))]
-        seconds = request.args.get('seconds', '86400')
+        start_time, end_time = get_start_end_times(request)
         query = 'SELECT time, status, tags, content, content_type ' \
                 'FROM {project}.live.messages WHERE sender.value IN ({values}) ' \
-                'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
+                'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
                 'ORDER BY time'. \
-            format(project=PROJECT_ID, values=str(values)[1:-1], seconds=seconds)
+            format(project=PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
         print(query)
         rows = []
         for row in bq.query(query):
@@ -87,3 +89,12 @@ def api(request):
     response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
 
     return response
+
+
+def get_start_end_times(request):
+    start_time = request.args.get('start', '86400')
+    start_time = datetime.datetime.utcfromtimestamp(start_time) \
+        if start_time else datetime.datetime.utcnow() - datetime.timedelta(seconds=86400)
+    end_time = request.args.get('end')
+    end_time = datetime.datetime.utcfromtimestamp(end_time) if end_time else datetime.datetime.utcnow()
+    return start_time.isoformat(), end_time.isoformat()
