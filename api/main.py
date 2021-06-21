@@ -1,7 +1,6 @@
 import datetime
-
+import dateutil.parser
 import flask
-import json
 import uuid
 
 from google.cloud import bigquery
@@ -92,9 +91,9 @@ def api(request):
 
 
 def get_start_end_times(request):
-    start_time = request.args.get('start', '86400')
-    start_time = datetime.datetime.utcfromtimestamp(start_time) \
+    start_time = request.args.get('start')
+    start_time = dateutil.parser.parse(start_time) \
         if start_time else datetime.datetime.utcnow() - datetime.timedelta(seconds=86400)
     end_time = request.args.get('end')
-    end_time = datetime.datetime.utcfromtimestamp(end_time) if end_time else datetime.datetime.utcnow()
+    end_time = dateutil.parser.parse(end_time) if end_time else datetime.datetime.utcnow()
     return start_time.isoformat(), end_time.isoformat()
