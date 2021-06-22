@@ -145,7 +145,7 @@ def login(request):
     if len(persons) == 0:
         return flask.jsonify({'status': 'error', 'message': 'Not found'}), 404
     person = persons[0].to_dict()
-    if person['hashpass'] != hashpass:
+    if person['login']['hashpass'] != hashpass:
         return flask.jsonify({'status': 'error', 'message': 'Forbidden'}), 403
     person['login']['id'] = identifier
     person['login']['time'] = datetime.datetime.utcnow()
