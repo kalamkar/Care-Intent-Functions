@@ -121,7 +121,7 @@ def signup(request):
 def verify(request):
     tokens = request.path.split('/')
     db = firestore.Client()
-    person_ref = db.collection('persons').where('signup.token', '==', tokens[2])
+    person_ref = db.collection('persons').where('login.verify', '==', tokens[2])
     persons = list(person_ref.get())
     if len(persons) == 0:
         return 'Forbidden', 403
