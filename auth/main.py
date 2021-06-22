@@ -127,7 +127,7 @@ def verify(request):
         return 'Forbidden', 403
     person = persons[0].to_dict()
     for identifier in person['identifiers']:
-        if identifier['value'] == person['signup']['id']:
+        if identifier['value'] == person['login']['id']:
             identifier['active'] = True
     del person['login']['verify']
     db.collection('persons').document(persons[0].id).update(person)
