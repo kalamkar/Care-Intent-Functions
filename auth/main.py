@@ -32,11 +32,14 @@ def handle_auth(request):
     db = firestore.Client()
     person_ref = db.collection('persons').document(state['person-id'])
     provider_ref = person_ref.collection('providers').document(state['provider'])
+    provider = provider_ref.get()
+    if provider and 'task_id' in provider:
+        stop_polling(state['provider'], provider['task_id'])
+
     provider = response.json()
     provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
+    provider['task_id'] = create_polling(state)
     provider_ref.set(provider)
-
-    create_polling(state)
 
     return flask.redirect('https://www.careintent.com', 302)
 
@@ -56,3 +59,10 @@ def create_polling(payload):
     }
     response = client.create_task(request={'parent': queue, 'task': task})
     print("Created task {}".format(response.name))
+    return response.name
+
+
+def stop_polling(provider, task_id):
+    client = tasks_v2.CloudTasksClient()
+    queue = client.queue_path('careintent', 'us-central1', provider)
+    client.delete_task(name=queue + '/tasks/' + task_id)

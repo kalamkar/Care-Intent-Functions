@@ -39,10 +39,10 @@ def handle_task(request):
     if 'last_sync' not in provider or not provider['last_sync'] or (last_sync and provider['last_sync'] < last_sync):
         provider['last_sync'] = last_sync
 
-    provider_ref.update(provider)
-
     if 'repeat-secs' in request.json:
-        create_polling(request.json)
+        provider['task_id'] = create_polling(request.json)
+
+    provider_ref.update(provider)
 
     return 'OK'
 
@@ -66,6 +66,7 @@ def create_polling(payload):
     }
     response = client.create_task(request={'parent': queue, 'task': task})
     print("Created task {}".format(response.name))
+    return response.name
 
 
 def get_access_token(refresh, provider_name):
