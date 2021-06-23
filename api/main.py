@@ -27,15 +27,20 @@ def api(request):
         return response
 
     tokens = request.path.split('/')
-    print(tokens)
 
-    # TODO: Check authentication and authorization
+    # TODO: Check authorization
+    db = firestore.Client()
+    try:
+        auth_token = request.headers['Authorization'].split(' ')[1]
+        user = list(db.collection('persons').where('login.token', '==', auth_token).get())[0]
+    except:
+        user = None
 
     if len(tokens) >= 2 and tokens[1] in RESOURCES:
-        db = firestore.Client()
         collection = db.collection(tokens[1])
         if request.method == 'GET' and len(tokens) >= 3:
-            response = flask.jsonify(collection.document(tokens[2]).get().to_dict())
+            doc = user.to_dict() if tokens[2] == 'me' else collection.document(tokens[2]).get().to_dict()
+            response = flask.jsonify(doc)
         elif request.method == 'POST':
             doc_ref = collection.document(str(uuid.uuid4()))
             doc_ref.set(request.json)
