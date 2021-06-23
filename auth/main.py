@@ -160,7 +160,7 @@ def verify(request, response):
 def login(request, _):
     db = firestore.Client()
     identifier = request.json['identifier']
-    hashpass = base64.b64encode(hashlib.sha256(request.json['password'].encode('utf-8')).digest())
+    hashpass = base64.b64encode(hashlib.sha256(request.json['password'].encode('utf-8')).digest()).decode('utf-8')
     id_type = 'email' if '@' in identifier else 'phone'
     contact = {'type': id_type, 'value': identifier, 'active': True}
     person_ref = db.collection('persons').where('identifiers', 'array_contains', contact)
