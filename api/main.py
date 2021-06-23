@@ -35,7 +35,7 @@ def api(request):
     except:
         user = None
 
-    if len(tokens) >= 2 and tokens[1] in RESOURCES:
+    if len(tokens) >= 2 and tokens[1] in RESOURCES and user:
         response = resources(request, response, user)
     elif len(tokens) >= 3 and tokens[1] == 'data':
         start_time, end_time = get_start_end_times(request)
