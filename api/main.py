@@ -40,6 +40,8 @@ def api(request):
         collection = db.collection(tokens[1])
         if request.method == 'GET' and len(tokens) >= 3:
             doc = user.to_dict() if tokens[2] == 'me' else collection.document(tokens[2]).get().to_dict()
+            if 'login' in doc:
+                del doc['login']
             response = flask.jsonify(doc)
         elif request.method == 'POST':
             doc_ref = collection.document(str(uuid.uuid4()))
