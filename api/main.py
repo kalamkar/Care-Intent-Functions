@@ -7,11 +7,10 @@ from google.cloud import bigquery
 from google.cloud import firestore
 
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
-
+JSON_CACHE_SECONDS = 600
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
                  'Access-Control-Allow-Credentials', 'X-Requested-With']
-
 RESOURCES = ['persons', 'relations', 'orgs', 'actions', 'content']
 
 
@@ -37,64 +36,81 @@ def api(request):
         user = None
 
     if len(tokens) >= 2 and tokens[1] in RESOURCES:
-        collection = db.collection(tokens[1])
-        if request.method == 'GET' and len(tokens) >= 3:
-            doc = user.to_dict() if tokens[2] == 'me' else collection.document(tokens[2]).get().to_dict()
-            if 'login' in doc:
-                del doc['login']
-            response = flask.jsonify(doc)
-        elif request.method == 'POST':
-            doc_ref = collection.document(str(uuid.uuid4()))
-            doc_ref.set(request.json)
-        elif request.method == 'PATCH' and len(tokens) >= 3:
-            doc_ref = collection.document(tokens[2])
-            doc_ref.update(request.json)
+        response = resources(request, response, user)
     elif len(tokens) >= 3 and tokens[1] == 'data':
-        bq = bigquery.Client()
-        names = request.args.getlist('name')
         start_time, end_time = get_start_end_times(request)
-        query = 'SELECT time, duration, name, number, value ' \
-                'FROM {project}.live.tsdatav1, UNNEST(data) WHERE source.id = "{source}" AND name IN ({names}) ' \
-                'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
-                'ORDER BY time'. \
-            format(project=PROJECT_ID, source=tokens[2], names=str(names)[1:-1], start=start_time, end=end_time)
-        print(query)
-        rows = []
-        for row in bq.query(query):
-            rows.append({'time': row['time'].isoformat(),
-                         'duration': row['duration'],
-                         'name': row['name'],
-                         'number': row['number'],
-                         'value': row['value']})
-        response = flask.jsonify({'rows': rows})
+        response = data(start_time, end_time, tokens[2], request.args.getlist('name'))
     elif len(tokens) >= 3 and tokens[1] == 'messages':
-        bq = bigquery.Client()
-        db = firestore.Client()
-        person_ref = db.collection('persons').document(tokens[2]).get()
-        values = [i['value'] for i in filter(lambda i: i['active'], person_ref.get('identifiers'))]
         start_time, end_time = get_start_end_times(request)
-        query = 'SELECT time, status, tags, content, content_type ' \
-                'FROM {project}.live.messages WHERE sender.value IN ({values}) ' \
-                'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
-                'ORDER BY time'. \
-            format(project=PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
-        print(query)
-        rows = []
-        for row in bq.query(query):
-            rows.append({'time': row['time'].isoformat(),
-                         'status': row['status'],
-                         'tags': row['tags'],
-                         'content': row['content'],
-                         'content_type': row['content_type']})
-        response = flask.jsonify({'rows': rows})
+        response = messages(start_time, end_time, tokens[2])
     else:
         response.status_code = 404
 
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     origin = request.headers.get('origin')
     response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
-
+    response.headers['Content-Type'] = 'application/json'
+    response.headers['Cache-Control'] = 'max-age=%d' % JSON_CACHE_SECONDS
     return response
+
+
+def resources(request, response, user):
+    tokens = request.path.split('/')
+    db = firestore.Client()
+    collection = db.collection(tokens[1])
+    if request.method == 'GET' and len(tokens) >= 3:
+        doc = user.to_dict() if tokens[2] == 'me' else collection.document(tokens[2]).get().to_dict()
+        if 'login' in doc:
+            del doc['login']
+        response = flask.jsonify(doc)
+    elif request.method == 'POST':
+        doc_ref = collection.document(str(uuid.uuid4()))
+        doc_ref.set(request.json)
+        response = flask.jsonify({'status': 'ok'})
+    elif request.method == 'PATCH' and len(tokens) >= 3:
+        doc_ref = collection.document(tokens[2])
+        doc_ref.update(request.json)
+        response = flask.jsonify({'status': 'ok'})
+    return response
+
+
+def data(start_time, end_time, source, names):
+    bq = bigquery.Client()
+    query = 'SELECT time, duration, name, number, value ' \
+            'FROM {project}.live.tsdatav1, UNNEST(data) WHERE source.id = "{source}" AND name IN ({names}) ' \
+            'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
+            'ORDER BY time'. \
+        format(project=PROJECT_ID, source=source, names=str(names)[1:-1], start=start_time, end=end_time)
+    print(query)
+    rows = []
+    for row in bq.query(query):
+        rows.append({'time': row['time'].isoformat(),
+                     'duration': row['duration'],
+                     'name': row['name'],
+                     'number': row['number'],
+                     'value': row['value']})
+    return flask.jsonify({'rows': rows})
+
+
+def messages(start_time, end_time, person_id):
+    bq = bigquery.Client()
+    db = firestore.Client()
+    person_ref = db.collection('persons').document(person_id).get()
+    values = [i['value'] for i in filter(lambda i: i['active'], person_ref.get('identifiers'))]
+    query = 'SELECT time, status, tags, content, content_type ' \
+            'FROM {project}.live.messages WHERE sender.value IN ({values}) ' \
+            'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
+            'ORDER BY time'. \
+        format(project=PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
+    print(query)
+    rows = []
+    for row in bq.query(query):
+        rows.append({'time': row['time'].isoformat(),
+                     'status': row['status'],
+                     'tags': row['tags'],
+                     'content': row['content'],
+                     'content_type': row['content_type']})
+    return flask.jsonify({'rows': rows})
 
 
 def get_start_end_times(request):
