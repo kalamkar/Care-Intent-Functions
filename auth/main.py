@@ -21,18 +21,38 @@ PROVIDERS = {'dexcom': {'url': 'https://sandbox-api.dexcom.com/v2/oauth2/token',
                         'client_id': '749186156527-hl1f7u9o2cssle1n80nl09bej2bjfg97.apps.googleusercontent.com',
                         'client_secret': 'GnBZGO7unmlgmko2CwqgRbBk'}}
 
+ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
+                 'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
+                 'Access-Control-Allow-Credentials', 'X-Requested-With']
+
 
 def handle_auth(request):
+    response = flask.make_response()
+    if request.method == 'OPTIONS':
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        origin = request.headers.get('origin')
+        response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PATCH,DELETE'
+        response.headers['Access-Control-Allow-Headers'] = ', '.join(ALLOW_HEADERS)
+        response.status_code = 204
+        return response
+
     tokens = request.path.split('/')
     if len(tokens) == 1:
-        return oauth(request)
+        response = oauth(request, response)
     elif len(tokens) >= 2 and tokens[1] == 'signup':
-        return signup(request)
+        response = signup(request, response)
     elif len(tokens) >= 2 and tokens[1] == 'login':
-        return login(request)
+        response = login(request, response)
     elif len(tokens) >= 2 and tokens[1] == 'verify':
-        return verify(request)
-    return 404, 'Not Found'
+        response = verify(request, response)
+    else:
+        response.status_code = 404
+
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    origin = request.headers.get('origin')
+    response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
+    return response
 
 
 def create_polling(payload):
@@ -59,7 +79,7 @@ def stop_polling(provider, task_id):
     client.delete_task(name=queue + '/tasks/' + task_id)
 
 
-def oauth(request):
+def oauth(request, _):
     state = cipher.parse_auth_token(request.args.get('state'))
     provider = state['provider']
     data = {'client_id': PROVIDERS[provider]['client_id'],
@@ -67,8 +87,8 @@ def oauth(request):
             'code': request.args.get('code'),
             'grant_type': 'authorization_code',
             'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'}
-    response = requests.post(PROVIDERS[provider]['url'], data=data)
-    print(response.content)
+    auth_response = requests.post(PROVIDERS[provider]['url'], data=data)
+    print(auth_response.content)
 
     db = firestore.Client()
     person_ref = db.collection('persons').document(state['person-id'])
@@ -77,7 +97,7 @@ def oauth(request):
     if provider and 'task_id' in provider:
         stop_polling(state['provider'], provider['task_id'])
 
-    provider = response.json()
+    provider = auth_response.json()
     provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
     provider['task_id'] = create_polling(state)
     provider_ref.set(provider)
@@ -85,7 +105,7 @@ def oauth(request):
     return flask.redirect('https://www.careintent.com', 302)
 
 
-def signup(request):
+def signup(request, _):
     db = firestore.Client()
     identifier = request.json['identifier']
     hashpass = base64.b64encode(hashlib.sha256(request.json['password'].encode('utf-8')).digest())
@@ -94,7 +114,9 @@ def signup(request):
     person_ref = db.collection('persons').where('identifiers', 'array_contains', contact)
     persons = list(person_ref.get())
     if len(persons) > 0:
-        return flask.jsonify({'status': 'error', 'message': 'Identifier already exists'}), 409
+        response = flask.jsonify({'status': 'error', 'message': 'Identifier already exists'})
+        response.status_code = 409
+        return response
 
     verify_token = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
     del contact['active']
@@ -115,16 +137,17 @@ def signup(request):
     }
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
 
-    return flask.jsonify({'status': 'ok', 'message': 'Success'}), 200
+    return flask.jsonify({'status': 'ok', 'message': 'Success'})
 
 
-def verify(request):
+def verify(request, response):
     tokens = request.path.split('/')
     db = firestore.Client()
     person_ref = db.collection('persons').where('login.verify', '==', tokens[2])
     persons = list(person_ref.get())
     if len(persons) == 0:
-        return 'Forbidden', 403
+        response.status_code = 403
+        return response
     person = persons[0].to_dict()
     for identifier in person['identifiers']:
         if identifier['value'] == person['login']['id']:
@@ -134,7 +157,7 @@ def verify(request):
     return flask.redirect('https://app.careintent.com', 302)
 
 
-def login(request):
+def login(request, _):
     db = firestore.Client()
     identifier = request.json['identifier']
     hashpass = base64.b64encode(hashlib.sha256(request.json['password'].encode('utf-8')).digest())
@@ -143,13 +166,17 @@ def login(request):
     person_ref = db.collection('persons').where('identifiers', 'array_contains', contact)
     persons = list(person_ref.get())
     if len(persons) == 0:
-        return flask.jsonify({'status': 'error', 'message': 'Not found'}), 404
+        response = flask.jsonify({'status': 'error', 'message': 'Not found'})
+        response.status_code = 404
+        return response
     person = persons[0].to_dict()
     if person['login']['hashpass'] != hashpass:
-        return flask.jsonify({'status': 'error', 'message': 'Forbidden'}), 403
+        response = flask.jsonify({'status': 'error', 'message': 'Forbidden'})
+        response.status_code = 403
+        return response
     person['login']['id'] = identifier
     person['login']['time'] = datetime.datetime.utcnow()
     person['login']['token'] = str(uuid.uuid4())
     db.collection('persons').document(persons[0].id).update(person)
     expiry = datetime.datetime.utcnow() + datetime.timedelta(hours=14)
-    return flask.jsonify({'status': 'ok', 'token': person['login']['token'], 'expiry': expiry.isoformat()}), 200
+    return flask.jsonify({'status': 'ok', 'token': person['login']['token'], 'expiry': expiry.isoformat()})
