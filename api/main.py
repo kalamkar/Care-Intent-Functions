@@ -72,10 +72,13 @@ def query(request, response, user):
     for relation in db.collection('relations')\
             .where(resource_type, '==', resource).where('type', '==', relation_type).get():
         result_id = relation.get(result_type)
-        doc = db.collection(result_id['type'] + 's').document(result_id['value']).get().to_dict()
-        if 'login' in doc:
-            del doc['login']
-        results.append(doc)
+        doc = db.collection(result_id['type'] + 's').document(result_id['value']).get()
+        doc_json = doc.to_dict()
+        if 'login' in doc_json:
+            del doc_json['login']
+        doc_json['resource_type'] = result_id['type']
+        doc_json['resource_id'] = doc.id
+        results.append(doc_json)
 
     return flask.jsonify({'results': results})
 
@@ -102,10 +105,13 @@ def resources(request, response, user):
     db = firestore.Client()
     collection = db.collection(tokens[1])
     if request.method == 'GET' and len(tokens) >= 3:
-        doc = user.to_dict() if tokens[2] == 'me' else collection.document(tokens[2]).get().to_dict()
-        if 'login' in doc:
-            del doc['login']
-        response = flask.jsonify(doc)
+        doc = user.to_dict() if tokens[2] == 'me' else collection.document(tokens[2]).get()
+        doc_json = doc.to_dict()
+        if 'login' in doc_json:
+            del doc_json['login']
+        doc_json['resource_type'] = tokens[1][:-1]
+        doc_json['resource_id'] = doc.id
+        response = flask.jsonify(doc_json)
     elif request.method == 'POST':
         doc_ref = collection.document(str(uuid.uuid4()))
         doc_ref.set(request.json)
