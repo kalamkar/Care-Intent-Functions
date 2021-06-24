@@ -104,7 +104,7 @@ def resources(request, response, user):
     db = firestore.Client()
     collection = db.collection(tokens[1])
     if request.method == 'GET' and len(tokens) >= 3:
-        doc = user.to_dict() if tokens[2] == 'me' else collection.document(tokens[2]).get()
+        doc = user if tokens[2] == 'me' else collection.document(tokens[2]).get()
         doc_json = doc.to_dict()
         if 'login' in doc_json:
             del doc_json['login']
