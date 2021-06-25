@@ -76,7 +76,7 @@ def query(request, response, user):
         doc_json = doc.to_dict()
         if 'login' in doc_json:
             del doc_json['login']
-        doc_json['identifier'] = {'type': result_id['type'], 'value': doc.id}
+        doc_json['id'] = {'type': result_id['type'], 'value': doc.id}
         results.append(doc_json)
 
     return flask.jsonify({'results': results})
@@ -108,7 +108,7 @@ def resources(request, response, user):
         doc_json = doc.to_dict()
         if 'login' in doc_json:
             del doc_json['login']
-        doc_json['identifier'] = {'type': tokens[1][:-1], 'value': doc.id}
+        doc_json['id'] = {'type': tokens[1][:-1], 'value': doc.id}
         response = flask.jsonify(doc_json)
     elif request.method == 'POST':
         doc_id = generate_id()
