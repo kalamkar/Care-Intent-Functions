@@ -73,11 +73,7 @@ def query(request, response, user):
             .where(resource_type, '==', resource).where('type', '==', relation_type).get():
         result_id = relation.get(result_type)
         doc = db.collection(result_id['type'] + 's').document(result_id['value']).get()
-        doc_json = doc.to_dict()
-        if 'login' in doc_json:
-            del doc_json['login']
-        doc_json['id'] = {'type': result_id['type'], 'value': doc.id}
-        results.append(doc_json)
+        results.append(get_document_json(doc, result_id['type']))
 
     return flask.jsonify({'results': results})
 
@@ -90,12 +86,7 @@ def add_relation(request, response, user):
         return response
 
     db = firestore.Client()
-    if relation['source']['type'] == 'person' and ':' in relation['source']['value']:
-        relation['source']['value'] = get_person_id(db, **relation['source']['value'].split(':', 1))
-    if relation['target']['type'] == 'person' and ':' in relation['target']['value']:
-        relation['target']['value'] = get_person_id(db, **relation['target']['value'].split(':', 1))
-    relation_id = generate_id()
-    db.collection('relations').document(relation_id).set(relation)
+    db.collection('relations').document(generate_id()).set(relation)
     return flask.jsonify({'status': 'ok'})
 
 
@@ -105,12 +96,14 @@ def resources(request, response, user):
     collection = db.collection(tokens[1])
     if request.method == 'GET' and len(tokens) >= 3:
         doc = user if tokens[2] == 'me' else collection.document(tokens[2]).get()
-        doc_json = doc.to_dict()
-        if 'login' in doc_json:
-            del doc_json['login']
-        doc_json['id'] = {'type': tokens[1][:-1], 'value': doc.id}
-        response = flask.jsonify(doc_json)
+        response = flask.jsonify(get_document_json(doc, tokens[1][:-1]))
     elif request.method == 'POST':
+        if tokens[1] == 'persons':
+            person_ref = db.collection('persons')\
+                .where('identifiers', 'array_contains_any', request.json['identifiers'])
+            persons = list(person_ref.get())
+            if len(persons) > 0:
+                return flask.jsonify(get_document_json(persons[0], tokens[1][:-1]))
         doc_id = generate_id()
         doc_ref = collection.document(doc_id)
         doc_ref.set(request.json)
@@ -119,11 +112,11 @@ def resources(request, response, user):
             'target': {'type': tokens[1][:-1], 'value': doc_id},
             'type': 'admin_of' if tokens[1] == 'groups' else 'created'
         })
-        response = flask.jsonify({'status': 'ok'})
+        response = flask.jsonify(get_document_json(doc_ref.get(), tokens[1][:-1]))
     elif request.method == 'PATCH' and len(tokens) >= 3:
         doc_ref = collection.document(tokens[2])
         doc_ref.update(request.json)
-        response = flask.jsonify({'status': 'ok'})
+        response = flask.jsonify(get_document_json(doc_ref.get(), tokens[1][:-1]))
     return response
 
 
@@ -175,18 +168,12 @@ def get_start_end_times(request):
     return start_time.isoformat(), end_time.isoformat()
 
 
-def get_person_id(db, id_type, value):
-    identifier = {'type': id_type, 'value': value, 'active': True}
-    person_ref = db.collection('persons').where('identifiers', 'array_contains', identifier)
-    persons = list(person_ref.get())
-    if len(persons) == 0:
-        # Create new person since it doesn't exist
-        person_id = generate_id()
-        person = {'identifiers': [identifier]}
-        db.collection('persons').document(person_id).set(person)
-        return person_id
-
-    return persons[0].id
+def get_document_json(doc, collection_name):
+    doc_json = doc.to_dict()
+    if 'login' in doc_json:
+        del doc_json['login']
+    doc_json['id'] = {'type': collection_name[:-1], 'value': doc.id}
+    return doc_json
 
 
 def generate_id():
