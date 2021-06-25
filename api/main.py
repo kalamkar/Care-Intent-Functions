@@ -94,7 +94,7 @@ def add_relation(request, response, user):
         relation['source']['value'] = get_person_id(db, **relation['source']['value'].split(':', 1))
     if relation['target']['type'] == 'person' and ':' in relation['target']['value']:
         relation['target']['value'] = get_person_id(db, **relation['target']['value'].split(':', 1))
-    relation_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
+    relation_id = generate_id()
     db.collection('relations').document(relation_id).set(relation)
     return flask.jsonify({'status': 'ok'})
 
@@ -111,8 +111,14 @@ def resources(request, response, user):
         doc_json['identifier'] = {'type': tokens[1][:-1], 'value': doc.id}
         response = flask.jsonify(doc_json)
     elif request.method == 'POST':
-        doc_ref = collection.document(str(uuid.uuid4()))
+        doc_id = generate_id()
+        doc_ref = collection.document(doc_id)
         doc_ref.set(request.json)
+        db.collection('relations').document(generate_id()).set({
+            'source': {'type': 'person', 'value': user.id},
+            'target': {'type': tokens[1][:-1], 'value': doc_id},
+            'type': 'admin_of' if tokens[1] == 'groups' else 'created'
+        })
         response = flask.jsonify({'status': 'ok'})
     elif request.method == 'PATCH' and len(tokens) >= 3:
         doc_ref = collection.document(tokens[2])
@@ -175,9 +181,13 @@ def get_person_id(db, id_type, value):
     persons = list(person_ref.get())
     if len(persons) == 0:
         # Create new person since it doesn't exist
-        person_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
+        person_id = generate_id()
         person = {'identifiers': [identifier]}
         db.collection('persons').document(person_id).set(person)
         return person_id
 
     return persons[0].id
+
+
+def generate_id():
+    return base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
