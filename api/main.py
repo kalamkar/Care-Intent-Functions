@@ -168,11 +168,11 @@ def get_start_end_times(request):
     return start_time.isoformat(), end_time.isoformat()
 
 
-def get_document_json(doc, collection_name):
+def get_document_json(doc, id_type):
     doc_json = doc.to_dict()
     if 'login' in doc_json:
         del doc_json['login']
-    doc_json['id'] = {'type': collection_name[:-1], 'value': doc.id}
+    doc_json['id'] = {'type': id_type, 'value': doc.id}
     return doc_json
 
 
