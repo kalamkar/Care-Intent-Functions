@@ -38,16 +38,17 @@ def handle_auth(request):
         return response
 
     tokens = request.path.split('/')
-    if len(tokens) == 1:
-        response = oauth(request, response)
-    elif len(tokens) >= 2 and tokens[1] == 'signup':
-        response = signup(request, response)
-    elif len(tokens) >= 2 and tokens[1] == 'login':
-        response = login(request, response)
-    elif len(tokens) >= 2 and tokens[1] == 'verify':
-        response = verify(request, response)
-    else:
+    print(tokens)
+    if not tokens:
         response.status_code = 404
+    elif tokens[-1] == 'auth':
+        response = oauth(request, response)
+    elif tokens[-1] == 'signup':
+        response = signup(request, response)
+    elif tokens[-1] == 'login':
+        response = login(request, response)
+    elif tokens[-1] == 'verify':
+        response = verify(request, response)
 
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     origin = request.headers.get('origin')
