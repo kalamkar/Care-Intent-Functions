@@ -38,10 +38,9 @@ def handle_auth(request):
         return response
 
     tokens = request.path.split('/')
-    print(tokens)
     if not tokens:
         response.status_code = 404
-    elif tokens[-1] == 'auth':
+    elif tokens[-1] == '':
         response = oauth(request, response)
     elif tokens[-1] == 'signup':
         response = signup(request, response)
