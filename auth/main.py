@@ -94,7 +94,7 @@ def oauth(request, _):
     person_ref = db.collection('persons').document(state['person-id'])
     provider_ref = person_ref.collection('providers').document(state['provider'])
     provider = provider_ref.get()
-    if provider and provider.get('task_id'):
+    if provider.exists and 'task_id' in provider.to_dict():
         stop_polling(state['provider'], provider.get('task_id'))
 
     provider = auth_response.json()
