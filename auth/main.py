@@ -94,8 +94,8 @@ def oauth(request, _):
     person_ref = db.collection('persons').document(state['person-id'])
     provider_ref = person_ref.collection('providers').document(state['provider'])
     provider = provider_ref.get()
-    if provider and 'task_id' in provider:
-        stop_polling(state['provider'], provider['task_id'])
+    if provider and provider.get('task_id'):
+        stop_polling(state['provider'], provider.get('task_id'))
 
     provider = auth_response.json()
     provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
