@@ -66,20 +66,20 @@ def process(event, metadata):
             context_value = context.get(rule['name'])
             expected_value = rule['value']
             if rule['compare'] == 'str' and context_value == expected_value:
-                score = rule['weight']
+                score += rule['weight']
             elif rule['compare'] == 'regex' and context_value:
                 matches = re.findall(expected_value, context_value)
                 if matches:
                     context.set(rule['name'] + '_match', matches)
-                    score = rule['weight']
+                    score += rule['weight']
             elif rule['compare'] == 'number' and context_value == float(expected_value):
-                score = rule['weight']
+                score += rule['weight']
             elif rule['compare'] == 'isnull' and context_value is None:
-                score = rule['weight']
+                score += rule['weight']
             elif rule['compare'] == 'notnull' and context_value is not None:
-                score = rule['weight']
+                score += rule['weight']
 
-        if score and action['type'] in ACTIONS:
+        if score >= 100 and action['type'] in ACTIONS:
             if 'repeat-secs' in action:
                 latest_run_time = get_latest_run_time(action_doc.id, person.id)
                 threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['repeat-secs'])
