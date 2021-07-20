@@ -64,7 +64,7 @@ def process(event, metadata):
         score = 0
         for rule in action['rules']:
             context_value = context.get(rule['name'])
-            expected_value = rule['value']
+            expected_value = rule['value'] if 'value' in rule else None
             if rule['compare'] == 'str' and context_value == expected_value:
                 score += rule['weight']
             elif rule['compare'] == 'regex' and context_value:
