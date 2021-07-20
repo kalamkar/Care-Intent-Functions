@@ -74,6 +74,10 @@ def process(event, metadata):
                     score = rule['weight']
             elif rule['compare'] == 'number' and context_value == float(expected_value):
                 score = rule['weight']
+            elif rule['compare'] == 'isnull' and context_value is None:
+                score = rule['weight']
+            elif rule['compare'] == 'notnull' and context_value is not None:
+                score = rule['weight']
 
         if score and action['type'] in ACTIONS:
             if 'repeat-secs' in action:
