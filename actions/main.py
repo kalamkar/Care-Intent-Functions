@@ -91,7 +91,10 @@ def process(event, metadata):
             action['score'] = score
             params = {}
             for name, value in action['params'].items():
-                params[name] = context.get(value[1:]) if type(value) == str and value.startswith('$') else value
+                variables = re.findall(r'\$[a-z-_.]+', value) if type(value) == str else []
+                for var in variables:
+                    value = value.replace(var, context.get(var[1:]))
+                params[name] = value
 
             action_object = ACTIONS[action['type']](**params)
             action_object.process()
