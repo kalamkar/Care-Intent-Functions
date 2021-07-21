@@ -141,7 +141,7 @@ class DataExtract(Action):
 
         row = {
             'time': datetime.datetime.utcnow().isoformat(),
-            'source': {'type': self.sender['type'], 'id': self.sender.value},
+            'source': {'type': self.sender['type'], 'id': self.sender['value']},
             'data': []
         }
         for name, value in self.params.items():
