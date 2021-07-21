@@ -13,10 +13,13 @@ from google.cloud import bigquery
 from google.cloud import firestore
 
 
-ACTIONS = {'Message': generic.Message,
-           'OAuthMessage': generic.OAuthMessage,
-           'SimplePatternCheck': generic.SimplePatternCheck,
-           'Update': generic.Update}
+ACTIONS = {
+    'DataExtract': generic.DataExtract,
+    'Message': generic.Message,
+    'OAuthMessage': generic.OAuthMessage,
+    'SimplePatternCheck': generic.SimplePatternCheck,
+    'Update': generic.Update
+}
 
 
 def process(event, metadata):

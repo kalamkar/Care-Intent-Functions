@@ -127,3 +127,26 @@ class Update(Action):
         db = firestore.Client()
         doc_ref = db.collection(self.collection).document(self.identifier)
         doc_ref.update(json.loads(self.content))
+
+
+class DataExtract(Action):
+    def __init__(self, sender=None, params=None):
+        self.sender = sender
+        self.params = params if params else {}
+        super().__init__()
+
+    def process(self):
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
+
+        row = {
+            'time': datetime.datetime.utcnow().isoformat(),
+            'source': {'type': self.sender['type'], 'id': self.sender.value},
+            'data': []
+        }
+        for name, value in self.params.items():
+            if type(value) in [int, float]:
+                row['data'].append({'name': name, 'number': value})
+            else:
+                row['data'].append({'name': name, 'value': value})
+        publisher.publish(topic_path, json.dumps(row).encode('utf-8'))

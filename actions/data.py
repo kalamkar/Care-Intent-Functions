@@ -118,4 +118,15 @@ ACTIONS = [{
     ],
     'priority': 1,
     'id': 'ffWxDX4rv37InPAuro05'
+}, {
+    'type': 'DataExtract',
+    'params': {
+        'params': '$message.dialogflow.params',
+        'sender': '$message.sender'
+    },
+    'rules': [
+        {'weight': 100, 'name': 'message.dialogflow.intent', 'value': 'biometric.report.bp', 'compare': 'str'}
+    ],
+    'priority': 1,
+    'id': 'zmrG5CweQGygxi9NPmbJmQ'
 }]
