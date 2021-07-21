@@ -1,4 +1,5 @@
 import base64
+import data
 import datetime
 
 import pytz
@@ -57,10 +58,7 @@ def process(event, metadata):
     print(context.data)
 
     client = bigquery.Client()
-    actions = list(db.collection('actions').get())
-    actions.sort(key=lambda a: a.get('priority'), reverse=True)
-    for action_doc in actions:
-        action = action_doc.to_dict()
+    for action in get_actions():
         score = 0
         for rule in action['rules']:
             context_value = context.get(rule['name'])
@@ -81,7 +79,7 @@ def process(event, metadata):
 
         if score >= 100 and action['type'] in ACTIONS:
             if 'repeat-secs' in action:
-                latest_run_time = get_latest_run_time(action_doc.id, person.id)
+                latest_run_time = get_latest_run_time(action['id'], person.id)
                 threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['repeat-secs'])
                 if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
                     print('Skipping {action} recently run at {runtime}'.format(action=action['type'],
@@ -102,7 +100,7 @@ def process(event, metadata):
             context.update(action_object.output)
             log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
                    'resources': [{'type': 'person', 'id': person.id},
-                                 {'type': 'action', 'id': action_doc.id}]}
+                                 {'type': 'action', 'id': action['id']}]}
             errors = client.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
             if errors:
                 print(errors)
@@ -125,6 +123,13 @@ def get_latest_run_time(action_id, person_id):
     for row in client.query(query):
         latest_run_time = row['time']
     return latest_run_time
+
+
+def get_actions():
+    return sorted(data.ACTIONS, key=lambda a: a.get('priority'), reverse=True)
+    # actions = list(db.collection('actions').get())
+    # actions.sort(key=lambda a: a.get('priority'), reverse=True)
+    # return [{**(action_doc.to_dict()), {'id': action_doc.id}} for action_doc in actions]
 
 
 class Context(object):
