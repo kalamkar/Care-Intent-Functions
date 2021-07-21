@@ -122,7 +122,7 @@ ACTIONS = [{
     'type': 'DataExtract',
     'params': {
         'params': '$message.dialogflow.params',
-        'sender': '$message.sender'
+        'person_id': '$sender.id'
     },
     'rules': [
         {'weight': 100, 'name': 'message.dialogflow.intent', 'value': 'biometric.report.bp', 'compare': 'str'}

@@ -130,8 +130,8 @@ class Update(Action):
 
 
 class DataExtract(Action):
-    def __init__(self, sender=None, params=None):
-        self.sender = sender
+    def __init__(self, person_id=None, params=None):
+        self.person_id = person_id
         self.params = params if params else {}
         super().__init__()
 
@@ -141,7 +141,7 @@ class DataExtract(Action):
 
         row = {
             'time': datetime.datetime.utcnow().isoformat(),
-            'source': {'type': self.sender['type'], 'id': self.sender['value']},
+            'source': {'type': 'person', 'id': self.person_id},
             'data': []
         }
         for name, value in self.params.items():
