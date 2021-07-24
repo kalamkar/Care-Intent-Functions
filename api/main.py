@@ -48,7 +48,7 @@ def api(request):
         response = data(start_time, end_time, tokens[2], request.args.getlist('name'))
     elif len(tokens) >= 3 and tokens[1] == 'messages':
         start_time, end_time = get_start_end_times(request)
-        response = messages(start_time, end_time, tokens[2])
+        response = messages(start_time, end_time, tokens[2], request.args.get('both'))
     else:
         response.status_code = 404
 
@@ -138,21 +138,30 @@ def data(start_time, end_time, source, names):
     return flask.jsonify({'rows': rows})
 
 
-def messages(start_time, end_time, person_id):
+def messages(start_time, end_time, person_id, both):
     bq = bigquery.Client()
     db = firestore.Client()
     person_ref = db.collection('persons').document(person_id).get()
     values = [i['value'] for i in filter(lambda i: i['active'], person_ref.get('identifiers'))]
-    query = 'SELECT time, status, tags, content, content_type ' \
-            'FROM {project}.live.messages WHERE sender.value IN ({values}) ' \
-            'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
-            'ORDER BY time'. \
-        format(project=PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
+    if both:
+        query = 'SELECT time, status, sender, receiver, tags, content, content_type ' \
+                'FROM {project}.live.messages WHERE (sender.value IN ({values}) OR receiver.value IN ({values})) ' \
+                'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
+                'ORDER BY time'. \
+            format(project=PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
+    else:
+        query = 'SELECT time, status, tags, content, content_type ' \
+                'FROM {project}.live.messages WHERE sender.value IN ({values}) ' \
+                'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
+                'ORDER BY time'. \
+            format(project=PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
     print(query)
     rows = []
     for row in bq.query(query):
         rows.append({'time': row['time'].isoformat(),
                      'status': row['status'],
+                     'sender': row['sender'],
+                     'receiver': row['receiver'],
                      'tags': row['tags'],
                      'content': row['content'],
                      'content_type': row['content_type']})
