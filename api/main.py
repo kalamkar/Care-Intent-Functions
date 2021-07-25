@@ -150,7 +150,7 @@ def messages(start_time, end_time, person_id, both):
                 'ORDER BY time'. \
             format(project=PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
     else:
-        query = 'SELECT time, status, tags, content, content_type ' \
+        query = 'SELECT time, status, sender, receiver, tags, content, content_type ' \
                 'FROM {project}.live.messages WHERE sender.value IN ({values}) ' \
                 'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
                 'ORDER BY time'. \
