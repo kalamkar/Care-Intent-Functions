@@ -29,7 +29,7 @@ ACTIONS = [{
         'identifier': '$sender.id',
         'collection': 'persons'
     },
-    'rules': [{'compare': 'str', 'weight': 50, 'value': 'slope', 'name': 'data.pattern'}],
+    'rules': [{'compare': 'str', 'weight': 100, 'value': 'slope', 'name': 'data.pattern'}],
     'id': '5IcqdTjPalz1E310eKiF'
 }, {
     'priority': 1,
@@ -129,4 +129,48 @@ ACTIONS = [{
     ],
     'priority': 1,
     'id': 'zmrG5CweQGygxi9NPmbJmQ'
+}, {
+    'type': 'Update',
+    'priority': 1,
+    'params': {
+        'list_name': 'topics',
+        'content': '["food"]',
+        'identifier': '$sender.id',
+        'collection': 'persons'
+    },
+    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'food.*', 'name': 'message.dialogflow.intent'}],
+    'id': 'oVSGH4sNSQeNTs-X24Xwaw'
+}, {
+    'type': 'Update',
+    'priority': 1,
+    'params': {
+        'list_name': 'topics',
+        'content': '["medication"]',
+        'identifier': '$sender.id',
+        'collection': 'persons'
+    },
+    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'medication.*', 'name': 'message.dialogflow.intent'}],
+    'id': 'O6MRdvl6R_28yOYEduaX7g'
+}, {
+    'type': 'Update',
+    'priority': 1,
+    'params': {
+        'list_name': 'topics',
+        'content': '["activity"]',
+        'identifier': '$sender.id',
+        'collection': 'persons'
+    },
+    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'activity.*', 'name': 'message.dialogflow.intent'}],
+    'id': 'WQXODyp9Q-q0tZZDGvHV0Q'
+}, {
+    'type': 'Update',
+    'priority': 1,
+    'params': {
+        'list_name': 'topics',
+        'content': '["bp"]',
+        'identifier': '$sender.id',
+        'collection': 'persons'
+    },
+    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'biometric.*bp', 'name': 'message.dialogflow.intent'}],
+    'id': 'skNVAa3cTkaLw9BpFVg__Q'
 }]

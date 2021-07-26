@@ -117,16 +117,20 @@ class SimplePatternCheck(Action):
 
 
 class Update(Action):
-    def __init__(self, identifier=None, collection=None, content=None):
+    def __init__(self, identifier=None, collection=None, content=None, list_name=None):
         self.identifier = identifier
         self.collection = collection
         self.content = content
+        self.list_name = list_name
         super().__init__()
 
     def process(self):
         db = firestore.Client()
         doc_ref = db.collection(self.collection).document(self.identifier)
-        doc_ref.update(json.loads(self.content))
+        if not self.list_name:
+            doc_ref.update(json.loads(self.content))
+        else:
+            doc_ref.update({self.list_name: firestore.ArrayUnion(json.loads(self.content))})
 
 
 class DataExtract(Action):
