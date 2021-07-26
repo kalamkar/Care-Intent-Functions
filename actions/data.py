@@ -125,7 +125,7 @@ ACTIONS = [{
         'person_id': '$sender.id'
     },
     'rules': [
-        {'weight': 100, 'name': 'message.dialogflow.intent', 'value': 'biometric.report.bp', 'compare': 'str'}
+        {'weight': 100, 'name': 'message.dialogflow.intent', 'value': 'biomarker.report.bp', 'compare': 'str'}
     ],
     'priority': 1,
     'id': 'zmrG5CweQGygxi9NPmbJmQ'
@@ -171,6 +171,6 @@ ACTIONS = [{
         'identifier': '$sender.id',
         'collection': 'persons'
     },
-    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'biometric.*bp', 'name': 'message.dialogflow.intent'}],
+    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'biomarker.*bp', 'name': 'message.dialogflow.intent'}],
     'id': 'skNVAa3cTkaLw9BpFVg__Q'
 }]
