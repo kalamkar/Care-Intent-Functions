@@ -167,10 +167,10 @@ ACTIONS = [{
     'priority': 1,
     'params': {
         'list_name': 'topics',
-        'content': '["bp"]',
+        'content': '["biomarker"]',
         'identifier': '$sender.id',
         'collection': 'persons'
     },
-    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'biomarker.*bp', 'name': 'message.dialogflow.intent'}],
+    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'biomarker.*', 'name': 'message.dialogflow.intent'}],
     'id': 'skNVAa3cTkaLw9BpFVg__Q'
 }]
