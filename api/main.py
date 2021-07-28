@@ -93,7 +93,7 @@ def add_relation(request, response, user):
 def resources(request, response, user):
     tokens = request.path.split('/')
     db = firestore.Client()
-    if request.method == 'GET' and len(tokens) >= 3:
+    if request.method == 'GET' and len(tokens) in [3, 5]:
         if len(tokens) >= 5:
             # Sub-collection
             collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
@@ -102,7 +102,21 @@ def resources(request, response, user):
             collection = db.collection(tokens[1])
             doc = user if tokens[2] == 'me' else collection.document(tokens[2]).get()
         response = flask.jsonify(get_document_json(doc, tokens[1][:-1]))
-    elif request.method == 'POST':
+    elif request.method == 'GET' and len(tokens) == 4:  # Get all sub-collection documents
+        # Sub-collection
+        collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
+        response = flask.jsonify({'results': [get_document_json(doc, tokens[1][:-1]) for doc in collection.get()]})
+    elif request.method == 'PATCH' and len(tokens) in [3, 5]:
+        if len(tokens) >= 5:
+            # Sub-collection
+            collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
+            doc_ref = collection.document(tokens[4])
+        else:
+            collection = db.collection(tokens[1])
+            doc_ref = collection.document(tokens[2])
+        doc_ref.update(request.json)
+        response = flask.jsonify(get_document_json(doc_ref.get(), tokens[1][:-1]))
+    elif request.method == 'POST' and len(tokens) in [2, 4]:
         if len(tokens) >= 4:
             # Sub-collection
             collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
@@ -122,16 +136,6 @@ def resources(request, response, user):
             'target': {'type': tokens[1][:-1], 'value': doc_id},
             'type': 'admin_of' if tokens[1] == 'groups' else 'created'
         })
-        response = flask.jsonify(get_document_json(doc_ref.get(), tokens[1][:-1]))
-    elif request.method == 'PATCH' and len(tokens) >= 3:
-        if len(tokens) >= 5:
-            # Sub-collection
-            collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
-            doc_ref = collection.document(tokens[4])
-        else:
-            collection = db.collection(tokens[1])
-            doc_ref = collection.document(tokens[2])
-        doc_ref.update(request.json)
         response = flask.jsonify(get_document_json(doc_ref.get(), tokens[1][:-1]))
     return response
 
