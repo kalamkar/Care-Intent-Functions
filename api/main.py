@@ -12,7 +12,7 @@ JSON_CACHE_SECONDS = 600
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
                  'Access-Control-Allow-Credentials', 'X-Requested-With']
-RESOURCES = ['persons', 'groups', 'actions', 'contents']
+RESOURCES = ['persons', 'groups']
 RELATION_TYPES = ['member_of', 'admin_of']
 
 
@@ -93,11 +93,21 @@ def add_relation(request, response, user):
 def resources(request, response, user):
     tokens = request.path.split('/')
     db = firestore.Client()
-    collection = db.collection(tokens[1])
     if request.method == 'GET' and len(tokens) >= 3:
-        doc = user if tokens[2] == 'me' else collection.document(tokens[2]).get()
+        if len(tokens) >= 5:
+            # Sub-collection
+            collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
+            doc = collection.document(tokens[4]).get()
+        else:
+            collection = db.collection(tokens[1])
+            doc = user if tokens[2] == 'me' else collection.document(tokens[2]).get()
         response = flask.jsonify(get_document_json(doc, tokens[1][:-1]))
     elif request.method == 'POST':
+        if len(tokens) >= 4:
+            # Sub-collection
+            collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
+        else:
+            collection = db.collection(tokens[1])
         if tokens[1] == 'persons':
             person_ref = db.collection('persons')\
                 .where('identifiers', 'array_contains_any', request.json['identifiers'])
@@ -114,7 +124,13 @@ def resources(request, response, user):
         })
         response = flask.jsonify(get_document_json(doc_ref.get(), tokens[1][:-1]))
     elif request.method == 'PATCH' and len(tokens) >= 3:
-        doc_ref = collection.document(tokens[2])
+        if len(tokens) >= 5:
+            # Sub-collection
+            collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
+            doc_ref = collection.document(tokens[4])
+        else:
+            collection = db.collection(tokens[1])
+            doc_ref = collection.document(tokens[2])
         doc_ref.update(request.json)
         response = flask.jsonify(get_document_json(doc_ref.get(), tokens[1][:-1]))
     return response
