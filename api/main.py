@@ -122,7 +122,7 @@ def resources(request, response, user):
             collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
         else:
             collection = db.collection(tokens[1])
-        if tokens[1] == 'persons':
+        if tokens[1] == 'persons' and len(tokens) == 2:
             person_ref = db.collection('persons')\
                 .where('identifiers', 'array_contains_any', request.json['identifiers'])
             persons = list(person_ref.get())
