@@ -97,8 +97,7 @@ ACTIONS = [{
     'condition': '$data.systolic < 50 or 200 < $data.systolic or $data.diastolic < 40 or 150 < $data.diastolic',
     'params': {
         'content': 'please take again',
-        'receiver': '$message.sender',
-        'sender': '$message.receiver'
+        'receiver': '$sender'
     }
 }, {
     'id': 'aZ4Oc5gspNy85fntVzJh',
