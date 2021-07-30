@@ -53,7 +53,7 @@ ACTIONS = [{
     'params': {
         'receiver': '$message.sender',
         'sender': '$message.receiver',
-        'content': '$dialogflow.fulfillment-text'
+        'content': '$dialogflow.fulfillment-text, $sender.name.first'
     },
     'type': 'Message',
     'id': 'M3Fmlhjv4Az1d4vn5XDs'
