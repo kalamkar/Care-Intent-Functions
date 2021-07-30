@@ -26,7 +26,7 @@ class Message(Action):
             self.receiver = list(filter(lambda i: i['type'] == 'phone', receiver['identifiers']))[0]
         else:
             self.receiver = receiver
-        self.sender = sender
+        self.sender = sender if sender else {'value': config.PHONE_NUMBER, 'type': 'phone'}
         self.content = content
         super().__init__()
 
