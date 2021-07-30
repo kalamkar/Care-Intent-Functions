@@ -127,7 +127,6 @@ class Context(object):
         try:
             return eval(expression)
         except:
-            print('Failed to evaluate: ' + expression)
             return None
 
     def set(self, name, value):
