@@ -23,7 +23,7 @@ class Message(Action):
         if receiver and 'type' in receiver and 'id' in receiver:
             self.receiver = receiver
         elif receiver and 'identifiers' in receiver and len(receiver['identifiers']):
-            self.receiver = receiver['identifiers'][0]
+            self.receiver = list(filter(lambda i: i['type'] == 'phone', receiver['identifiers']))[0]
         else:
             self.receiver = receiver
         self.sender = sender
