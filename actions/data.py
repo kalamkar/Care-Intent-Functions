@@ -1,10 +1,7 @@
 ACTIONS = [{
     'priority': 1,
     'type': 'Update',
-    'rules': [
-        {'name': 'message.dialogflow.intent', 'weight': 50, 'value': 'system.welcome', 'compare': 'str'},
-        {'compare': 'isnull', 'weight': 50, 'name': 'sender.name'}
-    ],
+    'condition': '$message.dialogflow.intent == "system.welcome" and $sender.name is None',
     'params': {
         'collection': 'persons',
         'content': '{"dialogflow": {"context": {"name": "setup_name", "lifespan": 1}}}',
@@ -19,7 +16,7 @@ ACTIONS = [{
     },
     'priority': 1,
     'type': 'Message',
-    'rules': [{'name': 'message.dialogflow.intent', 'weight': 100, 'compare': 'str', 'value': 'food.end'}],
+    'condition': '$message.dialogflow.intent == "food.end"',
     'id': '2yULpJaMPlzCt7O5wLVW'
 }, {
     'type': 'Update',
@@ -29,7 +26,7 @@ ACTIONS = [{
         'identifier': '$sender.id',
         'collection': 'persons'
     },
-    'rules': [{'compare': 'str', 'weight': 100, 'value': 'slope', 'name': 'data.pattern'}],
+    'condition': '$data.pattern == "slope"',
     'id': '5IcqdTjPalz1E310eKiF'
 }, {
     'priority': 1,
@@ -38,7 +35,7 @@ ACTIONS = [{
         'content': '$dialogflow.fulfillment-text',
         'receiver': '$message.sender'
     },
-    'rules': [{'name': 'message.dialogflow.action', 'weight': 100, 'compare': 'regex', 'value': '^smalltalk.*$'}],
+    'condition': 're.match("^smalltalk.*$", $message.dialogflow.action)',
     'type': 'Message',
     'id': 'LCUPdM6q5tFV2rdu0Ufx'
 },{
@@ -48,15 +45,10 @@ ACTIONS = [{
         'receiver': '$sender'
     },
     'priority': 1,
-    'rules': [{
-        'name': 'data.pattern', 'compare': 'str', 'value': 'slope', 'weight': 100
-    }],
+    'condition': '$data.pattern == "slope"',
     'id': 'LPRTZpIjwEp0DHYhGFDC'
 }, {
-    'rules': [
-        {'value': 'system.welcome', 'weight': 50, 'compare': 'str', 'name': 'message.dialogflow.intent'},
-        {'weight': 50, 'compare': 'notnull', 'name': 'sender.name'}
-    ],
+    'condition': '$message.dialogflow.intent == "system.welcome" and $sender.name is not None',
     'priority': 1,
     'params': {
         'receiver': '$message.sender',
@@ -66,7 +58,7 @@ ACTIONS = [{
     'type': 'Message',
     'id': 'M3Fmlhjv4Az1d4vn5XDs'
 }, {
-    'rules': [{'name': 'message.dialogflow.action', 'compare': 'str', 'weight': 100, 'value': 'connect.dexcom'}],
+    'condition': '$message.dialogflow.action == "connect.dexcom"',
     'params': {
         'sender': '$message.receiver',
         'receiver': '$message.sender',
@@ -78,16 +70,13 @@ ACTIONS = [{
     'id': 'Qx5DH1cjtQIZUJJbwzyB'
 }, {
     'params': {'person_id': '$data.source.id', 'max_threshold': 30, 'seconds': 14400, 'name': 'glucose'},
-    'rules': [{'compare': 'str', 'name': 'data.source.type', 'weight': 100, 'value': 'dexcom'}],
+    'condition': '$data.source.type == "dexcom"',
     'priority': 2,
     'type': 'SimplePatternCheck',
-    'repeat-secs': 3600,
+    'hold_secs': 3600,
     'id': 'UjclBjOUF88VnnhBPnzF'
 }, {
-    'rules': [
-        {'name': 'message.dialogflow.intent', 'value': 'system.welcome', 'weight': 50, 'compare': 'str'},
-        {'compare': 'isnull', 'name': 'sender.name', 'weight': 50}
-    ],
+    'condition': '$message.dialogflow.intent == "system.welcome" and $sender.name is None',
     'params': {
         'content': '$dialogflow.fulfillment-text I am Ezra, what is your name?',
         'receiver': '$message.sender',
@@ -103,7 +92,7 @@ ACTIONS = [{
         'receiver': '$message.sender'
     },
     'type': 'Message',
-    'rules': [{'compare': 'str', 'name': 'message.dialogflow.action', 'value': 'food.report', 'weight': 100}],
+    'condition': '$message.dialogflow.action == "food.report"',
     'id': 'aZ4Oc5gspNy85fntVzJh'
 }, {
     'type': 'OAuthMessage',
@@ -113,9 +102,7 @@ ACTIONS = [{
         'receiver': '$message.sender',
         'sender': '$message.receiver'
     },
-    'rules': [
-        {'weight': 100, 'name': 'message.dialogflow.action', 'value': 'connect.google', 'compare': 'str'}
-    ],
+    'condition': '$message.dialogflow.action == "connect.google"',
     'priority': 1,
     'id': 'ffWxDX4rv37InPAuro05'
 }, {
@@ -124,9 +111,7 @@ ACTIONS = [{
         'params': '$message.dialogflow.params',
         'person_id': '$sender.id'
     },
-    'rules': [
-        {'weight': 100, 'name': 'message.dialogflow.intent', 'value': 'biomarker.report.bp', 'compare': 'str'}
-    ],
+    'condition': '$message.dialogflow.intent == "biomarker.report.bp"',
     'priority': 1,
     'id': 'zmrG5CweQGygxi9NPmbJmQ'
 }, {
@@ -138,7 +123,7 @@ ACTIONS = [{
         'identifier': '$sender.id',
         'collection': 'persons'
     },
-    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'food.*', 'name': 'message.dialogflow.intent'}],
+    'condition': 're.match("food.*", $message.dialogflow.intent)',
     'id': 'oVSGH4sNSQeNTs-X24Xwaw'
 }, {
     'type': 'Update',
@@ -149,7 +134,7 @@ ACTIONS = [{
         'identifier': '$sender.id',
         'collection': 'persons'
     },
-    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'medication.*', 'name': 'message.dialogflow.intent'}],
+    'condition': 're.match("medication.*", $message.dialogflow.intent)',
     'id': 'O6MRdvl6R_28yOYEduaX7g'
 }, {
     'type': 'Update',
@@ -160,7 +145,7 @@ ACTIONS = [{
         'identifier': '$sender.id',
         'collection': 'persons'
     },
-    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'activity.*', 'name': 'message.dialogflow.intent'}],
+    'condition': 're.match("activity.*", $message.dialogflow.intent)',
     'id': 'WQXODyp9Q-q0tZZDGvHV0Q'
 }, {
     'type': 'Update',
@@ -171,6 +156,6 @@ ACTIONS = [{
         'identifier': '$sender.id',
         'collection': 'persons'
     },
-    'rules': [{'compare': 'regex', 'weight': 100, 'value': 'biomarker.*', 'name': 'message.dialogflow.intent'}],
+    'condition': 're.match("biomarker.*", $message.dialogflow.intent)',
     'id': 'skNVAa3cTkaLw9BpFVg__Q'
 }]
