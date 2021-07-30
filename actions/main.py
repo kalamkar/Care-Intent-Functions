@@ -124,7 +124,10 @@ class Context(object):
         for var in set(re.findall(r'\$[a-z0-9.-_]+', expression)):
             value = self.get(var[1:])
             expression = expression.replace(var, '"{}"'.format(value) if type(value) == str else str(value))
-        return eval(expression)
+        try:
+            return eval(expression)
+        except:
+            return None
 
     def set(self, name, value):
         tokens = name.split('.') if name else []
