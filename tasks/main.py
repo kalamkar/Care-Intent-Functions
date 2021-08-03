@@ -33,14 +33,19 @@ def handle_task(request):
 
 
 def handle_scheduled(request):
+    group_id = request.json['group_id']
+    action_id = request.json['action_id']
+
     cron = croniter.croniter(request.json['schedule'], datetime.datetime.utcnow())
-    schedule_task(request.json, cron.get_next(datetime.datetime))
+    task_id = schedule_task(request.json, cron.get_next(datetime.datetime))
+
+    db = firestore.Client()
+    action_doc = db.collection('groups').document(group_id).collection('actions').document(action_id).get()
+    action_doc.update({'task_id': task_id})
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
-    group_id = request.json['group_id']
-    action_id = request.json['action_id']
     members = query.get_relatives([], ['member_of'], {'type': 'group', 'value': group_id})
     for member in members:
         if member['type'] != 'person':
