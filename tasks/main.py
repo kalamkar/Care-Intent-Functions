@@ -23,13 +23,10 @@ PROVIDERS = {'dexcom': providers.get_dexcom_data,
 def handle_task(request):
     body = request.get_json()
     print(body)
-    try:
-        if 'provider' in body:
-            handle_provider(body)
-        elif 'schedule' in body:
-            handle_scheduled(body)
-    except:
-        print(sys.exc_info())
+    if 'provider' in body:
+        handle_provider(body)
+    elif 'schedule' in body:
+        handle_scheduled(body)
     return 'OK'
 
 
