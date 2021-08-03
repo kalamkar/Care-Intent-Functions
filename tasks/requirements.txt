@@ -1,5 +1,6 @@
 # Function dependencies, for example:
 # package>=version
+croniter
 python-dateutil
 google-cloud-firestore
 google-cloud-pubsub

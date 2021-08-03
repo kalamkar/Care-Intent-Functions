@@ -1,10 +1,13 @@
 import config
+import croniter
 import datetime
 import dateutil.parser
 import providers
 import json
 import pytz
+import query
 import requests
+import sys
 
 from google.cloud import firestore
 from google.cloud import pubsub_v1
@@ -19,7 +22,39 @@ PROVIDERS = {'dexcom': providers.get_dexcom_data,
 
 def handle_task(request):
     print(request.json)
+    try:
+        if 'provider' in request.json:
+            handle_provider(request)
+        elif 'schedule' in request.json:
+            handle_scheduled(request)
+    except:
+        print(sys.exc_info()[1])
+    return 'OK'
 
+
+def handle_scheduled(request):
+    cron = croniter.croniter(request.json['schedule'], datetime.datetime.utcnow())
+    schedule_task(request.json, cron.get_next(datetime.datetime))
+
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+
+    group_id = request.json['group_id']
+    action_id = request.json['action_id']
+    members = query.get_relatives([], ['member_of'], {'type': 'group', 'value': group_id})
+    for member in members:
+        if member['type'] != 'person':
+            continue
+        data = {
+            'time': datetime.datetime.utcnow().isoformat(),
+            'sender': member,
+            'content_type': 'application/json',
+            'content': {'group_id': group_id, 'action_id': action_id}
+        }
+        publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
+
+
+def handle_provider(request):
     db = firestore.Client()
     person_ref = db.collection('persons').document(request.json['person-id'])
     provider_ref = person_ref.collection('providers').document(request.json['provider'])
@@ -40,19 +75,18 @@ def handle_task(request):
         provider['last_sync'] = last_sync
 
     if 'repeat-secs' in request.json:
-        provider['task_id'] = create_polling(request.json)
+        next_run_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=request.json['repeat-secs'])
+        provider['task_id'] = schedule_task(request.json, next_run_time)
 
     provider_ref.update(provider)
 
-    return 'OK'
 
-
-def create_polling(payload):
+def schedule_task(payload, next_run_time):
     client = tasks_v2.CloudTasksClient()
     queue = client.queue_path(config.PROJECT_ID, 'us-central1', payload['provider'])
 
     timestamp = timestamp_pb2.Timestamp()
-    timestamp.FromDatetime(datetime.datetime.utcnow() + datetime.timedelta(seconds=payload['repeat-secs']))
+    timestamp.FromDatetime(next_run_time)
 
     task = {
         'http_request': {  # Specify the type of request.
