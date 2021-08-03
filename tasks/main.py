@@ -28,7 +28,7 @@ def handle_task(request):
         elif 'schedule' in request.json:
             handle_scheduled(request)
     except:
-        print(sys.exc_info()[1])
+        print(sys.exc_info())
     return 'OK'
 
 
