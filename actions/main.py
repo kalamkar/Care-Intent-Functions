@@ -75,7 +75,7 @@ def process(event, metadata):
                                                                            runtime=latest_run_time))
                 continue
 
-        if action['type'] not in ACTIONS or not context.evaluate(action['condition']):
+        if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
             continue
 
         params = {}
