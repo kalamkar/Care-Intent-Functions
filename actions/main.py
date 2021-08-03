@@ -1,5 +1,4 @@
 import base64
-import data
 import datetime
 
 import pytz
@@ -60,10 +59,7 @@ def process(event, metadata):
     print(context.data)
 
     bq = bigquery.Client()
-    for action in get_actions():
-        if action['type'] not in ACTIONS or not context.evaluate(action['condition']):
-            continue
-
+    for action in get_actions([]):
         if 'hold_secs' in action:
             latest_run_time = get_latest_run_time(action['id'], person.id, bq)
             threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
@@ -71,6 +67,9 @@ def process(event, metadata):
                 print('Skipping {action} recently run at {runtime}'.format(action=action['type'],
                                                                            runtime=latest_run_time))
                 continue
+
+        if action['type'] not in ACTIONS or not context.evaluate(action['condition']):
+            continue
 
         params = {}
         for name, value in action['params'].items():
@@ -109,8 +108,8 @@ def get_latest_run_time(action_id, person_id, bq):
     return latest_run_time
 
 
-def get_actions():
-    return sorted(data.ACTIONS, key=lambda a: a.get('priority'), reverse=True)
+def get_actions(groups):
+    return sorted(json.load(open('data.json'))['actions'], key=lambda a: a.get('priority'), reverse=True)
     # actions = list(db.collection('actions').get())
     # actions.sort(key=lambda a: a.get('priority'), reverse=True)
     # return [{**(action_doc.to_dict()), {'id': action_doc.id}} for action_doc in actions]
