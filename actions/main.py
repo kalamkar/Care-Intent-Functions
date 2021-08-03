@@ -64,8 +64,9 @@ def process(event, metadata):
     if channel_name == 'message' and message['content_type'] == 'application/json'\
             and 'action_id' in message['content']:
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
-        actions = [db.collection('groups').document(message['group_id'])
-                       .collection('actions').document(message['action_id']).get().to_dict()]
+        action = db.collection('groups').document(message['content']['group_id'])\
+            .collection('actions').document(message['content']['action_id']).get()
+        actions = [{**(action.to_dict()), 'id': action.id}]
     else:
         actions = get_actions(person.id)
     for action in actions:
