@@ -21,23 +21,24 @@ PROVIDERS = {'dexcom': providers.get_dexcom_data,
 
 
 def handle_task(request):
-    print(request.json)
+    body = request.get_json()
+    print(body)
     try:
-        if 'provider' in request.json:
-            handle_provider(request)
-        elif 'schedule' in request.json:
-            handle_scheduled(request)
+        if 'provider' in body:
+            handle_provider(body)
+        elif 'schedule' in body:
+            handle_scheduled(body)
     except:
         print(sys.exc_info())
     return 'OK'
 
 
-def handle_scheduled(request):
-    group_id = request.json['group_id']
-    action_id = request.json['action_id']
+def handle_scheduled(body):
+    group_id = body['group_id']
+    action_id = body['action_id']
 
-    cron = croniter.croniter(request.json['schedule'], datetime.datetime.utcnow())
-    task_id = schedule_task(request.json, cron.get_next(datetime.datetime))
+    cron = croniter.croniter(body['schedule'], datetime.datetime.utcnow())
+    task_id = schedule_task(body, cron.get_next(datetime.datetime))
 
     db = firestore.Client()
     action_doc = db.collection('groups').document(group_id).collection('actions').document(action_id).get()
@@ -59,19 +60,19 @@ def handle_scheduled(request):
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
 
-def handle_provider(request):
+def handle_provider(body):
     db = firestore.Client()
-    person_ref = db.collection('persons').document(request.json['person-id'])
-    provider_ref = person_ref.collection('providers').document(request.json['provider'])
+    person_ref = db.collection('persons').document(body['person-id'])
+    provider_ref = person_ref.collection('providers').document(body['provider'])
     provider = provider_ref.get().to_dict()
     if 'expires' not in provider or \
             provider['expires'] < datetime.datetime.utcnow().astimezone(pytz.UTC):
-        provider.update(get_access_token(provider['refresh_token'], request.json['provider']))
+        provider.update(get_access_token(provider['refresh_token'], body['provider']))
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
     last_sync = provider['last_sync'] if 'last_sync' in provider else None
-    for row in PROVIDERS[request.json['provider']](provider['access_token'], last_sync, person_ref.id):
+    for row in PROVIDERS[body['provider']](provider['access_token'], last_sync, person_ref.id):
         row_time = dateutil.parser.parse(row['time']).astimezone(pytz.UTC)
         last_sync = max(row_time, last_sync) if last_sync else row_time
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
@@ -79,9 +80,9 @@ def handle_provider(request):
     if 'last_sync' not in provider or not provider['last_sync'] or (last_sync and provider['last_sync'] < last_sync):
         provider['last_sync'] = last_sync
 
-    if 'repeat-secs' in request.json:
-        next_run_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=request.json['repeat-secs'])
-        provider['task_id'] = schedule_task(request.json, next_run_time)
+    if 'repeat-secs' in body:
+        next_run_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=body['repeat-secs'])
+        provider['task_id'] = schedule_task(body, next_run_time)
 
     provider_ref.update(provider)
 
