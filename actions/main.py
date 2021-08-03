@@ -1,11 +1,10 @@
 import base64
-import datetime
-
-import pytz
-
 import config
-import json
+import datetime
 import generic
+import json
+import pytz
+import query
 import re
 
 from google.cloud import bigquery
@@ -66,7 +65,7 @@ def process(event, metadata):
         actions = [db.collection('groups').document(message['group_id'])
                        .collection('actions').document(message['action_id']).get().to_dict()]
     else:
-        actions = get_actions([])
+        actions = get_actions(person.id)
     for action in actions:
         if 'hold_secs' in action:
             latest_run_time = get_latest_run_time(action['id'], person.id, bq)
@@ -116,11 +115,18 @@ def get_latest_run_time(action_id, person_id, bq):
     return latest_run_time
 
 
-def get_actions(groups):
-    return sorted(json.load(open('data.json'))['actions'], key=lambda a: a.get('priority'), reverse=True)
-    # actions = list(db.collection('actions').get())
-    # actions.sort(key=lambda a: a.get('priority'), reverse=True)
-    # return [{**(action_doc.to_dict()), {'id': action_doc.id}} for action_doc in actions]
+def get_actions(person_id):
+    db = firestore.Client()
+    actions = json.load(open('data.json'))['actions']
+    for group_id in query.get_relatives({'type': 'person', 'value': person_id}, ['member_of'], []):
+        if not group_id or group_id['type'] != 'group':
+            continue
+        for action_doc in db.collection('groups').document(group_id['value']).collection('actions').stream():
+            action = action_doc.to_dict()
+            if 'schedule' not in action:
+                action['id'] = action_doc.id
+                actions.append(action)
+    return sorted(actions, key=lambda a: a['priority'], reverse=True)
 
 
 class Context(object):
