@@ -38,8 +38,8 @@ def handle_scheduled(body):
     task_id = schedule_task(body, cron.get_next(datetime.datetime), 'actions')
 
     db = firestore.Client()
-    action_doc = db.collection('groups').document(group_id).collection('actions').document(action_id).get()
-    action_doc.update({'task_id': task_id})
+    action_ref = db.collection('groups').document(group_id).collection('actions').document(action_id)
+    action_ref.update({'task_id': task_id})
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
