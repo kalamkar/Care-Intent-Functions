@@ -38,10 +38,13 @@ def process(event, metadata):
     if channel_name == 'message':
         person_id = {'active': True}
         person_id.update(message['sender'] if 'sender' in message else message['receiver'])
-        person_ref = db.collection('persons').where('identifiers', 'array_contains', person_id)
-        persons = list(person_ref.get())
-        if len(persons) > 0:
-            person = persons[0]
+        if 'type' in person_id and person_id['type'] == 'person':
+            person = db.collection('persons').document(person_id['value']).get()
+        else:
+            person_ref = db.collection('persons').where('identifiers', 'array_contains', person_id)
+            persons = list(person_ref.get())
+            if len(persons) > 0:
+                person = persons[0]
     elif channel_name == 'data':
         for data in message['data']:
             context.set('data.' + data['name'], data['number'] if 'number' in data else data['value'])
@@ -59,7 +62,12 @@ def process(event, metadata):
     print(context.data)
 
     bq = bigquery.Client()
-    for action in get_actions([]):
+    if message['content_type'] == 'application/json' and 'action_id' in message['content']:
+        actions = [db.collection('groups').document(message['group_id'])
+                       .collection('actions').document(message['action_id']).get().to_dict()]
+    else:
+        actions = get_actions([])
+    for action in actions:
         if 'hold_secs' in action:
             latest_run_time = get_latest_run_time(action['id'], person.id, bq)
             threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
