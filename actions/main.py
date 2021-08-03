@@ -61,7 +61,9 @@ def process(event, metadata):
     print(context.data)
 
     bq = bigquery.Client()
-    if message['content_type'] == 'application/json' and 'action_id' in message['content']:
+    if channel_name == 'message' and message['content_type'] == 'application/json'\
+            and 'action_id' in message['content']:
+        # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
         actions = [db.collection('groups').document(message['group_id'])
                        .collection('actions').document(message['action_id']).get().to_dict()]
     else:
