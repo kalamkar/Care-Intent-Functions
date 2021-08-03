@@ -35,7 +35,7 @@ def handle_scheduled(body):
     action_id = body['action_id']
 
     cron = croniter.croniter(body['schedule'], datetime.datetime.utcnow())
-    task_id = schedule_task(body, cron.get_next(datetime.datetime))
+    task_id = schedule_task(body, cron.get_next(datetime.datetime), 'actions')
 
     db = firestore.Client()
     action_doc = db.collection('groups').document(group_id).collection('actions').document(action_id).get()
@@ -79,14 +79,14 @@ def handle_provider(body):
 
     if 'repeat-secs' in body:
         next_run_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=body['repeat-secs'])
-        provider['task_id'] = schedule_task(body, next_run_time)
+        provider['task_id'] = schedule_task(body, next_run_time, body['provider'])
 
     provider_ref.update(provider)
 
 
-def schedule_task(payload, next_run_time):
+def schedule_task(payload, next_run_time, queue_name):
     client = tasks_v2.CloudTasksClient()
-    queue = client.queue_path(config.PROJECT_ID, 'us-central1', payload['provider'])
+    queue = client.queue_path(config.PROJECT_ID, 'us-central1', queue_name)
 
     timestamp = timestamp_pb2.Timestamp()
     timestamp.FromDatetime(next_run_time)
