@@ -3,5 +3,6 @@
 google-cloud-bigquery
 google-cloud-firestore
 google-cloud-pubsub
+numpy
 python-dateutil
 PyCryptodome

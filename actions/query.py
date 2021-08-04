@@ -1,5 +1,18 @@
 from google.cloud import firestore
 
+DURATIONS = {
+    'm': 60,
+    'h': 60 * 60,
+    'd': 24 * 60 * 60,
+    'w': 7 * 24 * 60 * 60,
+}
+
+
+def get_duration_secs(duration):
+    if duration[-1] not in DURATIONS:
+        return 0
+    return DURATIONS[duration[-1]] * int(duration[:-1])
+
 
 def get_relations(relation_types, actor_id, source=True):
     db = firestore.Client()

@@ -2,7 +2,7 @@
     "id": "04rnCmZCWwwk0aohQaZJ",
     "type": "Update",
     "priority": 1,
-    "condition": "$message.dialogflow.intent == 'system.welcome' and $sender.name is None",
+    "condition": "{{message.dialogflow.intent == 'system.welcome' and sender.name == None}}",
     "params": {
         "collection": "persons",
         "content": "{'dialogflow': {'context': {'name': 'setup_name', 'lifespan': 1}}}",
@@ -12,9 +12,9 @@
     "id": "2yULpJaMPlzCt7O5wLVW",
     "type": "Message",
     "priority": 1,
-    "condition": "$message.dialogflow.intent == 'food.end'",
+    "condition": "{{message.dialogflow.intent == 'food.end'}}",
     "params": {
-        "content": "$dialogflow.fulfillment-text",
+        "content": "{{ dialogflow.fulfillment-text }}",
         "receiver": "$message.sender",
         "sender": "$message.receiver"
     }
@@ -22,27 +22,27 @@
     "id": "LCUPdM6q5tFV2rdu0Ufx",
     "type": "Message",
     "priority": 1,
-    "condition": "re.match('^smalltalk.*$', $message.dialogflow.action)",
+    "condition": "{{message.dialogflow.action.startswith('smalltalk')}}",
     "params": {
         "sender": "$message.receiver",
-        "content": "$dialogflow.fulfillment-text",
+        "content": "{{ dialogflow.fulfillment-text }}",
         "receiver": "$message.sender"
     }
 }, {
     "id": "M3Fmlhjv4Az1d4vn5XDs",
     "type": "Message",
     "priority": 1,
-    "condition": "$message.dialogflow.intent == 'system.welcome' and $sender.name is not None",
+    "condition": "{{message.dialogflow.intent == 'system.welcome' and sender.name != None}}",
     "params": {
         "receiver": "$message.sender",
         "sender": "$message.receiver",
-        "content": "$dialogflow.fulfillment-text, $sender.name.first"
+        "content": "{{ dialogflow.fulfillment-text }}, {{ sender.name.first }}"
     }
 }, {
     "id": "Qx5DH1cjtQIZUJJbwzyB",
     "type": "OAuth",
     "priority": 2,
-    "condition": "$message.dialogflow.action == 'connect.dexcom'",
+    "condition": "{{message.dialogflow.action == 'connect.dexcom'}}",
     "params": {
         "person_id": "$sender.id",
         "provider": "dexcom"
@@ -51,9 +51,9 @@
     "id": "BMUBxeYARWiYaAnRsHNFCg",
     "type": "Message",
     "priority": 1,
-    "condition": "$message.dialogflow.action == 'connect.dexcom'",
+    "condition": "{{message.dialogflow.action == 'connect.dexcom'}}",
     "params": {
-        "content": "Visit $oauth.url",
+        "content": "Visit {{ oauth.url }}",
         "sender": "$message.receiver",
         "receiver": "$message.sender"
     }
@@ -62,7 +62,7 @@
     "type": "SimplePatternCheck",
     "priority": 2,
     "hold_secs": 3600,
-    "condition": "$data.source.type == 'dexcom'",
+    "condition": "{{data.source.type == 'dexcom'}}",
     "params": {
         "person_id": "$data.source.id",
         "max_threshold": 30,
@@ -73,7 +73,7 @@
     "id": "5IcqdTjPalz1E310eKiF",
     "type": "Update",
     "priority": 1,
-    "condition": "$data.pattern == 'slope'",
+    "condition": "{{data.pattern == 'slope'}}",
     "params": {
         "content": "{'dialogflow': {'context': {'name': 'food_report', 'lifespan': 5}}}",
         "identifier": "$sender.id",
@@ -83,7 +83,7 @@
     "id": "LPRTZpIjwEp0DHYhGFDC",
     "type": "Message",
     "priority": 1,
-    "condition": "$data.pattern == 'slope'",
+    "condition": "{{data.pattern == 'slope'}}",
     "params": {
         "content": "What did you eat?",
         "receiver": "$sender"
@@ -92,9 +92,9 @@
     "id": "XtUYsSJEWCCuJlQYE8Wr",
     "type": "Message",
     "priority": 1,
-    "condition": "$message.dialogflow.intent == 'system.welcome' and $sender.name is None",
+    "condition": "{{message.dialogflow.intent == 'system.welcome' and not sender.name}}",
     "params": {
-        "content": "$dialogflow.fulfillment-text I am Ezra, what is your name?",
+        "content": "{{ dialogflow.fulfillment-text }} I am Ezra, what is your name?",
         "receiver": "$message.sender",
         "sender": "$message.receiver"
     }
@@ -102,7 +102,7 @@
     "id": "eySLlRqdQH6dNaqsu34C_Q",
     "type": "Message",
     "priority": 1,
-    "condition": "$data.systolic < 50 or 200 < $data.systolic or $data.diastolic < 40 or 150 < $data.diastolic",
+    "condition": "{{data.systolic < 50 or 200 < data.systolic or data.diastolic < 40 or 150 < data.diastolic}}",
     "params": {
         "content": "please take again",
         "receiver": "$sender"
@@ -111,9 +111,9 @@
     "id": "aZ4Oc5gspNy85fntVzJh",
     "type": "Message",
     "priority": 1,
-    "condition": "$message.dialogflow.action == 'food.report'",
+    "condition": "{{message.dialogflow.action == 'food.report'}}",
     "params": {
-        "content": "$dialogflow.fulfillment-text",
+        "content": "{{ dialogflow.fulfillment-text }}",
         "sender": "$message.receiver",
         "receiver": "$message.sender"
     }
@@ -121,7 +121,7 @@
     "id": "k5HItJPqQHyMvr6sCVJ7vA",
     "type": "Message",
     "priority": 1,
-    "condition": "$message.dialogflow.intent == 'medication.report'",
+    "condition": "{{message.dialogflow.intent == 'medication.report'}}",
     "params": {
         "content": "Got it",
         "receiver": "$message.sender",
@@ -131,7 +131,7 @@
     "id": "ffWxDX4rv37InPAuro05",
     "type": "OAuth",
     "priority": 2,
-    "condition": "$message.dialogflow.action == 'connect.google'",
+    "condition": "{{message.dialogflow.action == 'connect.google'}}",
     "params": {
         "provider": "google",
         "person_id": "$sender.id"
@@ -140,9 +140,9 @@
     "id": "3lRtdErhSYKSc2K0o5u6nw",
     "type": "Message",
     "priority": 1,
-    "condition": "$message.dialogflow.action == 'connect.google'",
+    "condition": "{{message.dialogflow.intent == 'connect.google'}}",
     "params": {
-        "content": "Visit $oauth.url",
+        "content": "Visit {{ oauth.url }}",
         "receiver": "$message.sender",
         "sender": "$message.receiver"
     }
@@ -150,52 +150,19 @@
     "id": "zmrG5CweQGygxi9NPmbJmQ",
     "type": "DataExtract",
     "priority": 1,
-    "condition": "$message.dialogflow.intent == 'biomarker.report.bp'",
+    "condition": "{{message.dialogflow.intent == 'biomarker.report.bp'}}",
     "params": {
         "params": "$message.dialogflow.params",
         "person_id": "$sender.id"
     }
 }, {
-    "id": "oVSGH4sNSQeNTs-X24Xwaw",
-    "type": "Update",
-    "priority": 1,
-    "condition": "re.match('food.*', $message.dialogflow.intent)",
-    "params": {
-        "list_name": "topics",
-        "content": "['food']",
-        "identifier": "$sender.id",
-        "collection": "persons"
-    }
-}, {
-    "id": "O6MRdvl6R_28yOYEduaX7g",
-    "type": "Update",
-    "priority": 1,
-    "condition": "re.match('medication.*', $message.dialogflow.intent)",
-    "params": {
-        "list_name": "topics",
-        "content": "['medication']",
-        "identifier": "$sender.id",
-        "collection": "persons"
-    }
-}, {
-    "id": "WQXODyp9Q-q0tZZDGvHV0Q",
-    "type": "Update",
-    "priority": 1,
-    "condition": "re.match('activity.*', $message.dialogflow.intent)",
-    "params": {
-        "list_name": "topics",
-        "content": "['activity']",
-        "identifier": "$sender.id",
-        "collection": "persons"
-    }
-}, {
     "id": "skNVAa3cTkaLw9BpFVg__Q",
     "type": "Update",
     "priority": 1,
-    "condition": "re.match('biomarker.*', $message.dialogflow.intent)",
+    "condition": "{{message.dialogflow.intent.split('.', 1)[0] in ['activity', 'biomarker', 'food', 'medication']}}",
     "params": {
         "list_name": "topics",
-        "content": "['biomarker']",
+        "content": "{{message.dialogflow.intent.split('.', 1)[:1]}}",
         "identifier": "$sender.id",
         "collection": "persons"
     }

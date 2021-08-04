@@ -2,10 +2,15 @@ import base64
 import config
 import datetime
 import generic
+import jinja2
 import json
+import numpy as np
 import pytz
 import query
 import re
+import random
+
+from inspect import getmembers, isfunction
 
 from google.cloud import bigquery
 from google.cloud import firestore
@@ -83,15 +88,18 @@ def process(event, metadata):
 
         params = {}
         for name, value in action['params'].items():
-            variables = re.findall(r'\$[a-z-_.]+', value) if type(value) == str else []
+            variables = re.findall(r'\$[a-z-_.]+', value) if name != 'content' and type(value) == str else []
             for var in variables:
                 value = context.get(var[1:]) if value == var else value.replace(var, context.get(var[1:]))
             params[name] = value
 
-        action_object = ACTIONS[action['type']](**params)
-        action_object.process()
-        print(action_object.output)
-        context.update(action_object.output)
+        if 'content' in params:
+            params['content'] = context.render(params['content'])
+
+        actrun = ACTIONS[action['type']](**params)
+        actrun.process()
+        print(actrun.output)
+        context.update(actrun.output)
         log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
                'resources': [{'type': 'person', 'id': person.id},
                              {'type': 'action', 'id': action['id']}]}
@@ -100,20 +108,30 @@ def process(event, metadata):
             print(errors)
 
 
+def get_variant(content, select='random'):
+    if type(content) == str:
+        return content
+    if select == 'random':
+        return content[random.randint(0, len(content) - 1)]['message']
+    else:
+        # TODO: Use bq log table to retrieve and increment variant id
+        return content[random.randint(0, len(content) - 1)]['message']
+
+
 def get_latest_run_time(action_id, person_id, bq):
-    query = '''SELECT time FROM(
+    q = '''SELECT time FROM(
         SELECT time,
             (SELECT id FROM UNNEST(resources) 
                 WHERE type = "action") AS action,
             (SELECT id FROM UNNEST(resources) 
                 WHERE type = "person") AS person
-        FROM `careintent.live.log`
+        FROM `{project}.live.log`
         WHERE type = "action.run"
     )
     WHERE action = "{action_id}" AND person = "{person_id}"
-    ORDER BY time DESC LIMIT 1'''.format(person_id=person_id, action_id=action_id)
+    ORDER BY time DESC LIMIT 1'''.format(person_id=person_id, action_id=action_id, project=config.PROJECT_ID)
     latest_run_time = None
-    for row in bq.query(query):
+    for row in bq.query(q):
         latest_run_time = row['time']
     return latest_run_time
 
@@ -135,15 +153,38 @@ def get_actions(person_id):
 class Context(object):
     def __init__(self):
         self.data = {}
+        self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True)
+        self.env.filters['history'] = self.history
+
+    def history(self, var, duration='1w', postprocess=None):
+        start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=query.get_duration_secs(duration))
+        start_time = start_time.isoformat()
+        bq = bigquery.Client()
+        q = 'SELECT number FROM {project}.live.tsdatav1, UNNEST(data) ' \
+            'WHERE name = "{name}" AND time > TIMESTAMP("{start}") ORDER BY time'. \
+            format(project=config.PROJECT_ID, name=var, start=start_time)
+        print(q)
+        if postprocess:
+            functions = {name: value for name, value in getmembers(np, isfunction)}
+            if postprocess in functions:
+                return functions[postprocess]([row['number'] for row in bq.query(q)])
+        return [row['number'] for row in bq.query(q)]
 
     def evaluate(self, expression):
-        for var in set(re.findall(r'\$[a-z0-9.-_]+', expression)):
-            value = self.get(var[1:])
-            expression = expression.replace(var, '"{}"'.format(value) if type(value) == str else str(value))
         try:
-            return eval(expression)
+            return self.env.from_string(expression).render(self.data) == str(True)
         except:
-            return None
+            return False
+
+    def render(self, content):
+        if type(content) == str:
+            return self.env.from_string(content).render(self.data)
+        elif type(content) == list:
+            return [self.render(item) for item in content]
+        elif type(content) == dict:
+            return {self.render(name): self.render(value) for name, value in content.items()}
+        else:
+            return content
 
     def set(self, name, value):
         tokens = name.split('.') if name else []
