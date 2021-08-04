@@ -194,6 +194,8 @@ class Context(object):
             return content
 
     def set(self, name, value):
+        if type(value) == dict:
+            value = {k.replace('-', '_'): v for k,v in value.items()}
         tokens = name.split('.') if name else []
         if len(tokens) == 1:
             self.data[name] = value
