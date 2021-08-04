@@ -1,3 +1,4 @@
+import base64
 import cipher
 import config
 import datetime
@@ -19,18 +20,30 @@ class Action(object):
 
 
 class Message(Action):
-    def __init__(self, receiver=None, sender=None, content=None):
-        if receiver and 'type' in receiver and 'id' in receiver:
-            self.receiver = receiver
-        elif receiver and 'identifiers' in receiver and len(receiver['identifiers']):
-            self.receiver = list(filter(lambda i: i['type'] == 'phone', receiver['identifiers']))[0]
-        else:
-            self.receiver = receiver
+    def __init__(self, receiver=None, sender=None, content=None, queue=False):
+        self.receiver = receiver
         self.sender = sender if sender else {'value': config.PHONE_NUMBER, 'type': 'phone'}
         self.content = content
+        self.queue = queue
         super().__init__()
 
     def process(self):
+        if self.queue:
+            db = firestore.Client()
+            msg_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
+            msg = db.collection('persons').document(self.receiver['id']).collection('messages').document(msg_id)
+            msg.set({
+                'time': datetime.datetime.utcnow().isoformat(),
+                'sender': self.sender,
+                'receiver': self.receiver,
+                'content_type': 'text/plain',
+                'content': self.content
+            })
+            return
+
+        if self.receiver and 'identifiers' in self.receiver and len(self.receiver['identifiers']):
+            self.receiver = list(filter(lambda i: i['type'] == 'phone', self.receiver['identifiers']))[0]
+
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
