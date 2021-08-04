@@ -1,4 +1,6 @@
 import base64
+import sys
+
 import config
 import datetime
 import generic
@@ -9,6 +11,7 @@ import pytz
 import query
 import re
 import random
+import traceback
 
 from inspect import getmembers, isfunction
 
@@ -94,7 +97,10 @@ def process(event, metadata):
             params[name] = value
 
         if 'content' in params:
-            params['content'] = context.render(get_variant(params['content']))
+            try:
+                params['content'] = context.render(get_variant(params['content']))
+            except:
+                traceback.print_exc()
 
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
@@ -174,6 +180,7 @@ class Context(object):
         try:
             return self.env.from_string(expression).render(self.data) == str(True)
         except:
+            traceback.print_exc()
             return False
 
     def render(self, content):
