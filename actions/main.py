@@ -176,7 +176,6 @@ class Context(object):
         try:
             return self.env.from_string(expression).render(self.data) == str(True)
         except:
-            print('Failed evaluation of ' + expression)
             return False
 
     def render(self, content):
@@ -184,7 +183,7 @@ class Context(object):
             try:
                 return self.env.from_string(content).render(self.data)
             except:
-                print('Failed rendeing ' + content)
+                print('Failed rendering ' + content)
         elif type(content) == list:
             return [self.render(item) for item in content]
         elif type(content) == dict:
