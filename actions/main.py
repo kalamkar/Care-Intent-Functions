@@ -94,7 +94,7 @@ def process(event, metadata):
             params[name] = value
 
         if 'content' in params:
-            params['content'] = context.render(params['content'])
+            params['content'] = context.render(get_variant(params['content']))
 
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
