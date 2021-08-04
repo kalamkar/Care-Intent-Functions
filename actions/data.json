@@ -110,6 +110,16 @@
         "receiver": "$message.sender"
     }
 }, {
+    "id": "k5HItJPqQHyMvr6sCVJ7vA",
+    "type": "Message",
+    "priority": 1,
+    "condition": "$message.dialogflow.intent == 'medication.report'",
+    "params": {
+        "content": "Got it",
+        "receiver": "$message.sender",
+        "sender": "$message.receiver"
+    }
+}, {
     "id": "ffWxDX4rv37InPAuro05",
     "type": "OAuthMessage",
     "priority": 1,
