@@ -157,8 +157,15 @@ class Context(object):
         self.data = {}
         self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True)
         self.env.filters['history'] = self.history
+        self.env.filters['np'] = self.numpy
 
-    def history(self, var, duration='1w', postprocess=None):
+    def numpy(self, value, function):
+        functions = {name: value for name, value in getmembers(np, isfunction)}
+        if not function or function not in functions:
+            return value
+        return functions[function](value)
+
+    def history(self, var, duration='1w'):
         start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=query.get_duration_secs(duration))
         start_time = start_time.isoformat()
         bq = bigquery.Client()
@@ -166,10 +173,6 @@ class Context(object):
             'WHERE name = "{name}" AND time > TIMESTAMP("{start}") ORDER BY time'. \
             format(project=config.PROJECT_ID, name=var, start=start_time)
         print(q)
-        if postprocess:
-            functions = {name: value for name, value in getmembers(np, isfunction)}
-            if postprocess in functions:
-                return functions[postprocess]([row['number'] for row in bq.query(q)])
         return [row['number'] for row in bq.query(q)]
 
     def evaluate(self, expression):
