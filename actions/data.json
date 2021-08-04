@@ -41,7 +41,7 @@
 }, {
     "id": "Qx5DH1cjtQIZUJJbwzyB",
     "type": "OAuth",
-    "priority": 1,
+    "priority": 2,
     "condition": "$message.dialogflow.action == 'connect.dexcom'",
     "params": {
         "person_id": "$sender.id",
