@@ -14,7 +14,7 @@ from google.cloud import firestore
 ACTIONS = {
     'DataExtract': generic.DataExtract,
     'Message': generic.Message,
-    'OAuthMessage': generic.OAuthMessage,
+    'OAuth': generic.OAuth,
     'SimplePatternCheck': generic.SimplePatternCheck,
     'Update': generic.Update
 }

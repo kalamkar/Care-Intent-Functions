@@ -85,19 +85,21 @@ PROVIDER_URLS = {'dexcom': create_dexcom_auth_url,
                  'google': create_google_auth_url}
 
 
-class OAuthMessage(Message):
-    def __init__(self, receiver=None, sender=None, person_id=None, provider=None):
+class OAuth(Action):
+    def __init__(self, person_id=None, provider=None):
         self.person_id = person_id
         self.provider = provider
+        super().__init__()
 
-        short_code = str(uuid.uuid4())
+    def process(self):
+        short_code = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
         db = firestore.Client()
         db.collection('urls').document(short_code).set({
             'redirect': PROVIDER_URLS[self.provider](self.person_id)
         })
-        short_url = ('https://us-central1-%s.cloudfunctions.net/u/' % config.PROJECT_ID) + short_code
-
-        super().__init__(receiver=receiver, sender=sender, content='Visit {}'.format(short_url))
+        self.output['oauth'] = {
+            'url': ('https://us-central1-%s.cloudfunctions.net/u/' % config.PROJECT_ID) + short_code
+        }
 
 
 class SimplePatternCheck(Action):

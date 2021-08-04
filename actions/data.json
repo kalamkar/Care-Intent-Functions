@@ -40,14 +40,22 @@
     }
 }, {
     "id": "Qx5DH1cjtQIZUJJbwzyB",
-    "type": "OAuthMessage",
+    "type": "OAuth",
     "priority": 1,
     "condition": "$message.dialogflow.action == 'connect.dexcom'",
     "params": {
-        "sender": "$message.receiver",
-        "receiver": "$message.sender",
         "person_id": "$sender.id",
         "provider": "dexcom"
+    }
+}, {
+    "id": "BMUBxeYARWiYaAnRsHNFCg",
+    "type": "Message",
+    "priority": 1,
+    "condition": "$message.dialogflow.action == 'connect.dexcom'",
+    "params": {
+        "content": "Visit $oauth.url",
+        "sender": "$message.receiver",
+        "receiver": "$message.sender"
     }
 }, {
     "id": "UjclBjOUF88VnnhBPnzF",
@@ -121,12 +129,20 @@
     }
 }, {
     "id": "ffWxDX4rv37InPAuro05",
-    "type": "OAuthMessage",
-    "priority": 1,
+    "type": "OAuth",
+    "priority": 2,
     "condition": "$message.dialogflow.action == 'connect.google'",
     "params": {
         "provider": "google",
-        "person_id": "$sender.id",
+        "person_id": "$sender.id"
+    }
+}, {
+    "id": "3lRtdErhSYKSc2K0o5u6nw",
+    "type": "Message",
+    "priority": 1,
+    "condition": "$message.dialogflow.action == 'connect.google'",
+    "params": {
+        "content": "Visit $oauth.url",
         "receiver": "$message.sender",
         "sender": "$message.receiver"
     }
