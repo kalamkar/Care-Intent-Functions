@@ -11,7 +11,6 @@ import pytz
 import query
 import re
 import random
-import traceback
 
 from inspect import getmembers, isfunction
 
@@ -97,10 +96,7 @@ def process(event, metadata):
             params[name] = value
 
         if 'content' in params:
-            try:
-                params['content'] = context.render(get_variant(params['content']))
-            except:
-                traceback.print_exc()
+            params['content'] = context.render(get_variant(params['content']))
 
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
@@ -180,18 +176,20 @@ class Context(object):
         try:
             return self.env.from_string(expression).render(self.data) == str(True)
         except:
-            traceback.print_exc()
+            print('Failed evaluation of ' + expression)
             return False
 
     def render(self, content):
         if type(content) == str:
-            return self.env.from_string(content).render(self.data)
+            try:
+                return self.env.from_string(content).render(self.data)
+            except:
+                print('Failed rendeing ' + content)
         elif type(content) == list:
             return [self.render(item) for item in content]
         elif type(content) == dict:
             return {self.render(name): self.render(value) for name, value in content.items()}
-        else:
-            return content
+        return content
 
     def set(self, name, value):
         if type(value) == dict:
