@@ -122,6 +122,7 @@
     "type": "Message",
     "priority": 1,
     "condition": "{{message.dialogflow.intent == 'medication.report'}}",
+    "content_select": "sequence",
     "params": {
         "content": [
             {

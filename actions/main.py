@@ -139,7 +139,7 @@ def get_content(content, select, latest_content_id):
                 return None, None
         except:
             print('Invalid content id ' + latest_content_id)
-    return content[i]['message'], content[i]['id']
+    return content[i]['message'], content[i]['id'] if 'id' in content[i] else None
 
 
 def get_latest_run_time(action_id, person_id, bq):
