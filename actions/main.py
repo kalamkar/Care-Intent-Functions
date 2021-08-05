@@ -11,6 +11,7 @@ import pytz
 import query
 import re
 import random
+import traceback
 
 from inspect import getmembers, isfunction
 
@@ -99,28 +100,31 @@ def process(event, metadata):
 
         content_id, content = None, None
         if 'content' in params:
-            selection = action['content_select'] if 'content_select' in action else None
+            selection = action['content_select'] if 'content_select' in action else 'random'
             content, content_id = get_content(params['content'], selection, latest_content_id)
             if not content:
                 print('Skipping matched {action} action because of missing content'.format(action=action['type']))
                 continue
             params['content'] = context.render(content)
 
-        actrun = ACTIONS[action['type']](**params)
-        actrun.process()
-        print(actrun.output)
-        context.update(actrun.output)
-        log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
-               'resources': [{'type': 'person', 'id': person.id},
-                             {'type': 'action', 'id': action['id']}]}
-        if content_id:
-            log['resources'].append({'type': 'content', 'id': content_id})
-        errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
-        if errors:
-            print(errors)
+        try:
+            actrun = ACTIONS[action['type']](**params)
+            actrun.process()
+            print(actrun.output)
+            context.update(actrun.output)
+            log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
+                   'resources': [{'type': 'person', 'id': person.id},
+                                 {'type': 'action', 'id': action['id']}]}
+            if content_id:
+                log['resources'].append({'type': 'content', 'id': content_id})
+            errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
+            if errors:
+                print(errors)
+        except:
+            traceback.print_exc()
 
 
-def get_content(content, select='random', latest_content_id=None):
+def get_content(content, select, latest_content_id):
     if type(content) == str:
         return content, None
     if type(content) != list or len(content) < 1:
