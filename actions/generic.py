@@ -142,10 +142,12 @@ class Update(Action):
     def process(self):
         db = firestore.Client()
         doc_ref = db.collection(self.collection).document(self.identifier)
-        if not self.list_name:
-            doc_ref.update(json.loads(self.content))
-        else:
-            doc_ref.update({self.list_name: firestore.ArrayUnion(json.loads(self.content))})
+        try:
+            content = json.loads(self.content)
+            doc_ref.update({self.list_name: firestore.ArrayUnion(content)} if self.list_name else content)
+        except:
+            print('Failed updating {collection}/{id} with {data}'.format(collection=self.collection,
+                                                                         id=self.identifier, data=self.content))
 
 
 class DataExtract(Action):
