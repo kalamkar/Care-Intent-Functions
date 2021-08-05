@@ -123,7 +123,17 @@
     "priority": 1,
     "condition": "{{message.dialogflow.intent == 'medication.report'}}",
     "params": {
-        "content": "Got it",
+        "content": [
+            {
+                "id": "1",
+                "message": "Got it"
+            },{
+                "id": "2",
+                "message": "Thanks for the update."
+            },{
+                "id": "3",
+                "message": "Bravo!"
+            }],
         "receiver": "$message.sender",
         "sender": "$message.receiver"
     }
