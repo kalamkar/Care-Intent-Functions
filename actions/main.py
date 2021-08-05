@@ -100,7 +100,7 @@ def process(event, metadata):
         content_id, content = None, None
         if 'content' in params:
             selection = action['content_select'] if 'content_select' in action else None
-            content_id, content = get_content(params['content'], selection, latest_content_id)
+            content, content_id = get_content(params['content'], selection, latest_content_id)
             if not content:
                 print('Skipping matched {action} action because of missing content'.format(action=action['type']))
                 continue
