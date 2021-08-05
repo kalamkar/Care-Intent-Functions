@@ -118,7 +118,7 @@
         "receiver": "$message.sender"
     }
 }, {
-    "id": "ccZ6ZNITTMWCS9rwE9hIrA",
+    "id": "39J9VgIQT_OLX40Q_bzrHw",
     "type": "Message",
     "priority": 1,
     "condition": "{{message.dialogflow.intent == 'medication.report'}}",

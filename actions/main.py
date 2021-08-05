@@ -134,7 +134,7 @@ def get_content(content, select, latest_content_id):
         i = random.randint(0, len(content) - 1)
     elif latest_content_id:
         try:
-            i = int(latest_content_id) + 1
+            i = int(latest_content_id) + 1 - 1  # Increment to next id but subtract 1 to make it 0-indexed
             if i >= len(content):  # For sequential content, stop sending messages after exhausting the list
                 return None, None
         except:
