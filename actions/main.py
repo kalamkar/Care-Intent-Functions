@@ -77,8 +77,10 @@ def process(event, metadata):
     else:
         actions = get_actions(person.id)
     for action in actions:
+        latest_run_time, latest_content_id = None, None
+        if 'hold_secs' in action or ('content_select' in action and action['content_select'] != 'random'):
+            latest_run_time, latest_content_id = get_latest_run_time(action['id'], person.id, bq)
         if 'hold_secs' in action:
-            latest_run_time = get_latest_run_time(action['id'], person.id, bq)
             threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
             if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
                 print('Skipping {action} recently run at {runtime}'.format(action=action['type'],
@@ -95,8 +97,14 @@ def process(event, metadata):
                 value = context.get(var[1:]) if value == var else value.replace(var, context.get(var[1:]))
             params[name] = value
 
+        content_id, content = None, None
         if 'content' in params:
-            params['content'] = context.render(get_variant(params['content']))
+            selection = action['content_select'] if 'content_select' in action else None
+            content_id, content = get_content(params['content'], selection, latest_content_id)
+            if not content:
+                print('Skipping matched {action} action because of missing content'.format(action=action['type']))
+                continue
+            params['content'] = context.render(content)
 
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
@@ -105,37 +113,51 @@ def process(event, metadata):
         log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
                'resources': [{'type': 'person', 'id': person.id},
                              {'type': 'action', 'id': action['id']}]}
+        if content_id:
+            log['resources'].append({'type': 'content', 'id': content_id})
         errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
         if errors:
             print(errors)
 
 
-def get_variant(content, select='random'):
+def get_content(content, select='random', latest_content_id=None):
     if type(content) == str:
-        return content
+        return content, None
+    if type(content) != list or len(content) < 1:
+        return None, None
+    i = 0
     if select == 'random':
-        return content[random.randint(0, len(content) - 1)]['message']
-    else:
-        # TODO: Use bq log table to retrieve and increment variant id
-        return content[random.randint(0, len(content) - 1)]['message']
+        i = random.randint(0, len(content) - 1)
+    elif latest_content_id:
+        try:
+            i = int(latest_content_id) + 1
+            if i >= len(content):  # For sequential content, stop sending messages after exhausting the list
+                return None, None
+        except:
+            print('Invalid content id ' + latest_content_id)
+    return content[i]['message'], content[i]['id']
 
 
 def get_latest_run_time(action_id, person_id, bq):
-    q = '''SELECT time FROM(
+    q = '''SELECT time, content FROM(
         SELECT time,
             (SELECT id FROM UNNEST(resources) 
                 WHERE type = "action") AS action,
             (SELECT id FROM UNNEST(resources) 
-                WHERE type = "person") AS person
+                WHERE type = "person") AS person,
+            (SELECT id FROM UNNEST(resources) 
+                WHERE type = "content") AS content
         FROM `{project}.live.log`
         WHERE type = "action.run"
     )
     WHERE action = "{action_id}" AND person = "{person_id}"
     ORDER BY time DESC LIMIT 1'''.format(person_id=person_id, action_id=action_id, project=config.PROJECT_ID)
     latest_run_time = None
+    latest_content_id = None
     for row in bq.query(q):
         latest_run_time = row['time']
-    return latest_run_time
+        latest_content_id = row['content']
+    return latest_run_time, latest_content_id
 
 
 def get_actions(person_id):
