@@ -1,11 +1,13 @@
 import base64
 import datetime
 import dateutil.parser
+import json
 import flask
 import uuid
 
 from google.cloud import bigquery
 from google.cloud import firestore
+from google.cloud import pubsub_v1
 
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 JSON_CACHE_SECONDS = 600
@@ -46,9 +48,11 @@ def api(request):
     elif len(tokens) >= 3 and tokens[1] == 'data':
         start_time, end_time = get_start_end_times(request)
         response = data(start_time, end_time, tokens[2], request.args.getlist('name'))
-    elif len(tokens) >= 3 and tokens[1] == 'messages':
+    elif len(tokens) >= 3 and tokens[1] == 'messages' and request.method == 'GET':
         start_time, end_time = get_start_end_times(request)
-        response = messages(start_time, end_time, tokens[2], request.args.get('both'))
+        response = get_messages(start_time, end_time, tokens[2], request.args.get('both'))
+    elif len(tokens) >= 3 and tokens[1] == 'messages' and request.method == 'POST' and user:
+        response = send_message(tokens[2], request.json, user, response)
     else:
         response.status_code = 404
 
@@ -158,11 +162,11 @@ def data(start_time, end_time, source, names):
     return flask.jsonify({'rows': rows})
 
 
-def messages(start_time, end_time, person_id, both):
+def get_messages(start_time, end_time, person_id, both):
     bq = bigquery.Client()
     db = firestore.Client()
-    person_ref = db.collection('persons').document(person_id).get()
-    values = [i['value'] for i in filter(lambda i: i['active'], person_ref.get('identifiers'))]
+    person_doc = db.collection('persons').document(person_id).get()
+    values = [i['value'] for i in filter(lambda i: i['active'], person_doc.get('identifiers'))]
     if both:
         query = 'SELECT time, status, sender, receiver, tags, content, content_type ' \
                 'FROM {project}.live.messages WHERE (sender.value IN ({values}) OR receiver.value IN ({values})) ' \
@@ -186,6 +190,21 @@ def messages(start_time, end_time, person_id, both):
                      'content': row['content'],
                      'content_type': row['content_type']})
     return flask.jsonify({'rows': rows})
+
+
+def send_message(person_id, message, user, response):
+    message['sender'] = user.get('identifiers')[0]
+    db = firestore.Client()
+    person_doc = db.collection('persons').document(person_id).get()
+    receiver = {message['receiver'], {'active': True}}
+    if receiver not in person_doc.to_dict()['identifiers']:
+        print('Invalid receiver {r} for person {pid}'.format(r=receiver, pid=person_id))
+        response.status_code = 403
+        return response
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(PROJECT_ID, 'message')
+    publisher.publish(topic_path, json.dumps(message).encode('utf-8'), send='true')
+    return flask.jsonify({'message': 'ok'})
 
 
 def get_start_end_times(request):
