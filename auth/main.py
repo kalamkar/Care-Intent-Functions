@@ -73,12 +73,6 @@ def create_polling(payload):
     return response.name
 
 
-def stop_polling(provider, task_id):
-    client = tasks_v2.CloudTasksClient()
-    queue = client.queue_path('careintent', 'us-central1', provider)
-    client.delete_task(name=queue + '/tasks/' + task_id)
-
-
 def oauth(request, _):
     state = cipher.parse_auth_token(request.args.get('state'))
     provider = state['provider']
@@ -95,7 +89,7 @@ def oauth(request, _):
     provider_ref = person_ref.collection('providers').document(state['provider'])
     provider = provider_ref.get()
     if provider.exists and 'task_id' in provider.to_dict():
-        stop_polling(state['provider'], provider.get('task_id'))
+        tasks_v2.CloudTasksClient().delete_task(provider.get('task_id'))
 
     provider = auth_response.json()
     provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
