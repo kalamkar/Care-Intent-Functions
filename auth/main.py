@@ -89,7 +89,7 @@ def oauth(request, _):
     provider_ref = person_ref.collection('providers').document(state['provider'])
     provider = provider_ref.get()
     if provider.exists and 'task_id' in provider.to_dict():
-        tasks_v2.CloudTasksClient().delete_task(provider.get('task_id'))
+        tasks_v2.CloudTasksClient().delete_task(name=provider.get('task_id'))
 
     provider = auth_response.json()
     provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
