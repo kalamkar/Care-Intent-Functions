@@ -61,7 +61,7 @@ def twilio(request):
         'dialogflow': {
             'intent': response.query_result.intent.display_name,
             'action': response.query_result.action,
-            'fulfillment-text': response.query_result.fulfillment_text,
+            'reply': response.query_result.fulfillment_text,
             'confidence': int(response.query_result.intent_detection_confidence * 100),
             'params': MessageToDict(response.query_result.parameters)
         }
