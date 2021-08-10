@@ -1,23 +1,19 @@
 import base64
-import sys
 
 import config
 import datetime
 import generic
-import jinja2
 import json
-import numpy as np
 import pytz
 import query
 import re
 import random
 import traceback
 
-from inspect import getmembers, isfunction
-
 from google.cloud import bigquery
 from google.cloud import firestore
 
+from context import Context
 
 ACTIONS = {
     'DataExtract': generic.DataExtract,
@@ -68,7 +64,6 @@ def process(event, metadata):
 
     print(context.data)
 
-    bq = bigquery.Client()
     if channel_name == 'message' and message['content_type'] == 'application/json'\
             and 'action_id' in message['content']:
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
@@ -77,51 +72,57 @@ def process(event, metadata):
         actions = [{**(action.to_dict()), 'id': action.id}]
     else:
         actions = get_actions(person.id)
+    bq = bigquery.Client()
     for action in actions:
-        latest_run_time, latest_content_id = None, None
-        if 'hold_secs' in action or ('content_select' in action and action['content_select'] != 'random'):
-            latest_run_time, latest_content_id = get_latest_run_time(action['id'], person.id, bq)
-        if 'hold_secs' in action:
-            threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
-            if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
-                print('Skipping {action} recently run at {runtime}'.format(action=action['type'],
-                                                                           runtime=latest_run_time))
-                continue
+        process_action(action, context, bq)
 
-        if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
-            continue
 
-        params = {}
-        for name, value in action['params'].items():
-            variables = re.findall(r'\$[a-z-_.]+', value) if name != 'content' and type(value) == str else []
-            for var in variables:
-                value = context.get(var[1:]) if value == var else value.replace(var, context.get(var[1:]))
-            params[name] = value
+def process_action(action, context, bq):
+    person_id = context.get('sender.id')
+    latest_run_time, latest_content_id = None, None
+    if 'hold_secs' in action or ('content_select' in action and action['content_select'] != 'random'):
+        latest_run_time, latest_content_id = get_latest_run_time(action['id'], person_id, bq)
+    if 'hold_secs' in action:
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
+        if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
+            print('Skipping {action} recently run at {runtime}'.format(action=action['type'],
+                                                                       runtime=latest_run_time))
+            return
 
-        content_id, content = None, None
-        if 'content' in params:
-            selection = action['content_select'] if 'content_select' in action else 'random'
-            content, content_id = get_content(params['content'], selection, latest_content_id)
-            if not content:
-                print('Skipping matched {action} action because of missing content'.format(action=action['type']))
-                continue
-            params['content'] = context.render(content)
+    if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
+        return
 
-        try:
-            actrun = ACTIONS[action['type']](**params)
-            actrun.process()
-            print(actrun.output)
-            context.update(actrun.output)
-            log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
-                   'resources': [{'type': 'person', 'id': person.id},
-                                 {'type': 'action', 'id': action['id']}]}
-            if content_id:
-                log['resources'].append({'type': 'content', 'id': content_id})
-            errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
-            if errors:
-                print(errors)
-        except:
-            traceback.print_exc()
+    params = {}
+    for name, value in action['params'].items():
+        variables = re.findall(r'\$[a-z-_.]+', value) if name != 'content' and type(value) == str else []
+        for var in variables:
+            value = context.get(var[1:]) if value == var else value.replace(var, context.get(var[1:]))
+        params[name] = value
+
+    content_id, content = None, None
+    if 'content' in params:
+        selection = action['content_select'] if 'content_select' in action else 'random'
+        content, content_id = get_content(params['content'], selection, latest_content_id)
+        if not content:
+            print('Skipping matched {action} action because of missing content'.format(action=action['type']))
+            return
+        params['content'] = context.render(content)
+
+    try:
+        actrun = ACTIONS[action['type']](**params)
+        actrun.process()
+        print(actrun.output)
+        context.update(actrun.output)
+        log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
+               'resources': [{'type': 'person', 'id': person_id},
+                             {'type': 'action', 'id': action['id']}]}
+        if content_id:
+            log['resources'].append({'type': 'content', 'id': content_id})
+        errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
+        if errors:
+            print(errors)
+    except:
+        traceback.print_exc()
 
 
 def get_content(content, select, latest_content_id):
@@ -176,74 +177,3 @@ def get_actions(person_id):
                 action['id'] = action_doc.id
                 actions.append(action)
     return sorted(actions, key=lambda a: a['priority'], reverse=True)
-
-
-class Context(object):
-    def __init__(self):
-        self.data = {}
-        self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True)
-        self.env.filters['history'] = self.history
-        self.env.filters['np'] = self.numpy
-
-    def numpy(self, value, function):
-        functions = {name: value for name, value in getmembers(np, isfunction)}
-        if not function or function not in functions:
-            return value
-        return functions[function](value)
-
-    def history(self, var, duration='1w'):
-        start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=query.get_duration_secs(duration))
-        start_time = start_time.isoformat()
-        bq = bigquery.Client()
-        q = 'SELECT number FROM {project}.live.tsdatav1, UNNEST(data) ' \
-            'WHERE name = "{name}" AND time > TIMESTAMP("{start}") ORDER BY time'. \
-            format(project=config.PROJECT_ID, name=var, start=start_time)
-        print(q)
-        return [row['number'] for row in bq.query(q)]
-
-    def evaluate(self, expression):
-        try:
-            return self.env.from_string(expression).render(self.data) == str(True)
-        except:
-            return False
-
-    def render(self, content):
-        if type(content) == str:
-            try:
-                return self.env.from_string(content).render(self.data)
-            except:
-                print('Failed rendering ' + content)
-        elif type(content) == list:
-            return [self.render(item) for item in content]
-        elif type(content) == dict:
-            return {self.render(name): self.render(value) for name, value in content.items()}
-        return content
-
-    def set(self, name, value):
-        tokens = name.split('.') if name else []
-        if len(tokens) == 1:
-            self.data[name] = value
-        elif len(tokens) == 2:
-            self.data[tokens[0]][tokens[1]] = value
-        elif len(tokens) == 3:
-            self.data[tokens[0]][tokens[1]][tokens[2]] = value
-        elif len(tokens) == 4:
-            self.data[tokens[0]][tokens[1]][tokens[2]][tokens[3]] = value
-
-    def get(self, name):
-        tokens = name.split('.') if name else []
-        try:
-            if len(tokens) == 1:
-                return self.data[tokens[0]]
-            elif len(tokens) == 2:
-                return self.data[tokens[0]][tokens[1]]
-            elif len(tokens) == 3:
-                return self.data[tokens[0]][tokens[1]][tokens[2]]
-            elif len(tokens) == 4:
-                return self.data[tokens[0]][tokens[1]][tokens[2]][tokens[3]]
-        except KeyError:
-            return None
-        return None
-
-    def update(self, patch):
-        self.data.update(patch)
