@@ -14,45 +14,88 @@ JSON_CACHE_SECONDS = 600
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
                  'Access-Control-Allow-Credentials', 'X-Requested-With']
-RESOURCES = ['persons', 'groups']
+COLLECTIONS = {'person': 'persons', 'group': 'groups'}
 RELATION_TYPES = ['member_of', 'admin_of']
 
 
 def api(request):
     response = flask.make_response()
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    origin = request.headers.get('origin')
+    response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
     if request.method == 'OPTIONS':
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        origin = request.headers.get('origin')
-        response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PATCH,DELETE'
         response.headers['Access-Control-Allow-Headers'] = ', '.join(ALLOW_HEADERS)
         response.status_code = 204
         return response
 
     tokens = request.path.split('/')
+    partner_id, resource_name, resource_id, sub_resource_name, sub_resource_id = None, None, None, None, None
+    if len(tokens) == 3:
+        _, partner_id, resource_name = tokens
+    elif len(tokens) == 4:
+        _, partner_id, resource_name, resource_id = tokens
+    elif len(tokens) == 5:
+        _, partner_id, resource_name, resource_id, sub_resource_name = tokens
+    elif len(tokens) == 6:
+        _, partner_id, resource_name, resource_id, sub_resource_name, sub_resource_id = tokens
+    else:
+        response.status_code = 400
+        return response
 
     # TODO: Check authorization
     db = firestore.Client()
     try:
         auth_token = request.headers['Authorization'].split(' ')[1]
         user = list(db.collection('persons').where('login.token', '==', auth_token).get())[0]
+        if not user:
+            raise Exception
     except:
-        user = None
+        response.status_code = 401
+        return response
 
-    if len(tokens) >= 2 and tokens[1] == 'query' and user:
-        response = query(request, response, user)
-    elif len(tokens) >= 2 and tokens[1] == 'relate' and user and request.json:
-        response = add_relation(request, response, user)
-    elif len(tokens) >= 2 and tokens[1] in RESOURCES and user:
-        response = resources(request, response, user)
-    elif len(tokens) >= 3 and tokens[1] == 'data':
+    if not resource_name:
+        response.status_code = 400
+        return response
+
+    if resource_name not in COLLECTIONS:
+        response.status_code = 404
+        return response
+
+    doc = None
+    if resource_name == 'query' and user:
+        resource = request.args.get('resource').split(':', 1)
+        resource = {'type': resource[0], 'value': resource[1]}
+        relation_type = request.args.get('relation_type')
+        resource_type = request.args.get('resource_type')
+        doc = query(resource, relation_type, resource_type)
+    elif resource_name == 'relate' and user and request.json:
+        doc = add_relation(request.json)
+    elif request.method == 'GET' and resource_id and sub_resource_name and not sub_resource_id:
+        doc = get_resources(resource_name, resource_id, sub_resource_name, db)
+        if resource_name == 'person' and sub_resource_name == 'message':
+            for qmessage in doc['results']:
+                qmessage['status'] = 'queued'
+            start_time, end_time = get_start_end_times(request)
+            doc['results'].extend(get_messages(start_time, end_time, resource_id, request.args.get('both')))
+    elif request.method == 'GET' and resource_id:
+        doc = get_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db)
+    elif request.method == 'GET' and resource_name == 'person' and sub_resource_name == 'data' and resource_id:
         start_time, end_time = get_start_end_times(request)
-        response = data(start_time, end_time, tokens[2], request.args.getlist('name'))
-    elif len(tokens) >= 3 and tokens[1] == 'messages' and request.method == 'GET':
-        start_time, end_time = get_start_end_times(request)
-        response = get_messages(start_time, end_time, tokens[2], request.args.get('both'))
-    elif len(tokens) >= 3 and tokens[1] == 'messages' and request.method == 'POST' and user:
-        response = send_message(tokens[2], request.json, user, response)
+        person = db.collection(COLLECTIONS[resource_name]).document(resource_id).get()
+        rows = []
+        for identifier in person.get('identifiers'):
+            rows.extend(get_rows(start_time, end_time, identifier['value'], request.args.getlist('name')))
+        doc = {'rows': rows}
+    elif request.method == 'PATCH' and resource_id:
+        doc = update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, request.json, db)
+    elif request.method == 'POST':
+        doc = add_resource(resource_name, resource_id, sub_resource_name, request.json, user.id, db)
+    elif request.method == 'POST' and sub_resource_name == 'message' and resource_id:
+        doc = send_message(resource_id, request.json, user)
+
+    if doc:
+        response = flask.jsonify(doc)
     else:
         response.status_code = 404
 
@@ -64,13 +107,8 @@ def api(request):
     return response
 
 
-def query(request, response, user):
-    resource = request.args.get('resource').split(':', 1)
-    resource = {'type': resource[0], 'value': resource[1]}
-    relation_type = request.args.get('relation_type')
-    resource_type = request.args.get('resource_type')
+def query(resource, relation_type, resource_type):
     result_type = 'target' if resource_type == 'source' else 'source'
-
     results = []
     db = firestore.Client()
     for relation in db.collection('relations')\
@@ -79,72 +117,63 @@ def query(request, response, user):
         doc = db.collection(result_id['type'] + 's').document(result_id['value']).get()
         results.append(get_document_json(doc, result_id['type']))
 
-    return flask.jsonify({'results': results})
+    return {'results': results}
 
 
-def add_relation(request, response, user):
-    relation = request.json
+def add_relation(relation):
     if 'source' not in relation or 'target' not in relation or 'type' not in relation\
             or relation['type'] not in RELATION_TYPES:
-        response.status_code = 400
-        return response
+        return None
 
     db = firestore.Client()
     db.collection('relations').document(generate_id()).set(relation)
-    return flask.jsonify({'status': 'ok'})
+    return {'status': 'ok'}
 
 
-def resources(request, response, user):
-    tokens = request.path.split('/')
-    db = firestore.Client()
-    if request.method == 'GET' and len(tokens) in [3, 5]:
-        if len(tokens) >= 5:
-            # Sub-collection
-            collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
-            doc = collection.document(tokens[4]).get()
-        else:
-            collection = db.collection(tokens[1])
-            doc = user if tokens[2] == 'me' else collection.document(tokens[2]).get()
-        response = flask.jsonify(get_document_json(doc, tokens[1][:-1]))
-    elif request.method == 'GET' and len(tokens) == 4:  # Get all sub-collection documents
-        # Sub-collection
-        collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
-        response = flask.jsonify({'results': [get_document_json(doc, tokens[1][:-1]) for doc in collection.get()]})
-    elif request.method == 'PATCH' and len(tokens) in [3, 5]:
-        if len(tokens) >= 5:
-            # Sub-collection
-            collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
-            doc_ref = collection.document(tokens[4])
-        else:
-            collection = db.collection(tokens[1])
-            doc_ref = collection.document(tokens[2])
-        doc_ref.update(request.json)
-        response = flask.jsonify(get_document_json(doc_ref.get(), tokens[1][:-1]))
-    elif request.method == 'POST' and len(tokens) in [2, 4]:
-        if len(tokens) >= 4:
-            # Sub-collection
-            collection = db.collection(tokens[1]).document(tokens[2]).collection(tokens[3])
-        else:
-            collection = db.collection(tokens[1])
-        if tokens[1] == 'persons' and len(tokens) == 2:
-            person_ref = db.collection('persons')\
-                .where('identifiers', 'array_contains_any', request.json['identifiers'])
-            persons = list(person_ref.get())
-            if len(persons) > 0:
-                return flask.jsonify(get_document_json(persons[0], tokens[1][:-1]))
-        doc_id = generate_id()
-        doc_ref = collection.document(doc_id)
-        doc_ref.set(request.json)
-        db.collection('relations').document(generate_id()).set({
-            'source': {'type': 'person', 'value': user.id},
-            'target': {'type': tokens[1][:-1], 'value': doc_id},
-            'type': 'admin_of' if tokens[1] == 'groups' else 'created'
-        })
-        response = flask.jsonify(get_document_json(doc_ref.get(), tokens[1][:-1]))
-    return response
+def get_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db):
+    doc_ref = db.collection(COLLECTIONS[resource_name]).document(resource_id)
+    if sub_resource_name and sub_resource_id:
+        doc_ref = doc_ref.collection(COLLECTIONS[sub_resource_name]).document(sub_resource_id)
+    return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
 
-def data(start_time, end_time, source, names):
+def get_resources(resource_name, resource_id, sub_resource_name, db):
+    collection = db.collection(COLLECTIONS[resource_name]).document(resource_id) \
+        .collection(COLLECTIONS[sub_resource_name])
+    return {'results': [get_document_json(doc, sub_resource_name) for doc in collection.get()]}
+
+
+def update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, resource, db):
+    doc_ref = db.collection(COLLECTIONS[resource_name]).document(resource_id)
+    if sub_resource_name and sub_resource_id:
+        doc_ref = doc_ref.collection(COLLECTIONS[sub_resource_name]).document(sub_resource_id)
+    doc_ref.update(resource)
+    return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
+
+
+def add_resource(resource_name, resource_id, sub_resource_name, resource, user_id, db):
+    collection = db.collection(COLLECTIONS[resource_name])
+    if resource_id and sub_resource_name:
+        collection = collection.document(resource_id).collection(COLLECTIONS[sub_resource_name])
+
+    if resource_name == 'person' and not sub_resource_name:
+        person_ref = db.collection('persons') \
+            .where('identifiers', 'array_contains_any', resource['identifiers'])
+        persons = list(person_ref.get())
+        if len(persons) > 0:
+            return get_document_json(persons[0], resource_name)
+    doc_id = generate_id()
+    doc_ref = collection.document(doc_id)
+    doc_ref.set(resource)
+    db.collection('relations').document(generate_id()).set({
+        'source': {'type': 'person', 'value': user_id},
+        'target': {'type': resource_name, 'value': doc_id},
+        'type': 'created'
+    })
+    return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
+
+
+def get_rows(start_time, end_time, source, names):
     bq = bigquery.Client()
     query = 'SELECT time, duration, name, number, value ' \
             'FROM {project}.live.tsdatav1, UNNEST(data) WHERE source.id = "{source}" AND name IN ({names}) ' \
@@ -159,7 +188,7 @@ def data(start_time, end_time, source, names):
                      'name': row['name'],
                      'number': row['number'],
                      'value': row['value']})
-    return flask.jsonify({'rows': rows})
+    return rows
 
 
 def get_messages(start_time, end_time, person_id, both):
@@ -189,22 +218,21 @@ def get_messages(start_time, end_time, person_id, both):
                      'tags': row['tags'],
                      'content': row['content'],
                      'content_type': row['content_type']})
-    return flask.jsonify({'rows': rows})
+    return rows
 
 
-def send_message(person_id, message, user, response):
+def send_message(person_id, message, user):
     message['sender'] = user.get('identifiers')[0]
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
     receiver = {message['receiver'], {'active': True}}
     if receiver not in person_doc.to_dict()['identifiers']:
         print('Invalid receiver {r} for person {pid}'.format(r=receiver, pid=person_id))
-        response.status_code = 403
-        return response
+        return None
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(PROJECT_ID, 'message')
     publisher.publish(topic_path, json.dumps(message).encode('utf-8'), send='true')
-    return flask.jsonify({'message': 'ok'})
+    return {'message': 'ok'}
 
 
 def get_start_end_times(request):
