@@ -60,18 +60,17 @@ def api(request):
         return response
 
     if resource_name not in COLLECTIONS or \
-            (sub_resource_name and sub_resource_name != 'data' and sub_resource_name not in COLLECTIONS):
+            (sub_resource_name and sub_resource_name not in (list(COLLECTIONS.keys()) + ['data', 'relation'])):
         response.status_code = 404
         return response
 
     doc = None
-    if resource_name == 'query' and user:
-        resource = request.args.get('resource').split(':', 1)
-        resource = {'type': resource[0], 'value': resource[1]}
+    if request.method == 'GET' and sub_resource_name == 'relation' and resource_id:
+        resource = {'type': resource_name, 'value': resource_id}
         relation_type = request.args.get('relation_type')
         resource_type = request.args.get('resource_type')
         doc = query(resource, relation_type, resource_type)
-    elif resource_name == 'relate' and user and request.json:
+    elif resource_name == 'relate' and request.json:
         doc = add_relation(request.json)
     elif request.method == 'GET' and resource_id and sub_resource_name and not sub_resource_id:
         doc = get_resources(resource_name, resource_id, sub_resource_name, db)
