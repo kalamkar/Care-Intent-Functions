@@ -111,7 +111,7 @@ def add_resource(resource_name, resource_id, sub_resource_name, resource, relati
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
 
-def send_message(person_id, content, user):
+def send_message(person_id, content, group):
     db = firestore.Client()
     if ':' in person_id:
         id_type, id_value = person_id.split(':', 1)
@@ -127,7 +127,7 @@ def send_message(person_id, content, user):
     topic_path = publisher.topic_path(PROJECT_ID, 'message')
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
-        'sender': user.get('identifiers')[0],
+        'sender': group.get('identifiers')[0],
         'receiver': receiver,
         'content_type': 'text/plain',
         'content': content

@@ -22,9 +22,9 @@ def save_message(event, context):
         'content': message['content'],
         'tags': message['tags']
     }
-    if 'sender' in message:
+    if 'sender' in message and 'type' in message['sender']:
         row['sender'] = {'type': message['sender']['type'], 'value': message['sender']['value']}
-    if 'receiver' in message:
+    if 'receiver' in message and 'type' in message['receiver']:
         row['receiver'] = {'type': message['receiver']['type'], 'value': message['receiver']['value']}
     if 'dialogflow' in message:
         if 'intent' in message['dialogflow']:

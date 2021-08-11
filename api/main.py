@@ -221,7 +221,7 @@ def get_messages(start_time, end_time, person_id, both):
 
 
 def send_message(person_id, message, user):
-    message['sender'] = user.get('identifiers')[0]
+    message['sender'] = {'type': 'person', 'value': user.id}
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
     receiver = {message['receiver'], {'active': True}}

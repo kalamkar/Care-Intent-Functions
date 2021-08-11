@@ -11,7 +11,10 @@ PHONE_NUMBER = '+16692154466'
 
 def send_sms(request):
     message = json.loads(base64.b64decode(request.json['message']['data']).decode('utf-8'))
-    if 'sender' not in message or not message['sender'] or 'value' not in message['sender']:
+    try:
+        if not message['sender']['value'] or message['sender']['type'] != 'phone':
+            raise Exception
+    except:
         message['sender'] = {'value': PHONE_NUMBER}
     print(message)
     if 'receiver' not in message or not message['receiver'] or 'value' not in message['receiver']:
