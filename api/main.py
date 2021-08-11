@@ -70,8 +70,13 @@ def api(request):
         relation_type = request.args.get('relation_type')
         resource_type = request.args.get('resource_type')
         doc = query(resource, relation_type, resource_type)
-    elif resource_name == 'relate' and request.json:
-        doc = add_relation(request.json)
+    elif request.method == 'GET' and resource_name == 'person' and resource_id and sub_resource_name == 'data':
+        start_time, end_time = get_start_end_times(request)
+        person = db.collection(COLLECTIONS[resource_name]).document(resource_id).get()
+        rows = []
+        for identifier in person.get('identifiers'):
+            rows.extend(get_rows(start_time, end_time, identifier['value'], request.args.getlist('name')))
+        doc = {'rows': rows}
     elif request.method == 'GET' and resource_id and sub_resource_name and not sub_resource_id:
         doc = get_resources(resource_name, resource_id, sub_resource_name, db)
         if resource_name == 'person' and sub_resource_name == 'message':
@@ -82,19 +87,15 @@ def api(request):
     elif request.method == 'GET' and resource_id:
         resource_id = user.id if resource_id == 'me' else resource_id
         doc = get_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db)
-    elif request.method == 'GET' and resource_name == 'person' and sub_resource_name == 'data' and resource_id:
-        start_time, end_time = get_start_end_times(request)
-        person = db.collection(COLLECTIONS[resource_name]).document(resource_id).get()
-        rows = []
-        for identifier in person.get('identifiers'):
-            rows.extend(get_rows(start_time, end_time, identifier['value'], request.args.getlist('name')))
-        doc = {'rows': rows}
     elif request.method == 'PATCH' and resource_id:
         doc = update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, request.json, db)
-    elif request.method == 'POST':
-        doc = add_resource(resource_name, resource_id, sub_resource_name, request.json, user.id, db)
-    elif request.method == 'POST' and sub_resource_name == 'message' and resource_id:
-        doc = send_message(resource_id, request.json, user)
+    elif request.method == 'POST' and request.json:
+        if resource_name == 'relation':
+            doc = add_relation(request.json)
+        elif sub_resource_name == 'message' and resource_id:
+            doc = send_message(resource_id, request.json, user)
+        else:
+            doc = add_resource(resource_name, resource_id, sub_resource_name, request.json, user.id, db)
 
     if doc:
         response = flask.jsonify(doc)
