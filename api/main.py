@@ -72,7 +72,7 @@ def api(request):
         doc = query(resource, relation_type, resource_type)
     elif request.method == 'GET' and resource_name == 'person' and resource_id and sub_resource_name == 'data':
         start_time, end_time = get_start_end_times(request)
-        doc = {'rows': get_rows(start_time, end_time, resource_id, request.args.getlist('name'))}
+        doc = {'results': get_rows(start_time, end_time, resource_id, request.args.getlist('name'))}
     elif request.method == 'GET' and resource_id and sub_resource_name and not sub_resource_id:
         doc = get_resources(resource_name, resource_id, sub_resource_name, db)
         if resource_name == 'person' and sub_resource_name == 'message':
