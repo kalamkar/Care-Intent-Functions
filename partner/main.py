@@ -1,4 +1,5 @@
 import base64
+import datetime
 import json
 import flask
 import uuid
@@ -55,7 +56,7 @@ def api(request):
         doc = update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, request.json, db)
     elif request.method == 'POST':
         if sub_resource_name == 'message' and resource_id:
-            doc = send_message(resource_id, request.json, group)
+            doc = send_message(resource_id, request.content, group)
         else:
             relation = 'admin_of' if request.args.get('role') == 'admin' else 'member_of'
             doc = add_resource(resource_name, resource_id, sub_resource_name, request.json, relation, group.id, db)
@@ -96,11 +97,9 @@ def add_resource(resource_name, resource_id, sub_resource_name, resource, relati
         collection = collection.document(resource_id).collection(COLLECTIONS[sub_resource_name])
 
     if resource_name == 'person' and not sub_resource_name:
-        person_ref = db.collection('persons') \
-            .where('identifiers', 'array_contains_any', resource['identifiers'])
-        persons = list(person_ref.get())
-        if len(persons) > 0:
-            return get_document_json(persons[0], resource_name)
+        person = get_person(resource['identifiers'], db)
+        if person:
+            return get_document_json(person, resource_name)
     doc_id = generate_id()
     doc_ref = collection.document(doc_id)
     doc_ref.set(resource)
@@ -112,17 +111,28 @@ def add_resource(resource_name, resource_id, sub_resource_name, resource, relati
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
 
-def send_message(person_id, message, user):
-    message['sender'] = user.get('identifiers')[0]
+def send_message(person_id, content, user):
     db = firestore.Client()
-    person_doc = db.collection('persons').document(person_id).get()
-    receiver = {message['receiver'], {'active': True}}
-    if receiver not in person_doc.to_dict()['identifiers']:
-        print('Invalid receiver {r} for person {pid}'.format(r=receiver, pid=person_id))
-        return None
+    if ':' in person_id:
+        id_type, id_value = person_id.split(':', 1)
+        person_doc = get_person([{'type': id_type, 'value': id_value, 'active': True}], db)
+        if not person_doc or id_type != 'phone':
+            return None
+        receiver = {'type': id_type, 'value': id_value}
+    else:
+        person_doc = db.collection('persons').document(person_id).get()
+        receiver = list(filter(lambda i: i['type'] == 'phone', person_doc.get('identifiers')))[0]
+
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(PROJECT_ID, 'message')
-    publisher.publish(topic_path, json.dumps(message).encode('utf-8'), send='true')
+    data = {
+        'time': datetime.datetime.utcnow().isoformat(),
+        'sender': user.get('identifiers')[0],
+        'receiver': receiver,
+        'content_type': 'text/plain',
+        'content': content
+    }
+    publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
     return {'message': 'ok'}
 
 
@@ -138,6 +148,13 @@ def get_document_json(doc, resource_type):
         del doc_json['tokens']
     doc_json['id'] = {'type': resource_type, 'value': doc.id}
     return doc_json
+
+
+def get_person(identifiers, db):
+    person_ref = db.collection('persons') \
+        .where('identifiers', 'array_contains_any', identifiers)
+    persons = list(person_ref.get())
+    return persons[0] if len(persons) > 0 else None
 
 
 def generate_id():
