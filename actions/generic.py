@@ -20,7 +20,7 @@ class Action(object):
 
 
 class Message(Action):
-    def __init__(self, receiver=None, sender=None, content=None, queue=False):
+    def __init__(self, receiver=None, sender=None, content=None, queue=False, tags=None):
         self.receiver = receiver
         self.sender = sender
         if self.sender and 'identifiers' in self.sender and len(self.sender['identifiers']):
@@ -30,6 +30,11 @@ class Message(Action):
         self.sender = self.sender if self.sender else {'value': config.PHONE_NUMBER, 'type': 'phone'}
         self.content = content
         self.queue = queue
+        self.tags = []
+        if type(tags) == list:
+            self.tags = tags
+        elif type(tags) == str:
+            self.tags = tags.split(',')
         super().__init__()
 
     def process(self):
@@ -41,6 +46,7 @@ class Message(Action):
                 'time': datetime.datetime.utcnow().isoformat(),
                 'sender': self.sender,
                 'receiver': self.receiver,
+                'tags': self.tags,
                 'content_type': 'text/plain',
                 'content': self.content
             })
@@ -56,6 +62,7 @@ class Message(Action):
             'time': datetime.datetime.utcnow().isoformat(),
             'sender': self.sender,
             'receiver': self.receiver,
+            'tags': self.tags,
             'content_type': 'text/plain',
             'content': self.content
         }

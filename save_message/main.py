@@ -20,7 +20,7 @@ def save_message(event, context):
         'status': message['status'] if 'status' in message else None,
         'content_type': message['content_type'],
         'content': message['content'],
-        'tags': []
+        'tags': message['tags']
     }
     if 'sender' in message:
         row['sender'] = {'type': message['sender']['type'], 'value': message['sender']['value']}
