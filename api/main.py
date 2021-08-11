@@ -224,7 +224,7 @@ def send_message(person_id, message, user):
     message['sender'] = {'type': 'person', 'value': user.id}
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
-    receiver = {message['receiver'], {'active': True}}
+    receiver = {**message['receiver'], 'active': True}
     if receiver not in person_doc.to_dict()['identifiers']:
         print('Invalid receiver {r} for person {pid}'.format(r=receiver, pid=person_id))
         return None
