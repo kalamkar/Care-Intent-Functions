@@ -57,7 +57,7 @@ def api(request):
     elif request.method == 'POST':
         if sub_resource_name == 'message' and resource_id:
             doc = send_message(resource_id, request.data.decode('utf-8'), group)
-        else:
+        elif request.json:
             relation = 'admin_of' if request.args.get('role') == 'admin' else 'member_of'
             doc = add_resource(resource_name, resource_id, sub_resource_name, request.json, relation, group.id, db)
 
