@@ -1,11 +1,11 @@
+import config
 import datetime
-from inspect import getmembers, isfunction
-
 import jinja2
 import numpy as np
-from google.cloud import bigquery
+import query
 
-from actions import query, config
+from inspect import getmembers, isfunction
+from google.cloud import bigquery
 
 
 class Context(object):
