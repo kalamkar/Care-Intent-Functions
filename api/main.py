@@ -31,13 +31,13 @@ def api(request):
 
     tokens = request.path.split('/')
     resource_name, resource_id, sub_resource_name, sub_resource_id = None, None, None, None
-    if len(tokens) == 3:
+    if len(tokens) == 2:
         _, resource_name = tokens
-    elif len(tokens) == 4:
+    elif len(tokens) == 3:
         _, resource_name, resource_id = tokens
-    elif len(tokens) == 5:
+    elif len(tokens) == 4:
         _, resource_name, resource_id, sub_resource_name = tokens
-    elif len(tokens) == 6:
+    elif len(tokens) == 5:
         _, resource_name, resource_id, sub_resource_name, sub_resource_id = tokens
     else:
         response.status_code = 400
