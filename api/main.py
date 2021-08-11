@@ -14,7 +14,7 @@ JSON_CACHE_SECONDS = 600
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
                  'Access-Control-Allow-Credentials', 'X-Requested-With']
-COLLECTIONS = {'person': 'persons', 'group': 'groups'}
+COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'schedule': 'schedules'}
 RELATION_TYPES = ['member_of', 'admin_of']
 
 
@@ -58,7 +58,8 @@ def api(request):
         response.status_code = 400
         return response
 
-    if resource_name not in COLLECTIONS:
+    if resource_name not in COLLECTIONS or \
+            (sub_resource_name and sub_resource_name != 'data' and sub_resource_name not in COLLECTIONS):
         response.status_code = 404
         return response
 
@@ -79,6 +80,7 @@ def api(request):
             start_time, end_time = get_start_end_times(request)
             doc['results'].extend(get_messages(start_time, end_time, resource_id, request.args.get('both')))
     elif request.method == 'GET' and resource_id:
+        resource_id = user.id if resource_id == 'me' else resource_id
         doc = get_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db)
     elif request.method == 'GET' and resource_name == 'person' and sub_resource_name == 'data' and resource_id:
         start_time, end_time = get_start_end_times(request)
