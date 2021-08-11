@@ -221,16 +221,22 @@ def get_messages(start_time, end_time, person_id, both):
 
 
 def send_message(person_id, message, user):
-    message['sender'] = {'type': 'person', 'value': user.id}
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
-    receiver = {**message['receiver'], 'active': True}
-    if receiver not in person_doc.to_dict()['identifiers']:
-        print('Invalid receiver {r} for person {pid}'.format(r=receiver, pid=person_id))
+    if {**message['receiver'], 'active': True} not in person_doc.to_dict()['identifiers']:
+        print('Invalid receiver {r} for person {pid}'.format(r=message['receiver'], pid=person_id))
         return None
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(PROJECT_ID, 'message')
-    publisher.publish(topic_path, json.dumps(message).encode('utf-8'), send='true')
+    data = {
+        'time': datetime.datetime.utcnow().isoformat(),
+        'sender': {'type': 'person', 'value': user.id},
+        'receiver': message['receiver'],
+        'tags': message['tags'] if 'tags' in message else [],
+        'content_type': 'text/plain',
+        'content': message['content']
+    }
+    publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
     return {'message': 'ok'}
 
 
