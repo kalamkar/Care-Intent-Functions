@@ -22,7 +22,12 @@ class Action(object):
 class Message(Action):
     def __init__(self, receiver=None, sender=None, content=None, queue=False):
         self.receiver = receiver
-        self.sender = sender if sender else {'value': config.PHONE_NUMBER, 'type': 'phone'}
+        self.sender = sender
+        if self.sender and 'identifiers' in self.sender and len(self.sender['identifiers']):
+            # Allow Person and Group objects as sender (in addition to an identifier / contact)
+            phones = list(filter(lambda i: i['type'] == 'phone', self.sender['identifiers']))
+            self.sender = phones[0] if phones else None
+        self.sender = self.sender if self.sender else {'value': config.PHONE_NUMBER, 'type': 'phone'}
         self.content = content
         self.queue = queue
         super().__init__()

@@ -69,7 +69,8 @@ def process(event, metadata):
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
         action = db.collection('groups').document(message['content']['group_id'])\
             .collection('actions').document(message['content']['action_id']).get()
-        actions = [{**(action.to_dict()), 'id': action.id}]
+        actions = [{**(action.to_dict()), 'id': action.id,
+                   'group': db.collection('groups').document(message['content']['group_id']).get().to_dict()}]
     else:
         actions = get_actions(person.id)
     bq = bigquery.Client()
@@ -79,6 +80,7 @@ def process(event, metadata):
 
 def process_action(action, context, bq):
     person_id = context.get('sender.id')
+    context.set('action', action)
     latest_run_time, latest_content_id = None, None
     if 'hold_secs' in action or ('content_select' in action and action['content_select'] != 'random'):
         latest_run_time, latest_content_id = get_latest_run_time(action['id'], person_id, bq)
@@ -175,5 +177,6 @@ def get_actions(person_id):
             action = action_doc.to_dict()
             if 'schedule' not in action:
                 action['id'] = action_doc.id
+                action['group'] = db.collection('groups').document(group_id['value']).get().to_dict()
                 actions.append(action)
     return sorted(actions, key=lambda a: a['priority'], reverse=True)
