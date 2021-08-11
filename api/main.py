@@ -30,18 +30,19 @@ def api(request):
         return response
 
     tokens = request.path.split('/')
-    partner_id, resource_name, resource_id, sub_resource_name, sub_resource_id = None, None, None, None, None
+    resource_name, resource_id, sub_resource_name, sub_resource_id = None, None, None, None
     if len(tokens) == 3:
-        _, partner_id, resource_name = tokens
+        _, resource_name = tokens
     elif len(tokens) == 4:
-        _, partner_id, resource_name, resource_id = tokens
+        _, resource_name, resource_id = tokens
     elif len(tokens) == 5:
-        _, partner_id, resource_name, resource_id, sub_resource_name = tokens
+        _, resource_name, resource_id, sub_resource_name = tokens
     elif len(tokens) == 6:
-        _, partner_id, resource_name, resource_id, sub_resource_name, sub_resource_id = tokens
+        _, resource_name, resource_id, sub_resource_name, sub_resource_id = tokens
     else:
         response.status_code = 400
         return response
+    print(resource_name, resource_id, sub_resource_name, sub_resource_id)
 
     # TODO: Check authorization
     db = firestore.Client()
