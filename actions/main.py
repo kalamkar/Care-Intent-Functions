@@ -20,7 +20,8 @@ ACTIONS = {
     'Message': generic.Message,
     'OAuth': generic.OAuth,
     'SimplePatternCheck': generic.SimplePatternCheck,
-    'Update': generic.Update
+    'Update': generic.Update,
+    'Webhook': generic.Webhook
 }
 
 

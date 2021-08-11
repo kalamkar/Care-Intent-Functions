@@ -3,6 +3,7 @@ import cipher
 import config
 import datetime
 import json
+import requests
 import uuid
 
 from google.cloud import bigquery
@@ -181,3 +182,39 @@ class DataExtract(Action):
             else:
                 row['data'].append({'name': name, 'value': value})
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
+
+
+class Webhook(Action):
+    def __init__(self, url=None, name=None, time=None, text=None, data=None, auth=None):
+        self.url = url
+        self.name = name
+        self.time = time
+        if not self.time:
+            self.time = datetime.datetime.utcnow().isoformat()
+        if type(self.time) == datetime.datetime:
+            self.time = self.time.isoformat()
+        self.text = text
+        self.data = data
+        if self.data and type(self.data) == str:
+            try:
+                self.data = json.loads(self.data)
+            except:
+                pass
+        self.auth = auth
+        super().__init__()
+
+    def process(self):
+        if not self.url or not self.name:
+            print('Missing url or name')
+            return
+
+        headers = {'Content-Type': 'application/json'}
+        if self.auth:
+            headers['Authorization'] = 'Bearer ' + self.auth
+        body = {
+            'time': self.time,
+            'name': self.name,
+            'text': self.text,
+            'data': self.data
+        }
+        requests.post(self.url, body, headers=headers)
