@@ -1,0 +1,13 @@
+# Function dependencies, for example:
+# package>=version
+PyCryptodome
+croniter
+dialogflow
+google-cloud-bigquery
+google-cloud-firestore
+google-cloud-pubsub
+google-cloud-tasks
+numpy
+python-dateutil
+requests
+twilio
