@@ -1,4 +1,5 @@
 import base64
+import datetime
 import json
 
 from google.cloud import bigquery
@@ -16,11 +17,11 @@ def save_message(event, context):
     message = json.loads(data)
 
     row = {
-        'time': message['time'],
+        'time': message['time'] if 'time' in message else datetime.datetime.utcnow().isoformat(),
         'status': message['status'] if 'status' in message else None,
-        'content_type': message['content_type'],
-        'content': message['content'],
-        'tags': message['tags']
+        'content_type': message['content_type'] if 'content_type' in message else None,
+        'content': message['content'] if 'content' in message else None,
+        'tags': message['tags'] if 'tags' in message else []
     }
     if 'sender' in message and 'type' in message['sender']:
         row['sender'] = {'type': message['sender']['type'], 'value': message['sender']['value']}
