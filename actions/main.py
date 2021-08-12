@@ -24,6 +24,8 @@ ACTIONS = {
     'Webhook': generic.Webhook
 }
 
+JINJA_PARAMS = ['content', 'text']
+
 
 def process(event, metadata):
     """Triggered from a message on a Cloud Pub/Sub topic.
@@ -97,7 +99,7 @@ def process_action(action, context, bq):
 
     params = {}
     for name, value in action['params'].items():
-        variables = re.findall(r'\$[a-z-_.]+', value) if name != 'content' and type(value) == str else []
+        variables = re.findall(r'\$[a-z-_.]+', value) if name not in JINJA_PARAMS and type(value) == str else []
         for var in variables:
             value = context.get(var[1:]) if value == var else value.replace(var, context.get(var[1:]))
         params[name] = value
@@ -110,6 +112,8 @@ def process_action(action, context, bq):
             print('Skipping matched {action} action because of missing content'.format(action=action['type']))
             return
         params['content'] = context.render(content)
+    for param_name in filter(lambda p: p != 'content', JINJA_PARAMS):
+        params[param_name] = context.render(params[param_name])
 
     try:
         actrun = ACTIONS[action['type']](**params)
