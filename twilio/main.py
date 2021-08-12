@@ -56,6 +56,7 @@ def twilio(request):
         'sender': {'type': IdType.phone, 'value': sender},
         'receiver': {'type': IdType.phone, 'value': receiver},
         'status': 'received',
+        'tags': [],
         'content_type': 'text/plain',
         'content': content,
         'dialogflow': {
