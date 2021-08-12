@@ -50,6 +50,10 @@ class Context(object):
         return content
 
     def set(self, name, value):
+        if type(value) == dict:
+            for param in ['login', 'tokens']:
+                if param in value:
+                    del value[param]
         tokens = name.split('.') if name else []
         if len(tokens) == 1:
             self.data[name] = value
