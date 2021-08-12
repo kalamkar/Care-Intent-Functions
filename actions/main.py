@@ -59,8 +59,7 @@ def process(event, metadata):
     if not person:
         return 500, 'Not ready'
 
-    context.set('sender', person.to_dict())
-    context.set('sender.id', person.id)
+    context.set('sender', person.to_dict() | {'id': person.id})
 
     if 'dialogflow' in message :
         context.set('dialogflow', message['dialogflow'])
@@ -70,6 +69,7 @@ def process(event, metadata):
     if channel_name == 'message' and message['content_type'] == 'application/json'\
             and 'action_id' in message['content']:
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
+        context.set('scheduled_run', True)
         action = db.collection('groups').document(message['content']['group_id'])\
             .collection('actions').document(message['content']['action_id']).get()
         actions = [{**(action.to_dict()), 'id': action.id,

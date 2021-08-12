@@ -7,10 +7,20 @@ import query
 from inspect import getmembers, isfunction
 from google.cloud import bigquery
 
+DEFAULT = {
+    'scheduled_run': False,
+    'data': {'systolic': None, 'diastolic': None, 'glucose': None, 'medication': None},
+    'message': {'time': None, 'sender': None, 'receiver': None, 'tags': [], 'content': None},
+    'sender': {'name': {'first': None, 'last': None}, 'identifiers': [{'type': None, 'value': None}]},
+    'receiver': {'name': {'first': None, 'last': None}, 'identifiers': [{'type': None, 'value': None}]},
+    'action': {'group': None, 'id': None},
+    'dialogflow': {'intent': None, 'action': None, 'reply': None, 'confidence': None, 'params': {}}
+}
+
 
 class Context(object):
     def __init__(self):
-        self.data = {}
+        self.data = DEFAULT
         self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True)
         self.env.filters['history'] = self.history
         self.env.filters['np'] = self.numpy
@@ -54,15 +64,7 @@ class Context(object):
             for param in ['login', 'tokens']:
                 if param in value:
                     del value[param]
-        tokens = name.split('.') if name else []
-        if len(tokens) == 1:
-            self.data[name] = value
-        elif len(tokens) == 2:
-            self.data[tokens[0]][tokens[1]] = value
-        elif len(tokens) == 3:
-            self.data[tokens[0]][tokens[1]][tokens[2]] = value
-        elif len(tokens) == 4:
-            self.data[tokens[0]][tokens[1]][tokens[2]][tokens[3]] = value
+        merge(self.data, {name: value})
 
     def get(self, name):
         tokens = name.split('.') if name else []
@@ -81,3 +83,23 @@ class Context(object):
 
     def update(self, patch):
         self.data.update(patch)
+
+
+def merge(destination, source):
+    """
+    run me with nosetests --with-doctest file.py
+
+    >>> a = { 'first' : { 'all_rows' : { 'pass' : 'dog', 'number' : '1' } } }
+    >>> b = { 'first' : { 'all_rows' : { 'fail' : 'cat', 'number' : '5' } } }
+    >>> merge(b, a) == { 'first' : { 'all_rows' : { 'pass' : 'dog', 'fail' : 'cat', 'number' : '5' } } }
+    True
+    """
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # get node or create one
+            node = destination.setdefault(key, {})
+            merge(node, value)
+        else:
+            destination[key] = value
+
+    return destination
