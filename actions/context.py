@@ -11,8 +11,8 @@ DEFAULT = {
     'scheduled_run': False,
     'data': {'systolic': None, 'diastolic': None, 'glucose': None, 'medication': None},
     'message': {'time': None, 'sender': None, 'receiver': None, 'tags': [], 'content': None},
-    'sender': {'name': {'first': None, 'last': None}, 'identifiers': [{'type': None, 'value': None}]},
-    'receiver': {'name': {'first': None, 'last': None}, 'identifiers': [{'type': None, 'value': None}]},
+    'sender': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
+    'receiver': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
     'action': {'group': None, 'id': None},
     'dialogflow': {'intent': None, 'action': None, 'reply': None, 'confidence': None, 'params': {}}
 }
