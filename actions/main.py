@@ -53,8 +53,6 @@ def process(event, metadata):
     if 'dialogflow' in message :
         context.set('dialogflow', message['dialogflow'])
 
-    print(context.data)
-
     if channel_name == 'message' and message['content_type'] == 'application/json'\
             and 'action_id' in message['content']:
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
@@ -106,13 +104,14 @@ def process_action(action, context, bq):
             params[param_name] = context.render(params[param_name])
 
     try:
-        print('Running action {type} {id}'.format(type=action['type'], id=action['id']))
+        print(context.data)
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
         print(actrun.output)
         context.update(actrun.output)
         log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
-               'resources': [resource_id, {'type': 'action', 'id': action['id']}]}
+               'resources': [{'type': resource_id['type'], 'id': resource_id['value']},
+                             {'type': 'action', 'id': action['id']}]}
         if content_id:
             log['resources'].append({'type': 'content', 'id': content_id})
         errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
