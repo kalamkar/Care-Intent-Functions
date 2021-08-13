@@ -4,7 +4,6 @@
     "priority": 1,
     "condition": "{{message.dialogflow.intent == 'system.welcome' and sender.name == None}}",
     "params": {
-        "collection": "persons",
         "content": "{'dialogflow': {'context': {'name': 'setup_name', 'lifespan': 1}}}",
         "identifier": "$sender.id"
     }
@@ -44,7 +43,7 @@
     "priority": 2,
     "condition": "{{message.dialogflow.action == 'connect.dexcom'}}",
     "params": {
-        "person_id": "$sender.id",
+        "person_id": "$sender.id.value",
         "provider": "dexcom"
     }
 }, {
@@ -76,8 +75,7 @@
     "condition": "{{data.pattern == 'slope'}}",
     "params": {
         "content": "{'dialogflow': {'context': {'name': 'food_report', 'lifespan': 5}}}",
-        "identifier": "$sender.id",
-        "collection": "persons"
+        "identifier": "$sender.id"
     }
 }, {
     "id": "LPRTZpIjwEp0DHYhGFDC",
@@ -86,7 +84,7 @@
     "condition": "{{data.pattern == 'slope'}}",
     "params": {
         "content": "What did you eat?",
-        "receiver": "$sender"
+        "receiver": "$sender.id"
     }
 }, {
     "id": "XtUYsSJEWCCuJlQYE8Wr",
@@ -105,7 +103,7 @@
     "condition": "{{data.systolic < 50 or 200 < data.systolic or data.diastolic < 40 or 150 < data.diastolic}}",
     "params": {
         "content": "please take again",
-        "receiver": "$sender"
+        "receiver": "$sender.id"
     }
 }, {
     "id": "aZ4Oc5gspNy85fntVzJh",
@@ -144,7 +142,7 @@
     "condition": "{{message.dialogflow.action == 'connect.google'}}",
     "params": {
         "provider": "google",
-        "person_id": "$sender.id"
+        "person_id": "$sender.id.value"
     }
 }, {
     "id": "3lRtdErhSYKSc2K0o5u6nw",
@@ -163,7 +161,7 @@
     "condition": "{{message.dialogflow.intent == 'biomarker.report.bp'}}",
     "params": {
         "params": "$message.dialogflow.params",
-        "person_id": "$sender.id"
+        "person_id": "$sender.id.value"
     }
 }, {
     "id": "skNVAa3cTkaLw9BpFVg__Q",
@@ -173,7 +171,6 @@
     "params": {
         "list_name": "topics",
         "content": "{{message.dialogflow.intent.split('.', 1)[:1]}}",
-        "identifier": "$sender.id",
-        "collection": "persons"
+        "identifier": "$sender.id"
     }
 }]}

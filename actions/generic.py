@@ -24,11 +24,6 @@ class Message(Action):
     def __init__(self, receiver=None, sender=None, content=None, queue=False, tags=None):
         self.receiver = receiver
         self.sender = sender
-        if self.sender and 'identifiers' in self.sender and len(self.sender['identifiers']):
-            # Allow Person and Group objects as sender (in addition to an identifier / contact)
-            phones = list(filter(lambda i: i['type'] == 'phone', self.sender['identifiers']))
-            self.sender = phones[0] if phones else None
-        self.sender = self.sender if self.sender else {'value': config.PHONE_NUMBER, 'type': 'phone'}
         self.content = content
         self.queue = queue
         self.tags = []
@@ -42,7 +37,7 @@ class Message(Action):
         if self.queue:
             db = firestore.Client()
             msg_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
-            msg = db.collection('persons').document(self.receiver['id']).collection('messages').document(msg_id)
+            msg = db.collection('persons').document(self.receiver['value']).collection('messages').document(msg_id)
             msg.set({
                 'time': datetime.datetime.utcnow().isoformat(),
                 'sender': self.sender,
@@ -52,9 +47,6 @@ class Message(Action):
                 'content': self.content
             })
             return
-
-        if self.receiver and 'identifiers' in self.receiver and len(self.receiver['identifiers']):
-            self.receiver = list(filter(lambda i: i['type'] == 'phone', self.receiver['identifiers']))[0]
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
@@ -145,18 +137,18 @@ class SimplePatternCheck(Action):
 
 
 class Update(Action):
-    def __init__(self, identifier=None, collection=None, content=None, list_name=None):
+    def __init__(self, identifier=None, content=None, list_name=None):
         self.identifier = identifier
-        self.collection = collection
         self.content = content
         self.list_name = list_name
         super().__init__()
 
     def process(self):
         db = firestore.Client()
-        doc_ref = db.collection(self.collection).document(self.identifier)
-        print('Updating {collection}/{id} with {data}'.format(collection=self.collection,
-                                                              id=self.identifier, data=self.content))
+        collection = self.identifier['type'] + 's'
+        doc_ref = db.collection(collection).document(self.identifier['value'])
+        print('Updating {collection}/{id} with {data}'.format(collection=collection, id=self.identifier['value'],
+                                                              data=self.content))
         content = json.loads(self.content.replace('\'', '"'))
         doc_ref.update({self.list_name: firestore.ArrayUnion(content)} if self.list_name else content)
 

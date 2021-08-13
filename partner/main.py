@@ -56,7 +56,7 @@ def api(request):
         doc = update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, request.json, db)
     elif request.method == 'POST':
         if sub_resource_name == 'message' and resource_id:
-            doc = send_message(resource_id, request.data.decode('utf-8'), group)
+            doc = send_message(resource_id, request.data.decode('utf-8'), group.id)
         elif request.json:
             relation = 'admin_of' if request.args.get('role') == 'admin' else 'member_of'
             doc = add_resource(resource_name, resource_id, sub_resource_name, request.json, relation, group.id, db)
@@ -111,7 +111,7 @@ def add_resource(resource_name, resource_id, sub_resource_name, resource, relati
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
 
-def send_message(person_id, content, group):
+def send_message(person_id, content, group_id):
     db = firestore.Client()
     if ':' in person_id:
         id_type, id_value = person_id.split(':', 1)
@@ -120,14 +120,13 @@ def send_message(person_id, content, group):
             return None
         receiver = {'type': id_type, 'value': id_value}
     else:
-        person_doc = db.collection('persons').document(person_id).get()
-        receiver = list(filter(lambda i: i['type'] == 'phone', person_doc.get('identifiers')))[0]
+        receiver = {'type': 'person', 'value': person_id}
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(PROJECT_ID, 'message')
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
-        'sender': group.get('identifiers')[0],
+        'sender': {'type': 'group', 'value': group_id},
         'receiver': receiver,
         'tags': [],
         'content_type': 'text/plain',

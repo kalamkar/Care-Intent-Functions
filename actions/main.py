@@ -40,26 +40,15 @@ def process(event, metadata):
     db = firestore.Client()
     context = Context()
     context.set(channel_name, message)
-    person = None
     if channel_name == 'message':
-        person_id = {'active': True}
-        person_id.update(message['sender'] if 'sender' in message else message['receiver'])
-        if 'type' in person_id and person_id['type'] == 'person':
-            person = db.collection('persons').document(person_id['value']).get()
-        else:
-            person_ref = db.collection('persons').where('identifiers', 'array_contains', person_id)
-            persons = list(person_ref.get())
-            if len(persons) > 0:
-                person = persons[0]
+        if 'sender' in message:
+            context.set('sender', get_resource(message['sender'], db))
+        if 'receiver' in message:
+            context.set('receiver', get_resource(message['receiver'], db))
     elif channel_name == 'data':
         for data in message['data']:
             context.set('data.' + data['name'], data['number'] if 'number' in data else data['value'])
-        person = db.collection('persons').document(message['source']['id']).get()
-
-    if not person:
-        return 500, 'Not ready'
-
-    context.set('sender', person.to_dict() | {'id': person.id})
+        context.set('sender', get_resource(message['source'], db))
 
     if 'dialogflow' in message :
         context.set('dialogflow', message['dialogflow'])
@@ -72,10 +61,10 @@ def process(event, metadata):
         context.set('scheduled_run', True)
         action = db.collection('groups').document(message['content']['group_id'])\
             .collection('actions').document(message['content']['action_id']).get()
-        actions = [{**(action.to_dict()), 'id': action.id,
-                   'group': db.collection('groups').document(message['content']['group_id']).get().to_dict()}]
+        group = db.collection('groups').document(message['content']['group_id']).get().to_dict()
+        actions = [action.to_dict() | {'id': action.id, 'group': group}]
     else:
-        actions = get_actions(person.id)
+        actions = get_actions([context.get('sender.id'), context.get('receiver.id')])
     bq = bigquery.Client()
     for action in actions:
         process_action(action, context, bq)
@@ -172,16 +161,34 @@ def get_latest_run_time(action_id, person_id, bq):
     return latest_run_time, latest_content_id
 
 
-def get_actions(person_id):
+def get_actions(resource_ids):
     db = firestore.Client()
     actions = json.load(open('data.json'))['actions']
-    for group_id in query.get_relatives({'type': 'person', 'value': person_id}, ['member_of'], []):
-        if not group_id or group_id['type'] != 'group':
+    ids = set()
+    for resource_id in resource_ids:
+        if not resource_id:
             continue
-        for action_doc in db.collection('groups').document(group_id['value']).collection('actions').stream():
-            action = action_doc.to_dict()
-            if 'schedule' not in action:
-                action['id'] = action_doc.id
-                action['group'] = db.collection('groups').document(group_id['value']).get().to_dict()
-                actions.append(action)
+        for group_id in query.get_relatives(resource_id, ['member_of'], []):
+            if not group_id or group_id['type'] != 'group':
+                continue
+            for action_doc in db.collection('groups').document(group_id['value']).collection('actions').stream():
+                action = action_doc.to_dict()
+                if action_doc.id not in ids:
+                    action['id'] = action_doc.id
+                    action['group'] = db.collection('groups').document(group_id['value']).get().to_dict()
+                    actions.append(action)
+                    ids.add(action_doc.id)
     return sorted(actions, key=lambda a: a['priority'], reverse=True)
+
+
+def get_resource(resource, db):
+    if not resource or type(resource) != dict or 'value' not in resource or 'type' not in resource:
+        return None
+    elif resource['type'] == 'phone':
+        person_id = resource | {'active': True}
+        persons = list(db.collection('persons').where('identifiers', 'array_contains', person_id).get())
+        return persons[0].to_dict() | {'id' : {'type': 'person', 'value': persons[0].id}} if len(persons) > 0 else None
+    elif resource['type'] in ['person', 'group']:
+        db = firestore.Client()
+        doc = db.collection(resource['type'] + 's').document(resource['value']).get()
+        return doc.to_dict() | {'id': resource}
