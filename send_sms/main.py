@@ -14,7 +14,7 @@ def send_sms(request):
     message = json.loads(base64.b64decode(request.json['message']['data']).decode('utf-8'))
     sender = get_phone(message['sender'], PHONE_NUMBER) if 'sender' in message else PHONE_NUMBER
     receiver = get_phone(message['receiver'], None) if 'receiver' in message else None
-    print(message)
+    print(message, sender, receiver)
     if not receiver or 'content' not in message or not message['content'] or type(message['content']) != str:
         return 'ERROR'
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
