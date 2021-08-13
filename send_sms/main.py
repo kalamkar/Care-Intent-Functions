@@ -12,8 +12,8 @@ PHONE_NUMBER = '+16692154466'
 
 def send_sms(request):
     message = json.loads(base64.b64decode(request.json['message']['data']).decode('utf-8'))
-    sender = get_phone(message['sender'], PHONE_NUMBER) if 'sender' in message else PHONE_NUMBER
-    receiver = get_phone(message['receiver'], None) if 'receiver' in message else None
+    sender = get_phone(message['sender'], PHONE_NUMBER, ['group']) if 'sender' in message else PHONE_NUMBER
+    receiver = get_phone(message['receiver']) if 'receiver' in message else None
     print(message, sender, receiver)
     if not receiver or 'content' not in message or not message['content'] or type(message['content']) != str:
         return 'ERROR'
@@ -22,12 +22,12 @@ def send_sms(request):
     return 'OK'
 
 
-def get_phone(resource, default):
+def get_phone(resource, default=None, resource_types=('person', 'group')):
     if not resource or type(resource) != dict or 'value' not in resource or 'type' not in resource:
         return default
     elif resource['type'] == 'phone':
         return resource['value']
-    elif resource['type'] in ['person', 'group']:
+    elif resource['type'] in resource_types:
         db = firestore.Client()
         doc = db.collection(resource['type'] + 's').document(resource['value']).get()
         ids = doc.get('identifiers')
@@ -35,3 +35,4 @@ def get_phone(resource, default):
             return default
         phones = list(filter(lambda i: i['type'] == 'phone', ids))
         return phones[0]['value'] if phones else default
+    return default
