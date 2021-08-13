@@ -140,6 +140,8 @@ def get_content(content, select, latest_content_id):
 
 
 def get_latest_run_time(action_id, resource_id, bq):
+    if not resource_id or 'type' not in resource_id or 'value' not in resource_id:
+        return None, None
     q = '''SELECT time, content FROM(
         SELECT time,
             (SELECT id FROM UNNEST(resources) 
