@@ -102,7 +102,8 @@ def process_action(action, context, bq):
             return
         params['content'] = context.render(content)
     for param_name in filter(lambda p: p != 'content', JINJA_PARAMS):
-        params[param_name] = context.render(params[param_name])
+        if param_name in params:
+            params[param_name] = context.render(params[param_name])
 
     try:
         actrun = ACTIONS[action['type']](**params)
