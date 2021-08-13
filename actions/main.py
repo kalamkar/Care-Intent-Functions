@@ -48,7 +48,7 @@ def process(event, metadata):
     elif channel_name == 'data':
         for data in message['data']:
             context.set('data', {data['name']: data['number'] if 'number' in data else data['value']})
-        context.set('sender', get_resource(message['source'], db))
+        context.set('sender', get_resource({'type': message['source']['type'], 'value': message['source']['id']}, db))
 
     if 'dialogflow' in message :
         context.set('dialogflow', message['dialogflow'])
