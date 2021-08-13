@@ -34,4 +34,4 @@ def get_phone(resource, default):
         if not ids:
             return default
         phones = list(filter(lambda i: i['type'] == 'phone', ids))
-        return phones[0] if phones else default
+        return phones[0]['value'] if phones else default
