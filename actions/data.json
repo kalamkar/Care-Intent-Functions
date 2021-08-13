@@ -64,7 +64,7 @@
     "hold_secs": 3600,
     "condition": "{{data.source.type == 'dexcom'}}",
     "params": {
-        "person_id": "$data.source.id",
+        "person_id": "$data.source.value",
         "max_threshold": 30,
         "seconds": 14400,
         "name": "glucose"

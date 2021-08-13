@@ -175,7 +175,7 @@ def add_resource(resource_name, resource_id, sub_resource_name, resource, user_i
 def get_rows(start_time, end_time, source, names):
     bq = bigquery.Client()
     query = 'SELECT time, duration, name, number, value ' \
-            'FROM {project}.live.tsdatav1, UNNEST(data) WHERE source.id = "{source}" AND name IN ({names}) ' \
+            'FROM {project}.live.data, UNNEST(data) WHERE source.value = "{source}" AND name IN ({names}) ' \
             'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
             'ORDER BY time'. \
         format(project=PROJECT_ID, source=source, names=str(names)[1:-1], start=start_time, end=end_time)

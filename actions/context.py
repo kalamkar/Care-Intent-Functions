@@ -29,13 +29,21 @@ class Context(object):
             return value
         return functions[function](value)
 
-    def history(self, var, duration='1w'):
+    def history(self, resource, var, duration='1w'):
+        if not var or not resource or type(resource) != dict:
+            return []
+        if 'id' in resource and 'value' in resource['id']:
+            source = resource['id']['value']
+        elif 'value' in resource:
+            source = resource['value']
+        else:
+            return []
         start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=query.get_duration_secs(duration))
         start_time = start_time.isoformat()
         bq = bigquery.Client()
-        q = 'SELECT number FROM {project}.live.tsdatav1, UNNEST(data) ' \
-            'WHERE name = "{name}" AND time > TIMESTAMP("{start}") ORDER BY time'. \
-            format(project=config.PROJECT_ID, name=var, start=start_time)
+        q = 'SELECT number FROM {project}.live.data, UNNEST(data) ' \
+            'WHERE source.value = "{source}" AND name = "{name}" AND time > TIMESTAMP("{start}") ORDER BY time'. \
+            format(project=config.PROJECT_ID, name=var, start=start_time, source=source)
         print(q)
         return [row['number'] for row in bq.query(q)]
 
