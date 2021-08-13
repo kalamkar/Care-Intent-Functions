@@ -23,11 +23,11 @@ def save_message(event, context):
         'content': message['content'] if 'content' in message else None,
         'tags': message['tags'] if 'tags' in message else []
     }
-    if 'sender' in message and 'type' in message['sender']:
+    if 'sender' in message and message['sender'] and 'type' in message['sender']:
         row['sender'] = {'type': message['sender']['type'], 'value': message['sender']['value']}
-    if 'receiver' in message and 'type' in message['receiver']:
+    if 'receiver' in message and message['receiver'] and 'type' in message['receiver']:
         row['receiver'] = {'type': message['receiver']['type'], 'value': message['receiver']['value']}
-    if 'dialogflow' in message:
+    if 'dialogflow' in message and message['dialogflow']:
         if 'intent' in message['dialogflow']:
             row['tags'].append(message['dialogflow']['intent'])
         if 'action' in message['dialogflow']:
