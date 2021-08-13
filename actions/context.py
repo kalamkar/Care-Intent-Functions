@@ -7,20 +7,18 @@ import query
 from inspect import getmembers, isfunction
 from google.cloud import bigquery
 
-DEFAULT = {
-    'scheduled_run': False,
-    'data': {'systolic': None, 'diastolic': None, 'glucose': None, 'medication': None},
-    'message': {'time': None, 'sender': None, 'receiver': None, 'tags': [], 'content': None},
-    'sender': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
-    'receiver': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
-    'action': {'group': None, 'id': None},
-    'dialogflow': {'intent': None, 'action': None, 'reply': None, 'confidence': None, 'params': {}}
-}
-
 
 class Context(object):
     def __init__(self):
-        self.data = DEFAULT
+        self.data = {
+            'scheduled_run': False,
+            'data': {'systolic': None, 'diastolic': None, 'glucose': None, 'medication': None},
+            'message': {'time': None, 'sender': None, 'receiver': None, 'tags': [], 'content': None},
+            'sender': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
+            'receiver': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
+            'action': {'group': None, 'id': None},
+            'dialogflow': {'intent': None, 'action': None, 'reply': None, 'confidence': None, 'params': {}}
+        }
         self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True)
         self.env.filters['history'] = self.history
         self.env.filters['np'] = self.numpy
