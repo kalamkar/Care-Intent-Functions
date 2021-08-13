@@ -70,7 +70,8 @@ def handle_provider(body):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
     last_sync = provider['last_sync'] if 'last_sync' in provider else None
-    for row in PROVIDERS[body['provider']](provider['access_token'], last_sync, person_ref.id):
+    source_id = {'type': 'person', 'value': person_ref.id}
+    for row in PROVIDERS[body['provider']](provider['access_token'], last_sync, source_id):
         row_time = dateutil.parser.parse(row['time']).astimezone(pytz.UTC)
         last_sync = max(row_time, last_sync) if last_sync else row_time
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))

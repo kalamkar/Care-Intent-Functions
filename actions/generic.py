@@ -165,7 +165,8 @@ class DataExtract(Action):
 
         row = {
             'time': datetime.datetime.utcnow().isoformat(),
-            'source': {'type': 'person', 'id': self.person_id},
+            'source': {'type': 'person', 'value': self.person_id},
+            'tags': ['self'],
             'data': []
         }
         for name, value in self.params.items():

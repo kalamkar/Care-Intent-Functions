@@ -19,10 +19,11 @@ def get_dexcom_data(access_token, last_sync, source_id):
     for reading in response.json()['egvs']:
         egvs.append({
             'time': reading['systemTime'],
-            'source': {'type': 'dexcom', 'id': source_id},
+            'source': source_id,
             'data': [{'name': 'glucose', 'number': reading['value']},
                      {'name': 'trend', 'value': reading['trend']},
-                     {'name': 'trendRate', 'number': reading['trendRate']}]
+                     {'name': 'trendRate', 'number': reading['trendRate']}],
+            'tags': ['dexcom']
         })
     return egvs
 
@@ -59,7 +60,8 @@ def get_google_data(access_token, last_sync, source_id):
             rows.append({
                 'time': start.isoformat(),
                 'duration': duration.total_seconds(),
-                'source': {'type': 'gfit', 'id': source_id},
-                'data': [{'name': 'steps', 'number': points[0]['value'][0]['intVal']}]
+                'source': source_id,
+                'data': [{'name': 'steps', 'number': points[0]['value'][0]['intVal']}],
+                'tags': ['gfit']
         })
     return rows
