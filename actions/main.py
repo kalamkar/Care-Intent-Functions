@@ -71,11 +71,11 @@ def process(event, metadata):
 
 
 def process_action(action, context, bq):
-    person_id = context.get('sender.id')
+    resource_id = context.get('sender.id') or context.get('receiver.id')
     context.set('action', action)
     latest_run_time, latest_content_id = None, None
     if 'hold_secs' in action or ('content_select' in action and action['content_select'] != 'random'):
-        latest_run_time, latest_content_id = get_latest_run_time(action['id'], person_id, bq)
+        latest_run_time, latest_content_id = get_latest_run_time(action['id'], resource_id, bq)
     if 'hold_secs' in action:
         threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
         if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
@@ -111,8 +111,7 @@ def process_action(action, context, bq):
         print(actrun.output)
         context.update(actrun.output)
         log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
-               'resources': [{'type': 'person', 'id': person_id},
-                             {'type': 'action', 'id': action['id']}]}
+               'resources': [resource_id, {'type': 'action', 'id': action['id']}]}
         if content_id:
             log['resources'].append({'type': 'content', 'id': content_id})
         errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
@@ -140,20 +139,21 @@ def get_content(content, select, latest_content_id):
     return content[i]['message'], content[i]['id'] if 'id' in content[i] else None
 
 
-def get_latest_run_time(action_id, person_id, bq):
+def get_latest_run_time(action_id, resource_id, bq):
     q = '''SELECT time, content FROM(
         SELECT time,
             (SELECT id FROM UNNEST(resources) 
                 WHERE type = "action") AS action,
             (SELECT id FROM UNNEST(resources) 
-                WHERE type = "person") AS person,
+                WHERE type = "{resource_type}") AS resource,
             (SELECT id FROM UNNEST(resources) 
                 WHERE type = "content") AS content
         FROM `{project}.live.log`
         WHERE type = "action.run"
     )
-    WHERE action = "{action_id}" AND person = "{person_id}"
-    ORDER BY time DESC LIMIT 1'''.format(person_id=person_id, action_id=action_id, project=config.PROJECT_ID)
+    WHERE action = "{action_id}" AND resource = "{resource_id}"
+    ORDER BY time DESC LIMIT 1'''.format(resource_type=resource_id['type'], resource_id=resource_id['value'],
+                                         action_id=action_id, project=config.PROJECT_ID)
     latest_run_time = None
     latest_content_id = None
     for row in bq.query(q):
