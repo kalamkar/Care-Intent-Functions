@@ -79,6 +79,8 @@ class Context(object):
                 return self.data[tokens[0]][tokens[1]][tokens[2]][tokens[3]]
         except KeyError:
             return None
+        except TypeError:
+            return None
         return None
 
     def update(self, patch):
