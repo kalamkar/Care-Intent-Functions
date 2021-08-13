@@ -26,11 +26,11 @@ class Message(Action):
         self.sender = sender
         self.content = content
         self.queue = queue
-        self.tags = []
+        self.tags = ['source:action']
         if type(tags) == list:
-            self.tags = tags
+            self.tags.extend(tags)
         elif type(tags) == str:
-            self.tags = tags.split(',')
+            self.tags.extend(tags.split(','))
         super().__init__()
 
     def process(self):

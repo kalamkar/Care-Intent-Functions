@@ -126,7 +126,7 @@ def signup(request, _):
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'receiver': contact,
-        'tags': [],
+        'tags': ['source:auth'],
         'content_type': 'text/plain',
         'content': 'Verify signup %s' % url
     }

@@ -51,7 +51,7 @@ def handle_scheduled(body):
         data = {
             'time': datetime.datetime.utcnow().isoformat(),
             'sender': member,
-            'tags': [],
+            'tags': ['source:schedule'],
             'content_type': 'application/json',
             'content': {'group_id': group_id, 'action_id': action_id}
         }

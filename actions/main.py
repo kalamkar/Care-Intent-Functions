@@ -106,6 +106,7 @@ def process_action(action, context, bq):
             params[param_name] = context.render(params[param_name])
 
     try:
+        print('Running action {type} {id}'.format(type=action['type'], id=action['id']))
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
         print(actrun.output)

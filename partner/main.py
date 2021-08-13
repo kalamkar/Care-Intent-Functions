@@ -128,7 +128,7 @@ def send_message(person_id, content, group_id):
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': 'group', 'value': group_id},
         'receiver': receiver,
-        'tags': [],
+        'tags': ['source:partner'],
         'content_type': 'text/plain',
         'content': content
     }

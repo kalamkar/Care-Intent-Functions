@@ -35,6 +35,7 @@
     "params": {
         "receiver": "$message.sender",
         "sender": "$message.receiver",
+        "tags": "action:$action.id",
         "content": "{{ dialogflow.reply }}, {{ sender.name.first }}"
     }
 }, {
