@@ -13,7 +13,7 @@
     "priority": 1,
     "condition": "{{message.dialogflow.intent == 'food.end'}}",
     "params": {
-        "content": "{{ dialogflow.reply }}",
+        "content": "{{ message.dialogflow.reply }}",
         "receiver": "$message.sender",
         "sender": "$message.receiver"
     }
@@ -24,7 +24,7 @@
     "condition": "{{message.dialogflow.action.startswith('smalltalk')}}",
     "params": {
         "sender": "$message.receiver",
-        "content": "{{ dialogflow.reply }}",
+        "content": "{{ message.dialogflow.reply }}",
         "receiver": "$message.sender"
     }
 }, {
@@ -36,7 +36,7 @@
         "receiver": "$message.sender",
         "sender": "$message.receiver",
         "tags": "action:$action.id",
-        "content": "{{ dialogflow.reply }}, {{ sender.name.first }}"
+        "content": "{{ message.dialogflow.reply }}, {{ sender.name.first }}"
     }
 }, {
     "id": "Qx5DH1cjtQIZUJJbwzyB",
@@ -93,7 +93,7 @@
     "priority": 1,
     "condition": "{{message.dialogflow.intent == 'system.welcome' and not sender.name}}",
     "params": {
-        "content": "{{ dialogflow.reply }} I am Ezra, what is your name?",
+        "content": "{{ message.dialogflow.reply }} I am Ezra, what is your name?",
         "receiver": "$message.sender",
         "sender": "$message.receiver"
     }
@@ -112,7 +112,7 @@
     "priority": 1,
     "condition": "{{message.dialogflow.action == 'food.report'}}",
     "params": {
-        "content": "{{ dialogflow.reply }}",
+        "content": "{{ message.dialogflow.reply }}",
         "sender": "$message.receiver",
         "receiver": "$message.sender"
     }

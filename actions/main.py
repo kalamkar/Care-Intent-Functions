@@ -50,9 +50,7 @@ def process(event, metadata):
             context.set('data', {data['name']: data['number'] if 'number' in data else data['value']})
         context.set('sender', get_resource({'type': message['source']['type'], 'value': message['source']['id']}, db))
 
-    if 'dialogflow' in message :
-        context.set('dialogflow', message['dialogflow'])
-
+    add_shorthands(context)
     if channel_name == 'message' and message['content_type'] == 'application/json'\
             and 'action_id' in message['content']:
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
@@ -195,3 +193,12 @@ def get_resource(resource, db):
         db = firestore.Client()
         doc = db.collection(resource['type'] + 's').document(resource['value']).get()
         return doc.to_dict() | {'id': resource}
+
+
+def add_shorthands(context):
+    sender = context.get('sender')
+    receiver = context.get('receiver')
+    if receiver and type(receiver) == dict and 'id' in receiver and receiver['id']['type'] == 'person':
+        context.set('person', receiver)
+    elif sender and type(sender) == dict and 'id' in sender and sender['id']['type'] == 'person':
+        context.set('person', sender)
