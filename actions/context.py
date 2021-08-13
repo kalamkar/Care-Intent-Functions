@@ -94,12 +94,15 @@ def merge(destination, source):
     >>> merge(b, a) == { 'first' : { 'all_rows' : { 'pass' : 'dog', 'fail' : 'cat', 'number' : '5' } } }
     True
     """
+    print(destination, source)
     for key, value in source.items():
+        print(key, value)
         if isinstance(value, dict):
             # get node or create one
-            node = destination.setdefault(key, {})
+            if key not in destination or not destination[key]:
+                destination[key] = {}
+            node = destination[key]
             merge(node, value)
         else:
             destination[key] = value
-
     return destination
