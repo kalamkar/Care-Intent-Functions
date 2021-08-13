@@ -118,7 +118,7 @@ class SimplePatternCheck(Action):
 
     def process(self):
         client = bigquery.Client()
-        query = 'SELECT DISTINCT time, number FROM careintent.live.data, UNNEST(data) ' \
+        query = 'SELECT DISTINCT time, number FROM careintent.live.tsdata, UNNEST(data) ' \
                 'WHERE source.value = "{source}" AND name = "{name}" ' \
                 'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
                 'ORDER BY time'.\

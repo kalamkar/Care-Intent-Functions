@@ -41,7 +41,7 @@ class Context(object):
         start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=query.get_duration_secs(duration))
         start_time = start_time.isoformat()
         bq = bigquery.Client()
-        q = 'SELECT number FROM {project}.live.data, UNNEST(data) ' \
+        q = 'SELECT number FROM {project}.live.tsdata, UNNEST(data) ' \
             'WHERE source.value = "{source}" AND name = "{name}" AND time > TIMESTAMP("{start}") ORDER BY time'. \
             format(project=config.PROJECT_ID, name=var, start=start_time, source=source)
         print(q)

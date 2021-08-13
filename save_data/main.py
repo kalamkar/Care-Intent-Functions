@@ -17,7 +17,7 @@ def save_data(event, context):
     print(data)
 
     client = bigquery.Client()
-    table_id = '%s.live.data' % PROJECT_ID
+    table_id = '%s.live.tsdata' % PROJECT_ID
     errors = client.insert_rows_json(table_id, [data])
     if errors:
         print(errors)
