@@ -83,13 +83,7 @@ def process_action(action, context, bq):
     if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
         return
 
-    params = {}
-    for name, value in action['params'].items():
-        variables = re.findall(r'\$[a-z-_.]+', value) if name not in JINJA_PARAMS and type(value) == str else []
-        for var in variables:
-            value = context.get(var[1:]) if value == var else value.replace(var, context.get(var[1:]))
-        params[name] = value
-
+    params = get_context_params(action['params'], context)
     content_id, content = None, None
     if 'content' in params:
         selection = action['content_select'] if 'content_select' in action else 'random'
@@ -203,3 +197,22 @@ def add_shorthands(context):
         context.set('person', receiver)
     elif sender and type(sender) == dict and 'id' in sender and sender['id']['type'] == 'person':
         context.set('person', sender)
+
+
+def get_context_params(action_params, context):
+    params = {}
+    for name, value in action_params.items():
+        variables = re.findall(r'\$[a-z-_.]+', value) if (name not in JINJA_PARAMS) and (type(value) == str) else []
+        for var in variables:
+            context_value = context.get(var[1:])
+            if value == var:
+                value = context_value
+            elif type(context_value) == str:
+                value = value.replace(var, context_value)
+            else:
+                try:
+                    value = json.loads(value.replace(var, json.dumps(context_value)))
+                except Exception as ex:
+                    print(ex)
+        params[name] = value
+    return params
