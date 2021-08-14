@@ -1,11 +1,11 @@
 import base64
 
+import common
 import config
 import datetime
 import generic
 import json
 import pytz
-import query
 import re
 import random
 import traceback
@@ -165,7 +165,7 @@ def get_actions(resource_ids):
     for resource_id in resource_ids:
         if not resource_id:
             continue
-        for group_id in query.get_relatives(resource_id, ['member_of'], []):
+        for group_id in common.get_relatives(resource_id, ['member_of'], []):
             if not group_id or group_id['type'] != 'group':
                 continue
             for action_doc in db.collection('groups').document(group_id['value']).collection('actions').stream():
