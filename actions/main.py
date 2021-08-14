@@ -61,6 +61,7 @@ def process(event, metadata):
         actions = [action.to_dict() | {'id': action.id, 'group': group}]
     else:
         actions = get_actions([context.get('sender.id'), context.get('receiver.id')])
+    print('Context', context.data)
     bq = bigquery.Client()
     for action in actions:
         process_action(action, context, bq)
@@ -97,7 +98,7 @@ def process_action(action, context, bq):
             params[param_name] = context.render(params[param_name])
 
     try:
-        print(context.data)
+        print('Triggering ', action)
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
         print(actrun.output)
