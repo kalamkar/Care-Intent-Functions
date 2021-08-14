@@ -6,3 +6,4 @@ google-cloud-pubsub
 numpy
 python-dateutil
 PyCryptodome
+sendgrid

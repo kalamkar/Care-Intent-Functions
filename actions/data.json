@@ -107,6 +107,18 @@
         "receiver": "$sender.id"
     }
 }, {
+    "id": "I8xSKHq_QLSgUVg89st62Q",
+    "type": "Webhook",
+    "priority": 1,
+    "condition": "{{data.systolic < 50 or 200 < data.systolic or data.diastolic < 40 or 150 < data.diastolic}}",
+    "params": {
+        "content": "please take again",
+        "receiver": "$sender.id",
+        "name" : "bp.invalid",
+        "text" : "Invalid bp values received",
+        "data" : "{'member': $person}"
+    }
+}, {
     "id": "aZ4Oc5gspNy85fntVzJh",
     "type": "Message",
     "priority": 1,

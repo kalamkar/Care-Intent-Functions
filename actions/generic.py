@@ -11,6 +11,10 @@ from google.cloud import firestore
 from google.cloud import pubsub_v1
 from urllib.parse import urlencode
 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Content
+from sendgrid.helpers.mail import Mail
+
 
 class Action(object):
     def __init__(self):
@@ -210,4 +214,7 @@ class Webhook(Action):
             'text': self.text,
             'data': self.data
         }
-        requests.post(self.url, body, headers=headers)
+        # requests.post(self.url, body, headers=headers)
+        message = Mail(from_email='support@careintent.com', to_emails='support@careintent.com',
+                       subject='Webhook: ' + self.name, plain_text_content=Content('text/plain', json.dumps(body)))
+        SendGridAPIClient('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').send(message)

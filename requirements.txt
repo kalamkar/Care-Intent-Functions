@@ -12,4 +12,5 @@ jinja2
 numpy
 python-dateutil
 requests
+sendgrid
 twilio
