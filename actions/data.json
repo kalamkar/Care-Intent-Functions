@@ -112,6 +112,7 @@
     "priority": 1,
     "condition": "{{data.systolic < 50 or 200 < data.systolic or data.diastolic < 40 or 150 < data.diastolic}}",
     "params": {
+        "url": "http://www.google.com",
         "name" : "bp.invalid",
         "text" : "Invalid bp values received",
         "data" : "{'member': $person}"
