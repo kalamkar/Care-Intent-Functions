@@ -1,0 +1,8 @@
+steps:
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  args: [
+      'gcloud', 'functions', 'deploy', 'send-sms', '--source', 'send_sms', '--entry-point', 'send_sms',
+      '--runtime', 'python39', '--env-vars-file', 'env.yaml',
+      '--security-level', 'secure-always'
+  ]
+  timeout: '600s'
