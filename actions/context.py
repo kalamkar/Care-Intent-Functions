@@ -1,8 +1,8 @@
+import common
 import config
 import datetime
 import jinja2
 import numpy as np
-import query
 
 from inspect import getmembers, isfunction
 from google.cloud import bigquery
@@ -39,7 +39,7 @@ class Context(object):
             source = resource['value']
         else:
             return []
-        start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=query.get_duration_secs(duration))
+        start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=common.get_duration_secs(duration))
         start_time = start_time.isoformat()
         bq = bigquery.Client()
         q = 'SELECT number FROM {project}.live.tsdata, UNNEST(data) ' \
