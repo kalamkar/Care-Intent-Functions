@@ -115,7 +115,7 @@
         "url": "http://www.google.com",
         "name" : "bp.invalid",
         "text" : "Invalid bp values received",
-        "data" : "{'member': $person}"
+        "data" : "{\"member\": $person}"
     }
 }, {
     "id": "aZ4Oc5gspNy85fntVzJh",
