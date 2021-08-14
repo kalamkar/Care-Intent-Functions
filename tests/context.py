@@ -21,3 +21,7 @@ class ContextTestCase(unittest.TestCase):
                                 'dialogflow': {'intent': 'system.welcome', 'action': 'input.welcome',
                                                'reply': 'Greetings! How can I assist?', 'confidence': 100,
                                                'params': {}}})
+        self.assertEqual('hi', context.get('message.content'))
+        context.clear('message')
+        self.assertEqual(None, context.get('message.content'))
+        context.clear('foo')

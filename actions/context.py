@@ -13,11 +13,12 @@ class Context(object):
         self.data = {
             'scheduled_run': False,
             'data': {'systolic': None, 'diastolic': None, 'glucose': None, 'medication': None},
-            'message': {'time': None, 'sender': None, 'receiver': None, 'tags': [], 'content': None},
+            'message': {'time': None, 'sender': None, 'receiver': None, 'tags': [], 'content': None,
+                        'dialogflow': {'intent': None, 'action': None, 'reply': None, 'confidence': None,
+                                       'params': {}}},
             'sender': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
             'receiver': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
-            'action': {'group': None, 'id': None},
-            'dialogflow': {'intent': None, 'action': None, 'reply': None, 'confidence': None, 'params': {}}
+            'action': {'group': None, 'id': None}
         }
         self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True)
         self.env.filters['history'] = self.history
@@ -71,6 +72,10 @@ class Context(object):
                 if param in value:
                     del value[param]
         merge(self.data, {name: value})
+
+    def clear(self, name):
+        if name in self.data:
+            del self.data[name]
 
     def get(self, name):
         tokens = name.split('.') if name else []

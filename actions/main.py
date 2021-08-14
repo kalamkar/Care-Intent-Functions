@@ -68,6 +68,7 @@ def process(event, metadata):
 
 def process_action(action, context, bq):
     resource_id = context.get('sender.id') or context.get('receiver.id')
+    context.clear('action')
     context.set('action', action)
     latest_run_time, latest_content_id = None, None
     if 'hold_secs' in action or ('content_select' in action and action['content_select'] != 'random'):
