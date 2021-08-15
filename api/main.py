@@ -14,7 +14,8 @@ JSON_CACHE_SECONDS = 600
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
                  'Access-Control-Allow-Credentials', 'X-Requested-With']
-COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'schedule': 'schedules'}
+COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'schedule': 'schedules',
+               'member': 'members', 'admin': 'admins'}
 
 
 def api(request):
@@ -65,7 +66,7 @@ def api(request):
 
     doc = None
     if request.method == 'GET' and sub_resource_name in ['member', 'admin']:
-        doc = query(resource_name, resource_id, sub_resource_name)
+        doc = query(resource_name, resource_id, sub_resource_name, sub_resource_id)
     elif request.method == 'GET' and resource_name == 'person' and sub_resource_name == 'data' and resource_id:
         start_time, end_time = get_start_end_times(request)
         doc = {'results': get_rows(start_time, end_time, resource_id, request.args.getlist('name'))}
@@ -102,20 +103,23 @@ def api(request):
     return response
 
 
-def query(resource_name, resource_id, sub_resource_name):
+def query(resource_name, resource_id, sub_resource_name, sub_resource_id):
     if resource_name != 'group':
         return None
 
     results = []
     db = firestore.Client()
-    if sub_resource_name == 'member':
-        for collection in ['persons', 'groups']:
-            q = db.collection(collection).where('groups', 'array_contains', resource_id)
-            results.extend([get_document_json(doc, 'person') for doc in q.stream()])
-    elif sub_resource_name == 'admin':
-        for admin in db.collection(COLLECTIONS[resource_name]).document(resource_id).get().get('admins'):
-            doc = db.collection(COLLECTIONS[admin['id']['type']]).document(admin['id']['value']).get()
-            results.append(get_document_json(doc, 'person'))
+    if sub_resource_id and (not resource_id or resource_id in ['any', 'all']):
+        # Get all the parents of the sub_resource_name:sub_resource_id
+        relation_query = db.collection_group(COLLECTIONS[sub_resource_name]).where('id.value', '==', sub_resource_id)
+        for relative in relation_query.stream():
+            results.append(get_document_json(relative.reference.parent.parent.get(), 'group'))
+    elif resource_id and (not sub_resource_id or sub_resource_id in ['any', 'all']):
+        # Get all the children
+        relation_query = db.collection(COLLECTIONS[resource_name]).document(resource_id).collection(sub_resource_name)
+        for doc in relation_query.stream():
+            relative = db.collection(COLLECTIONS[doc.get('id.type')]).document(doc.get('id.value')).get()
+            results.append(get_document_json(relative, doc.get('id.type')))
     return {'results': results}
 
 
@@ -124,12 +128,8 @@ def add_relation(resource_name, resource_id, sub_resource_name, identifier):
         return None
 
     db = firestore.Client()
-    if sub_resource_name == 'member':
-        doc_ref = db.collection(COLLECTIONS[identifier['type']]).document(identifier['value'])
-        doc_ref.update({'groups': firestore.ArrayUnion([resource_id])})
-    elif sub_resource_name == 'admin' and identifier['type'] == 'person':
-        doc_ref = db.collection(COLLECTIONS[resource_name]).document(resource_id)
-        doc_ref.update({'admins': firestore.ArrayUnion([{'id': identifier}])})
+    db.collection(COLLECTIONS[resource_name]).document(resource_id).collection(COLLECTIONS[sub_resource_name])\
+        .document(identifier['type'] + ':' + identifier['value']).set({'id': identifier})
     return {'status': 'ok'}
 
 
