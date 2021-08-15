@@ -1,3 +1,4 @@
+import common
 import config
 import croniter
 import datetime
@@ -5,7 +6,6 @@ import dateutil.parser
 import providers
 import json
 import pytz
-import query
 import requests
 import sys
 
@@ -44,7 +44,7 @@ def handle_scheduled(body):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
-    members = query.get_relatives([], ['member_of'], {'type': 'group', 'value': group_id})
+    members = common.get_relatives([], ['member_of'], {'type': 'group', 'value': group_id})
     for member in members:
         if member['type'] != 'person':
             continue
