@@ -15,7 +15,6 @@ ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Co
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
                  'Access-Control-Allow-Credentials', 'X-Requested-With']
 COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'schedule': 'schedules'}
-RELATION_TYPES = ['member_of', 'admin_of']
 
 
 def api(request):
@@ -65,12 +64,9 @@ def api(request):
         return response
 
     doc = None
-    if request.method == 'GET' and sub_resource_name == 'relation' and resource_id:
-        resource = {'type': resource_name, 'value': resource_id}
-        relation_type = request.args.get('relation_type')
-        resource_type = request.args.get('resource_type')
-        doc = query(resource, relation_type, resource_type)
-    elif request.method == 'GET' and resource_name == 'person' and resource_id and sub_resource_name == 'data':
+    if request.method == 'GET' and sub_resource_name in ['member', 'admin']:
+        doc = query(resource_name, resource_id, sub_resource_name)
+    elif request.method == 'GET' and resource_name == 'person' and sub_resource_name == 'data' and resource_id:
         start_time, end_time = get_start_end_times(request)
         doc = {'results': get_rows(start_time, end_time, resource_id, request.args.getlist('name'))}
     elif request.method == 'GET' and resource_id and sub_resource_name and not sub_resource_id:
@@ -86,8 +82,8 @@ def api(request):
     elif request.method == 'PATCH' and resource_id:
         doc = update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, request.json, db)
     elif request.method == 'POST' and request.json:
-        if resource_name == 'relation':
-            doc = add_relation(request.json)
+        if sub_resource_name in ['member', 'admin'] and resource_id and sub_resource_name:
+            doc = add_relation(resource_name, resource_id, sub_resource_name, request.json)
         elif sub_resource_name == 'message' and resource_id:
             doc = send_message(resource_id, request.json, user)
         else:
@@ -106,26 +102,34 @@ def api(request):
     return response
 
 
-def query(resource, relation_type, resource_type):
-    result_type = 'target' if resource_type == 'source' else 'source'
+def query(resource_name, resource_id, sub_resource_name):
+    if resource_name != 'group':
+        return None
+
     results = []
     db = firestore.Client()
-    for relation in db.collection('relations')\
-            .where(resource_type, '==', resource).where('type', '==', relation_type).get():
-        result_id = relation.get(result_type)
-        doc = db.collection(result_id['type'] + 's').document(result_id['value']).get()
-        results.append(get_document_json(doc, result_id['type']))
-
+    if sub_resource_name == 'member':
+        for collection in ['persons', 'groups']:
+            q = db.collection(collection).where('groups', 'array_contains', resource_id)
+            results.extend([get_document_json(doc, 'person') for doc in q.stream()])
+    elif sub_resource_name == 'admin':
+        for admin in db.collection(COLLECTIONS[resource_name]).document(resource_id).get().get('admins'):
+            doc = db.collection(COLLECTIONS[admin['id']['type']]).document(admin['id']['value']).get()
+            results.append(get_document_json(doc, 'person'))
     return {'results': results}
 
 
-def add_relation(relation):
-    if 'source' not in relation or 'target' not in relation or 'type' not in relation\
-            or relation['type'] not in RELATION_TYPES:
+def add_relation(resource_name, resource_id, sub_resource_name, identifier):
+    if 'type' not in identifier or 'value' not in identifier or resource_name != 'group':
         return None
 
     db = firestore.Client()
-    db.collection('relations').document(generate_id()).set(relation)
+    if sub_resource_name == 'member':
+        doc_ref = db.collection(COLLECTIONS[identifier['type']]).document(identifier['value'])
+        doc_ref.update({'groups': firestore.ArrayUnion([resource_id])})
+    elif sub_resource_name == 'admin' and identifier['type'] == 'person':
+        doc_ref = db.collection(COLLECTIONS[resource_name]).document(resource_id)
+        doc_ref.update({'admins': firestore.ArrayUnion([{'id': identifier}])})
     return {'status': 'ok'}
 
 
