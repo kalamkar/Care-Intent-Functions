@@ -104,19 +104,18 @@ def api(request):
 
 
 def query(resource_name, resource_id, sub_resource_name, sub_resource_id):
-    if resource_name != 'group':
-        return None
-
     results = []
     db = firestore.Client()
     if sub_resource_id and (not resource_id or resource_id in ['any', 'all']):
         # Get all the parents of the sub_resource_name:sub_resource_id
         relation_query = db.collection_group(COLLECTIONS[sub_resource_name]).where('id.value', '==', sub_resource_id)
         for relative in relation_query.stream():
-            results.append(get_document_json(relative.reference.parent.parent.get(), 'group'))
-    elif resource_id and (not sub_resource_id or sub_resource_id in ['any', 'all']):
+            parent = relative.reference.parent.parent.get()
+            results.append(get_document_json(parent, parent.reference.path.split('/')[0][:-1]))
+    elif resource_id and (not sub_resource_id or sub_resource_id in ['any', 'all']) and resource_name == 'group':
         # Get all the children
-        relation_query = db.collection(COLLECTIONS[resource_name]).document(resource_id).collection(sub_resource_name)
+        relation_query = db.collection(COLLECTIONS[resource_name]).document(resource_id)\
+            .collection(COLLECTIONS[sub_resource_name])
         for doc in relation_query.stream():
             relative = db.collection(COLLECTIONS[doc.get('id.type')]).document(doc.get('id.value')).get()
             results.append(get_document_json(relative, doc.get('id.type')))
