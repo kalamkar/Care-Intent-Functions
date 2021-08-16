@@ -184,7 +184,11 @@ def get_resource(resource, db):
     elif resource['type'] == 'phone':
         person_id = resource | {'active': True}
         persons = list(db.collection('persons').where('identifiers', 'array_contains', person_id).get())
-        return persons[0].to_dict() | {'id' : {'type': 'person', 'value': persons[0].id}} if len(persons) > 0 else None
+        if len(persons) > 0:
+            return persons[0].to_dict() | {'id': {'type': 'person', 'value': persons[0].id}}
+        else:
+            groups = list(db.collection('groups').where('identifiers', 'array_contains', resource).get())
+            return (groups[0].to_dict() | {'id': {'type': 'group', 'value': groups[0].id}}) if groups else None
     elif resource['type'] in ['person', 'group']:
         db = firestore.Client()
         doc = db.collection(resource['type'] + 's').document(resource['value']).get()
