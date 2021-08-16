@@ -43,8 +43,9 @@ class Context(object):
         start_time = start_time.isoformat()
         bq = bigquery.Client()
         q = 'SELECT number FROM {project}.live.tsdata, UNNEST(data) ' \
-            'WHERE source.value = "{source}" AND name = "{name}" AND time > TIMESTAMP("{start}") ORDER BY time'. \
-            format(project=config.PROJECT_ID, name=var, start=start_time, source=source)
+            'WHERE source.value = "{source}" AND name = "{name}" AND time > TIMESTAMP("{start}") ' \
+            'AND number IS NOT NULL ' \
+            'ORDER BY time'.format(project=config.PROJECT_ID, name=var, start=start_time, source=source)
         print(q)
         data = [row['number'] for row in bq.query(q)]
         print(data)

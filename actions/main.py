@@ -77,8 +77,8 @@ def process_action(action, context, bq):
     if 'hold_secs' in action:
         threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
         if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
-            print('Skipping {action} recently run at {runtime}'.format(action=action['type'],
-                                                                       runtime=latest_run_time))
+            print('Skipping {type} {id} recently run at {runtime}'.format(type=action['type'], id=action['id'],
+                                                                          runtime=latest_run_time))
             return
 
     if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
