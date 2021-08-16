@@ -83,7 +83,7 @@ def api(request):
     elif request.method == 'PATCH' and resource_id:
         doc = update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, request.json, db)
     elif request.method == 'POST' and request.json:
-        if sub_resource_name in ['member', 'admin'] and resource_id and sub_resource_name:
+        if sub_resource_name in ['member', 'admin'] and resource_id:
             doc = add_relation(resource_name, resource_id, sub_resource_name, request.json)
         elif sub_resource_name == 'message' and resource_id:
             doc = send_message(resource_id, request.json, user)
@@ -149,6 +149,12 @@ def update_resource(resource_name, resource_id, sub_resource_name, sub_resource_
     doc_ref = db.collection(COLLECTIONS[resource_name]).document(resource_id)
     if sub_resource_name and sub_resource_id:
         doc_ref = doc_ref.collection(COLLECTIONS[sub_resource_name]).document(sub_resource_id)
+    elif resource_name == 'person' and 'identifiers' in resource:
+        # Check if the new identifiers exist for someone else
+        for person in db.collection('persons')\
+                .where('identifiers', 'array_contains_any', resource['identifiers']).stream():
+            if person.reference.path != doc_ref:
+                return None
     doc_ref.update(resource)
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
@@ -167,11 +173,9 @@ def add_resource(resource_name, resource_id, sub_resource_name, resource, user_i
     doc_id = generate_id()
     doc_ref = collection.document(doc_id)
     doc_ref.set(resource)
-    db.collection('relations').document(generate_id()).set({
-        'source': {'type': 'person', 'value': user_id},
-        'target': {'type': resource_name, 'value': doc_id},
-        'type': 'created'
-    })
+    if resource_name == 'group' and not resource_id:
+        db.collection(COLLECTIONS[resource_name]).document(doc_id).collection('admins')\
+            .document('person:' + user_id).set({'id': {'type': 'person', 'value': user_id}})
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
 
