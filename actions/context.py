@@ -46,7 +46,9 @@ class Context(object):
             'WHERE source.value = "{source}" AND name = "{name}" AND time > TIMESTAMP("{start}") ORDER BY time'. \
             format(project=config.PROJECT_ID, name=var, start=start_time, source=source)
         print(q)
-        return [row['number'] for row in bq.query(q)]
+        data = [row['number'] for row in bq.query(q)]
+        print(data)
+        return data
 
     def evaluate(self, expression):
         try:
