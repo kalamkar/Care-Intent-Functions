@@ -1,13 +1,4 @@
 {"actions": [{
-    "id": "04rnCmZCWwwk0aohQaZJ",
-    "type": "Update",
-    "priority": 1,
-    "condition": "{{message.dialogflow.intent == 'system.welcome' and sender.name == None}}",
-    "params": {
-        "content": "{'dialogflow': {'context': {'name': 'setup_name', 'lifespan': 1}}}",
-        "identifier": "$sender.id"
-    }
-}, {
     "id": "2yULpJaMPlzCt7O5wLVW",
     "type": "Message",
     "priority": 1,
@@ -16,27 +7,6 @@
         "content": "{{ message.dialogflow.reply }}",
         "receiver": "$message.sender",
         "sender": "$message.receiver"
-    }
-}, {
-    "id": "LCUPdM6q5tFV2rdu0Ufx",
-    "type": "Message",
-    "priority": 1,
-    "condition": "{{message.dialogflow.action.startswith('smalltalk')}}",
-    "params": {
-        "sender": "$message.receiver",
-        "content": "{{ message.dialogflow.reply }}",
-        "receiver": "$message.sender"
-    }
-}, {
-    "id": "M3Fmlhjv4Az1d4vn5XDs",
-    "type": "Message",
-    "priority": 1,
-    "condition": "{{message.dialogflow.intent == 'system.welcome' and sender.name != None}}",
-    "params": {
-        "receiver": "$message.sender",
-        "sender": "$message.receiver",
-        "tags": "action:$action.id",
-        "content": "{{ message.dialogflow.reply }}, {{ sender.name.first }}"
     }
 }, {
     "id": "Qx5DH1cjtQIZUJJbwzyB",
@@ -88,36 +58,6 @@
         "receiver": "$sender.id"
     }
 }, {
-    "id": "XtUYsSJEWCCuJlQYE8Wr",
-    "type": "Message",
-    "priority": 1,
-    "condition": "{{message.dialogflow.intent == 'system.welcome' and not sender.name}}",
-    "params": {
-        "content": "{{ message.dialogflow.reply }} I am Ezra, what is your name?",
-        "receiver": "$message.sender",
-        "sender": "$message.receiver"
-    }
-}, {
-    "id": "eySLlRqdQH6dNaqsu34C_Q",
-    "type": "Message",
-    "priority": 1,
-    "condition": "{{data.systolic < 50 or 200 < data.systolic or data.diastolic < 40 or 150 < data.diastolic}}",
-    "params": {
-        "content": "please take again",
-        "receiver": "$sender.id"
-    }
-}, {
-    "id": "I8xSKHq_QLSgUVg89st62Q",
-    "type": "Webhook",
-    "priority": 1,
-    "condition": "{{data.systolic < 50 or 200 < data.systolic or data.diastolic < 40 or 150 < data.diastolic}}",
-    "params": {
-        "url": "http://www.google.com",
-        "name" : "bp.invalid",
-        "text" : "Invalid bp values received",
-        "data" : "{\"member\": $person}"
-    }
-}, {
     "id": "aZ4Oc5gspNy85fntVzJh",
     "type": "Message",
     "priority": 1,
@@ -165,15 +105,6 @@
         "content": "Visit {{ oauth.url }}",
         "receiver": "$message.sender",
         "sender": "$message.receiver"
-    }
-}, {
-    "id": "zmrG5CweQGygxi9NPmbJmQ",
-    "type": "DataExtract",
-    "priority": 1,
-    "condition": "{{message.dialogflow.intent == 'biomarker.report.bp'}}",
-    "params": {
-        "params": "$message.dialogflow.params",
-        "person_id": "$sender.id.value"
     }
 }, {
     "id": "skNVAa3cTkaLw9BpFVg__Q",
