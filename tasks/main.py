@@ -44,9 +44,8 @@ def handle_scheduled(body):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
-    members = common.get_relatives([], ['member_of'], {'type': 'group', 'value': group_id})
-    for member in members:
-        if member['type'] != 'person':
+    for member in common.get_children_ids({'type': 'group', 'value': group_id}, 'member', db):
+        if not member or member['type'] != 'person':
             continue
         data = {
             'time': datetime.datetime.utcnow().isoformat(),

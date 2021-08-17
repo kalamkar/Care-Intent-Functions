@@ -165,14 +165,14 @@ def get_actions(resource_ids):
     for resource_id in resource_ids:
         if not resource_id:
             continue
-        for group_id in common.get_relatives(resource_id, ['member_of'], []):
-            if not group_id or group_id['type'] != 'group':
+        for group in common.get_parents(resource_id, 'member', db):
+            if not group:
                 continue
-            for action_doc in db.collection('groups').document(group_id['value']).collection('actions').stream():
+            for action_doc in db.collection('groups').document(group.id).collection('actions').stream():
                 action = action_doc.to_dict()
                 if action_doc.id not in ids:
                     action['id'] = action_doc.id
-                    action['group'] = db.collection('groups').document(group_id['value']).get().to_dict()
+                    action['group'] = group.to_dict()
                     actions.append(action)
                     ids.add(action_doc.id)
     return sorted(actions, key=lambda a: a['priority'], reverse=True)

@@ -9,13 +9,13 @@ from google.cloud import bigquery
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 
+from common import COLLECTIONS
+
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 JSON_CACHE_SECONDS = 600
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
                  'Access-Control-Allow-Credentials', 'X-Requested-With']
-COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'schedule': 'schedules',
-               'member': 'members', 'admin': 'admins'}
 
 
 def api(request):
