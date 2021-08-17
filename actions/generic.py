@@ -176,7 +176,7 @@ class DataExtract(Action):
         for name, value in self.params.items():
             if type(value) in [int, float]:
                 row['data'].append({'name': name, 'number': value})
-            else:
+            elif type(value) == str:
                 row['data'].append({'name': name, 'value': value})
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
 
