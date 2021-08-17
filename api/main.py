@@ -202,6 +202,7 @@ def get_messages(start_time, end_time, person_id, both):
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
     values = [i['value'] for i in filter(lambda i: i['active'], person_doc.get('identifiers'))]
+    values.append(person_doc.id)
     if both:
         query = 'SELECT time, status, sender, receiver, tags, content, content_type ' \
                 'FROM {project}.live.messages WHERE (sender.value IN ({values}) OR receiver.value IN ({values})) ' \
