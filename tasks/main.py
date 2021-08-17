@@ -25,7 +25,7 @@ def handle_task(request):
     print(body)
     if 'provider' in body:
         handle_provider(body)
-    elif 'schedule' in body:
+    elif 'action_id' in body:
         handle_scheduled(body)
     return 'OK'
 
@@ -34,12 +34,16 @@ def handle_scheduled(body):
     group_id = body['group_id']
     action_id = body['action_id']
 
-    cron = croniter.croniter(body['schedule'], datetime.datetime.utcnow())
-    task_id = schedule_task(body, cron.get_next(datetime.datetime), 'actions')
-
     db = firestore.Client()
-    action_ref = db.collection('groups').document(group_id).collection('actions').document(action_id)
-    action_ref.update({'task_id': task_id})
+    action_doc = db.collection('groups').document(group_id).collection('actions').document(action_id).get()
+    action = action_doc.to_dict()
+
+    if 'schedule' in action:
+        now = datetime.datetime.utcnow()
+        now = now.astimezone(pytz.timezone(action['timezone'])) if 'timezone' in action else now
+        cron = croniter.croniter(action['schedule'], now)
+        task_id = schedule_task(body, cron.get_next(datetime.datetime), 'actions')
+        action_doc.reference.update({'task_id': task_id})
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
