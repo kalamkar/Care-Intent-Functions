@@ -16,11 +16,14 @@ def save_message(event, context):
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
 
+    content = message['content'] if 'content' in message else None
+    if content and type(content) != str:
+        content = json.dumps(content)
     row = {
         'time': message['time'] if 'time' in message else datetime.datetime.utcnow().isoformat(),
         'status': message['status'] if 'status' in message else None,
         'content_type': message['content_type'] if 'content_type' in message else None,
-        'content': message['content'] if 'content' in message else None,
+        'content': content,
         'tags': message['tags'] if 'tags' in message else []
     }
     if 'sender' in message and message['sender'] and 'type' in message['sender']:
