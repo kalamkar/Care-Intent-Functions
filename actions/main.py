@@ -207,6 +207,7 @@ def add_shorthands(context):
 def get_context_params(action_params, context):
     params = {}
     for name, value in action_params.items():
+        needs_json_load = False
         variables = re.findall(r'\$[a-z-_.]+', value) if (name not in JINJA_PARAMS) and (type(value) == str) else []
         for var in variables:
             context_value = context.get(var[1:])
@@ -215,9 +216,10 @@ def get_context_params(action_params, context):
             elif type(context_value) == str:
                 value = value.replace(var, context_value)
             else:
+                needs_json_load = True
                 try:
-                    value = json.loads(value.replace(var, json.dumps(context_value)))
+                    value = value.replace(var, json.dumps(context_value))
                 except Exception as ex:
                     print(ex)
-        params[name] = value
+        params[name] = json.loads(value) if needs_json_load else value
     return params
