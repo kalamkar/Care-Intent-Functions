@@ -11,7 +11,7 @@ from google.cloud import bigquery
 class Context(object):
     def __init__(self):
         self.data = {
-            'scheduled_run': False,
+            'scheduled': False,
             'data': {'systolic': None, 'diastolic': None, 'glucose': None, 'medication': None},
             'message': {'time': None, 'sender': None, 'receiver': None, 'tags': [], 'content': None,
                         'dialogflow': {'intent': None, 'action': None, 'reply': None, 'confidence': None,
