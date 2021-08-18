@@ -5,6 +5,7 @@ import datetime
 import flask
 import hashlib
 import json
+import logging
 import requests
 import uuid
 
@@ -12,7 +13,9 @@ from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.cloud import tasks_v2
 
-PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
+import google.cloud.logging as logger
+logger.handlers.setup_logging(logger.Client().get_default_handler())
+
 
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
@@ -80,7 +83,7 @@ def create_polling(payload):
         }
     }
     response = client.create_task(request={'parent': queue, 'task': task})
-    print("Created task {}".format(response.name))
+    logging.info("Created task {}".format(response.name))
     return response.name
 
 
@@ -92,13 +95,16 @@ def oauth(request, _):
             'grant_type': 'authorization_code',
             'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'}
     auth_response = requests.post(config.PROVIDERS[state['action_id']]['url'], data=data)
-    print(auth_response.content)
+    logging.info(auth_response.content)
 
     db = firestore.Client()
     action_doc = db.collection('persons').document(state['person_id'])\
         .collection('actions').document(state['action_id']).get()
-    if action_doc.exists and 'task_id' in action_doc.to_dict():
-        tasks_v2.CloudTasksClient().delete_task(name=action_doc.get('task_id'))
+    if action_doc and 'task_id' in action_doc.to_dict():
+        try:
+            tasks_v2.CloudTasksClient().delete_task(name=action_doc.get('task_id'))
+        except:
+            logging.warning('Could not delete task {}'.format(action_doc.get('task_id')))
 
     action = DATA_PROVIDER_ACTION | auth_response.json() | state
     action['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=action['expires_in'])
@@ -130,8 +136,8 @@ def signup(request, _):
     db.collection('persons').document(person_id).set(person)
 
     publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path(PROJECT_ID, 'message')
-    url = 'https://us-central1-%s.cloudfunctions.net/auth/verify/%s' % (PROJECT_ID, verify_token)
+    topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+    url = 'https://us-central1-%s.cloudfunctions.net/auth/verify/%s' % (config.PROJECT_ID, verify_token)
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'receiver': contact,
