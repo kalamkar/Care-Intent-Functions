@@ -107,7 +107,8 @@ def oauth(request, _):
             logging.warning('Could not delete task {}'.format(action_doc.get('task_id')))
 
     action = DATA_PROVIDER_ACTION | auth_response.json() | state
-    action['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=action['expires_in'])
+    action['expires'] = datetime.datetime.utcnow() \
+                        + datetime.timedelta(seconds=action['expires_in'] if 'expires_in' in action else 0)
     action['task_id'] = create_polling(state)
     action_doc.reference.set(action)
 
