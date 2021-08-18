@@ -5,6 +5,7 @@ import config
 import datetime
 import generic
 import json
+import logging
 import providers
 import pytz
 import re
@@ -15,6 +16,9 @@ from google.cloud import bigquery
 from google.cloud import firestore
 
 from context import Context
+
+import google.cloud.logging as logger
+logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 ACTIONS = {
     'DataExtract': generic.DataExtract,
@@ -37,7 +41,7 @@ def process(event, metadata):
     """
     channel_name = metadata.resource['name'].split('/')[-1]
     message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
-    print(metadata, message)
+    logging.info(message)
 
     db = firestore.Client()
     context = Context()
@@ -67,18 +71,15 @@ def process(event, metadata):
         actions = [(action, db.collection(parent_collection).document(parent_id).get())]
     else:
         actions = get_actions([context.get('sender.id'), context.get('receiver.id')])
-    print('Context', context.data)
+    logging.info(context.data)
     bq = bigquery.Client()
     for action, parent in actions:
         process_action(action, parent, context, bq)
 
 
 def process_action(action_doc, parent_doc, context, bq):
-    if parent_doc:
-        action = action_doc.to_dict() | {'id': action_doc.id, 'parent': parent_doc.to_dict()
-                                                                        | {'id': common.get_id(parent_doc)}}
-    else:
-        action = action_doc
+    action = action_doc.to_dict() | {'id': action_doc.id, 'parent': parent_doc.to_dict()
+                                                                    | {'id': common.get_id(parent_doc)}}
     resource_id = context.get('sender.id') or context.get('receiver.id')
     context.clear('action')
     context.set('action', action)
@@ -88,8 +89,8 @@ def process_action(action_doc, parent_doc, context, bq):
     if 'hold_secs' in action:
         threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
         if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
-            print('Skipping {type} {id} recently run at {runtime}'.format(type=action['type'], id=action['id'],
-                                                                          runtime=latest_run_time))
+            logging.info('Skipping {type} {id} recently run at {runtime}'.format(type=action['type'], id=action['id'],
+                                                                                 runtime=latest_run_time))
             return
 
     if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
@@ -101,7 +102,7 @@ def process_action(action_doc, parent_doc, context, bq):
         selection = action['content_select'] if 'content_select' in action else 'random'
         content, content_id = get_content(params['content'], selection, latest_content_id)
         if not content:
-            print('Skipping matched {action} action because of missing content'.format(action=action['type']))
+            logging.warning('Skipping matched {action} action because of missing content'.format(action=action['type']))
             return
         params['content'] = context.render(content)
     for param_name in filter(lambda p: p != 'content', JINJA_PARAMS):
@@ -109,12 +110,12 @@ def process_action(action_doc, parent_doc, context, bq):
             params[param_name] = context.render(params[param_name])
 
     try:
-        print('Triggering ', action)
+        logging.info(action)
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
-        print(actrun.context_update)
+        logging.info(actrun.context_update)
         context.update(actrun.context_update)
-        if actrun.action_update and type(action_doc) != dict:
+        if actrun.action_update:
             action_doc.reference.update(actrun.action_update)
         # TODO: Use firestore action_doc for storing last run and use with hold secs
         log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
@@ -124,7 +125,7 @@ def process_action(action_doc, parent_doc, context, bq):
             log['resources'].append({'type': 'content', 'id': content_id})
         errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
         if errors:
-            print(errors)
+            logging.warning(errors)
     except:
         traceback.print_exc()
 
@@ -143,7 +144,7 @@ def get_content(content, select, latest_content_id):
             if i >= len(content):  # For sequential content, stop sending messages after exhausting the list
                 return None, None
         except:
-            print('Invalid content id ' + latest_content_id)
+            logging.warning('Invalid content id ' + latest_content_id)
     return content[i]['message'], content[i]['id'] if 'id' in content[i] else None
 
 
@@ -174,14 +175,16 @@ def get_latest_run_time(action_id, resource_id, bq):
 
 def get_actions(resource_ids):
     db = firestore.Client()
-    actions = [(action, None) for action in json.load(open('data.json'))['actions']]
+    actions = []
     ids = set()
+    groups = {db.collection('groups').document(config.SYSTEM_GROUP_ID).get()}
     for resource_id in resource_ids:
-        for group in common.get_parents(resource_id, 'member', db):
-            for action in db.collection('groups').document(group.id).collection('actions').stream():
-                if action.id not in ids:
-                    actions.append((action, group))
-                    ids.add(action.id)
+        groups.add(common.get_parents(resource_id, 'member', db))
+    for group in groups:
+        for action in db.collection('groups').document(group.id).collection('actions').stream():
+            if action.id not in ids:
+                actions.append((action, group))
+                ids.add(action.id)
     return sorted(actions, key=lambda pair: pair[0].get('priority'), reverse=True)
 
 
@@ -227,6 +230,6 @@ def get_context_params(action_params, context):
                 try:
                     value = value.replace(var, json.dumps(context_value))
                 except Exception as ex:
-                    print(ex)
+                    logging.warning(ex)
         params[name] = json.loads(value) if needs_json_load else value
     return params

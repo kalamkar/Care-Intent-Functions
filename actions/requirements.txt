@@ -2,6 +2,7 @@
 # package>=version
 google-cloud-bigquery
 google-cloud-firestore
+google-cloud-logging
 google-cloud-pubsub
 numpy
 python-dateutil
