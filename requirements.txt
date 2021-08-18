@@ -6,6 +6,7 @@ dialogflow
 flask
 google-cloud-bigquery
 google-cloud-firestore
+google-cloud-logging
 google-cloud-pubsub
 google-cloud-tasks
 jinja2

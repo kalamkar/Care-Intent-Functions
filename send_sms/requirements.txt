@@ -2,3 +2,4 @@
 # package>=version
 twilio
 google-cloud-firestore
+google-cloud-logging

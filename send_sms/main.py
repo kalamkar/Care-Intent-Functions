@@ -1,8 +1,12 @@
 import base64
 import json
+import logging
 
 from google.cloud import firestore
 from twilio.rest import Client
+
+import google.cloud.logging as logger
+logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 TWILIO_ACCOUNT_SID = 'ACd3f03d1554da132e550d541480419d42'
@@ -18,7 +22,11 @@ def send_sms(request):
     if not receiver or 'content' not in message or not message['content'] or type(message['content']) != str:
         return 'ERROR'
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-    client.messages.create(to=receiver, from_=sender, body=message['content'])
+    try:
+        client.messages.create(to=receiver, from_=sender, body=message['content'])
+    except Exception as ex:
+        logging.error(ex)
+        return 'ERROR'
     return 'OK'
 
 
