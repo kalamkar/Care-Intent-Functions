@@ -86,22 +86,21 @@ def create_polling(payload):
 
 def oauth(request, _):
     state = cipher.parse_auth_token(request.args.get('state'))
-    provider = state['provider']
-    data = {'client_id': config.PROVIDERS[provider]['client_id'],
-            'client_secret': config.PROVIDERS[provider]['client_secret'],
+    data = {'client_id': config.PROVIDERS[state['action_id']]['client_id'],
+            'client_secret': config.PROVIDERS[state['action_id']]['client_secret'],
             'code': request.args.get('code'),
             'grant_type': 'authorization_code',
             'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'}
-    auth_response = requests.post(config.PROVIDERS[provider]['url'], data=data)
+    auth_response = requests.post(config.PROVIDERS[state['action_id']]['url'], data=data)
     print(auth_response.content)
 
     db = firestore.Client()
     action_doc = db.collection('persons').document(state['person_id'])\
-        .collection('actions').document(state['provider']).get()
+        .collection('actions').document(state['action_id']).get()
     if action_doc.exists and 'task_id' in action_doc.to_dict():
         tasks_v2.CloudTasksClient().delete_task(name=action_doc.get('task_id'))
 
-    action = DATA_PROVIDER_ACTION | auth_response.json()
+    action = DATA_PROVIDER_ACTION | auth_response.json() | state
     action['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=action['expires_in'])
     action['task_id'] = create_polling(state)
     action_doc.reference.set(action)

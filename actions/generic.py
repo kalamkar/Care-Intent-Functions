@@ -74,7 +74,7 @@ def create_dexcom_auth_url(person_id):
         'response_type': 'code',
         'scope': 'offline_access',
         'state': cipher.create_auth_token(
-            {'person_id': person_id, 'provider': 'dexcom', 'schedule': '0-55/5 * * * *'})
+            {'person_id': person_id, 'action_id': 'dexcom', 'schedule': '0-55/5 * * * *'})
     })
 
 
@@ -87,7 +87,7 @@ def create_google_auth_url(person_id):
         'access_type': 'offline',
         'redirect_uri': 'https://us-central1-%s.cloudfunctions.net/auth' % config.PROJECT_ID,
         'state': cipher.create_auth_token(
-            {'person_id': person_id, 'provider': 'google', 'schedule': '0 * * * *'})
+            {'person_id': person_id, 'action_id': 'google', 'schedule': '0 * * * *'})
     })
 
 
