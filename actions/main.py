@@ -170,7 +170,7 @@ def get_latest_run_time(action_id, resource_id, bq):
 
 def get_actions(resource_ids):
     db = firestore.Client()
-    actions = json.load(open('data.json'))['actions']
+    actions = [(action, None) for action in json.load(open('data.json'))['actions']]
     ids = set()
     for resource_id in resource_ids:
         for group in common.get_parents(resource_id, 'member', db):
