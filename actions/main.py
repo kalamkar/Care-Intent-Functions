@@ -60,7 +60,7 @@ def process(event, metadata):
         parent_id, parent_collection = None, None
         if 'group_id' in message['content']:
             parent_id, parent_collection = message['content']['group_id'], 'groups'
-        elif 'person_id' in message:
+        elif 'person_id' in message['content']:
             parent_id, parent_collection = message['content']['person_id'], 'persons'
         action = db.collection(parent_collection).document(parent_id)\
             .collection('actions').document(message['content']['action_id']).get()
