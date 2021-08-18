@@ -74,8 +74,11 @@ def process(event, metadata):
 
 
 def process_action(action_doc, parent_doc, context, bq):
-    action = action_doc.to_dict() | {'id': action_doc.id, 'parent': parent_doc.to_dict()
-                                                                    | {'id': common.get_id(parent_doc)}}
+    if parent_doc:
+        action = action_doc.to_dict() | {'id': action_doc.id, 'parent': parent_doc.to_dict()
+                                                                        | {'id': common.get_id(parent_doc)}}
+    else:
+        action = action_doc
     resource_id = context.get('sender.id') or context.get('receiver.id')
     context.clear('action')
     context.set('action', action)
