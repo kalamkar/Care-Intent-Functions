@@ -177,10 +177,10 @@ def get_actions(resource_ids):
     db = firestore.Client()
     actions = []
     ids = set()
-    groups = {db.collection('groups').document(config.SYSTEM_GROUP_ID).get()}
+    groups = [db.collection('groups').document(config.SYSTEM_GROUP_ID).get()]
     for resource_id in resource_ids:
-        groups.add(common.get_parents(resource_id, 'member', db))
-    for group in groups:
+        groups.extend(common.get_parents(resource_id, 'member', db))
+    for group in set(groups):
         for action in db.collection('groups').document(group.id).collection('actions').stream():
             if action.id not in ids:
                 actions.append((action, group))
