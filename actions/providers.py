@@ -1,7 +1,44 @@
+import config
 import datetime
+import dateutil.parser
 import json
-
+import pytz
 import requests
+
+from generic import Action
+
+from google.cloud import pubsub_v1
+from urllib.parse import urlencode
+
+
+class DataProvider(Action):
+    def __init__(self, name=None, source_id=None, access_token=None, expires=None, refresh_token=None, last_sync=None):
+        super().__init__()
+        self.name = name
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.expiration = expires
+        self.last_sync = last_sync
+        self.source_id = source_id
+
+    def process(self):
+        if not self.expiration or self.expiration < datetime.datetime.utcnow().astimezone(pytz.UTC):
+            response = get_access_token(self.refresh_token, 'google')
+            self.access_token = response['access_token']
+            self.expiration = datetime.datetime.utcnow() + datetime.timedelta(seconds=response['expires_in'])
+            response['expires'] = self.expiration
+            self.action_update.update(response)
+
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
+        last_sync = self.last_sync
+        for row in PROVIDERS[self.name](self.access_token, last_sync, self.source_id):
+            row_time = dateutil.parser.parse(row['time']).astimezone(pytz.UTC)
+            last_sync = max(row_time, last_sync) if last_sync else row_time
+            publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
+
+        if not self.last_sync or (last_sync and self.last_sync < last_sync):
+            self.action_update['last_sync'] = last_sync
 
 
 def get_dexcom_data(access_token, last_sync, source_id):
@@ -65,3 +102,22 @@ def get_google_data(access_token, last_sync, source_id):
                 'tags': ['gfit']
         })
     return rows
+
+
+def get_access_token(refresh, provider_name):
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    body = urlencode({
+        'client_id': config.PROVIDERS[provider_name]['client_id'],
+        'client_secret': config.PROVIDERS[provider_name]['client_secret'],
+        'refresh_token': refresh,
+        'grant_type': 'refresh_token',
+        'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'
+    })
+    response = requests.post(config.PROVIDERS[provider_name]['url'], body, headers=headers)
+    if response.status_code > 299:
+        print(response.content)
+        return response.json()
+    return response.json()
+
+
+PROVIDERS = {'dexcom': get_dexcom_data, 'google': get_google_data}

@@ -18,7 +18,8 @@ from sendgrid.helpers.mail import Mail
 
 class Action(object):
     def __init__(self):
-        self.output = {}
+        self.context_update = {}
+        self.action_update = {}
 
     def process(self):
         pass
@@ -73,7 +74,7 @@ def create_dexcom_auth_url(person_id):
         'response_type': 'code',
         'scope': 'offline_access',
         'state': cipher.create_auth_token(
-            {'person-id': person_id, 'provider': 'dexcom', 'repeat-secs': 5 * 60})
+            {'person_id': person_id, 'provider': 'dexcom', 'schedule': '0-55/5 * * * *'})
     })
 
 
@@ -86,7 +87,7 @@ def create_google_auth_url(person_id):
         'access_type': 'offline',
         'redirect_uri': 'https://us-central1-%s.cloudfunctions.net/auth' % config.PROJECT_ID,
         'state': cipher.create_auth_token(
-            {'person-id': person_id, 'provider': 'google', 'repeat-secs': 60 * 60})
+            {'person_id': person_id, 'provider': 'google', 'schedule': '0 * * * *'})
     })
 
 
@@ -106,7 +107,7 @@ class OAuth(Action):
         db.collection('urls').document(short_code).set({
             'redirect': PROVIDER_URLS[self.provider](self.person_id)
         })
-        self.output['oauth'] = {
+        self.context_update['oauth'] = {
             'url': ('https://us-central1-%s.cloudfunctions.net/u/' % config.PROJECT_ID) + short_code
         }
 
@@ -137,7 +138,7 @@ class SimplePatternCheck(Action):
         hour_rate = (data[-1][1] - data[0][1]) * (60 * 60) / (seconds if seconds else 1)
         if (self.min_threshold and hour_rate < self.min_threshold) or\
            (self.max_threshold and hour_rate > self.max_threshold):
-            self.output['data'] = {'pattern': 'slope', 'rate-hour': hour_rate, 'name': self.name}
+            self.context_update['data'] = {'pattern': 'slope', 'rate-hour': hour_rate, 'name': self.name}
 
 
 class Update(Action):

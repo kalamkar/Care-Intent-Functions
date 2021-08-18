@@ -1,4 +1,5 @@
 import base64
+import config
 import cipher
 import datetime
 import flask
@@ -13,17 +14,27 @@ from google.cloud import tasks_v2
 
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 
-
-PROVIDERS = {'dexcom': {'url': 'https://sandbox-api.dexcom.com/v2/oauth2/token',
-                        'client_id': 'cfz2ttzaLK164vTJ3lkt02n7ih0YMBHg',
-                        'client_secret': 'NZ4sTh0n4X6AT0XE'},
-             'google': {'url': 'https://oauth2.googleapis.com/token',
-                        'client_id': '749186156527-hl1f7u9o2cssle1n80nl09bej2bjfg97.apps.googleusercontent.com',
-                        'client_secret': 'GnBZGO7unmlgmko2CwqgRbBk'}}
-
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
                  'Access-Control-Allow-Credentials', 'X-Requested-With']
+
+DATA_PROVIDER_ACTION = {
+    'type': 'DataProvider',
+    'priority': 10,
+    'condition': '{{schedule}}',
+    'access_token': None,
+    'refresh_token': None,
+    'expires': datetime.datetime.utcnow(),
+    'last_sync': None,
+    'params': {
+        'name': '$action.id',
+        'access_token': '$action.access_token',
+        'refresh_token': '$action.refresh_token',
+        'expires': '$action.expires',
+        'last_sync': '$action.last_sync',
+        'source_id': '$sender.id'
+    }
+}
 
 
 def handle_auth(request):
@@ -76,25 +87,24 @@ def create_polling(payload):
 def oauth(request, _):
     state = cipher.parse_auth_token(request.args.get('state'))
     provider = state['provider']
-    data = {'client_id': PROVIDERS[provider]['client_id'],
-            'client_secret': PROVIDERS[provider]['client_secret'],
+    data = {'client_id': config.PROVIDERS[provider]['client_id'],
+            'client_secret': config.PROVIDERS[provider]['client_secret'],
             'code': request.args.get('code'),
             'grant_type': 'authorization_code',
             'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'}
-    auth_response = requests.post(PROVIDERS[provider]['url'], data=data)
+    auth_response = requests.post(config.PROVIDERS[provider]['url'], data=data)
     print(auth_response.content)
 
     db = firestore.Client()
-    person_ref = db.collection('persons').document(state['person-id'])
-    provider_ref = person_ref.collection('providers').document(state['provider'])
-    provider = provider_ref.get()
-    if provider.exists and 'task_id' in provider.to_dict():
-        tasks_v2.CloudTasksClient().delete_task(name=provider.get('task_id'))
+    action_doc = db.collection('persons').document(state['person_id'])\
+        .collection('actions').document(state['provider']).get()
+    if action_doc.exists and 'task_id' in action_doc.to_dict():
+        tasks_v2.CloudTasksClient().delete_task(name=action_doc.get('task_id'))
 
-    provider = auth_response.json()
-    provider['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=provider['expires_in'])
-    provider['task_id'] = create_polling(state)
-    provider_ref.set(provider)
+    action = DATA_PROVIDER_ACTION | auth_response.json()
+    action['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=action['expires_in'])
+    action['task_id'] = create_polling(state)
+    action_doc.reference.set(action)
 
     return flask.redirect('https://www.careintent.com', 302)
 

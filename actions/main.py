@@ -5,6 +5,7 @@ import config
 import datetime
 import generic
 import json
+import providers
 import pytz
 import re
 import random
@@ -17,6 +18,7 @@ from context import Context
 
 ACTIONS = {
     'DataExtract': generic.DataExtract,
+    'DataProvider': providers.DataProvider,
     'Message': generic.Message,
     'OAuth': generic.OAuth,
     'SimplePatternCheck': generic.SimplePatternCheck,
@@ -55,19 +57,25 @@ def process(event, metadata):
             and 'action_id' in message['content']:
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
         context.set('scheduled', True)
-        action = db.collection('groups').document(message['content']['group_id'])\
+        parent_id, parent_collection = None, None
+        if 'group_id' in message['content']:
+            parent_id, parent_collection = message['content']['group_id'], 'groups'
+        elif 'person_id' in message:
+            parent_id, parent_collection = message['content']['person_id'], 'persons'
+        action = db.collection(parent_collection).document(parent_id)\
             .collection('actions').document(message['content']['action_id']).get()
-        group = db.collection('groups').document(message['content']['group_id']).get().to_dict()
-        actions = [action.to_dict() | {'id': action.id, 'group': group}]
+        actions = [(action, db.collection(parent_collection).document(parent_id).get())]
     else:
         actions = get_actions([context.get('sender.id'), context.get('receiver.id')])
     print('Context', context.data)
     bq = bigquery.Client()
-    for action in actions:
-        process_action(action, context, bq)
+    for action, parent in actions:
+        process_action(action, parent, context, bq)
 
 
-def process_action(action, context, bq):
+def process_action(action_doc, parent_doc, context, bq):
+    action = action_doc.to_dict() | {'id': action_doc.id, 'parent': parent_doc.to_dict()
+                                                                    | {'id': common.get_id(parent_doc)}}
     resource_id = context.get('sender.id') or context.get('receiver.id')
     context.clear('action')
     context.set('action', action)
@@ -101,8 +109,10 @@ def process_action(action, context, bq):
         print('Triggering ', action)
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
-        print(actrun.output)
-        context.update(actrun.output)
+        print(actrun.context_update)
+        context.update(actrun.context_update)
+        action_doc.reference.update(actrun.action_update)
+        # TODO: Use firestore action_doc for storing last run and use with hold secs
         log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
                'resources': [{'type': resource_id['type'], 'id': resource_id['value']},
                              {'type': 'action', 'id': action['id']}]}
@@ -163,19 +173,12 @@ def get_actions(resource_ids):
     actions = json.load(open('data.json'))['actions']
     ids = set()
     for resource_id in resource_ids:
-        if not resource_id:
-            continue
         for group in common.get_parents(resource_id, 'member', db):
-            if not group:
-                continue
-            for action_doc in db.collection('groups').document(group.id).collection('actions').stream():
-                action = action_doc.to_dict()
-                if action_doc.id not in ids:
-                    action['id'] = action_doc.id
-                    action['group'] = group.to_dict()
-                    actions.append(action)
-                    ids.add(action_doc.id)
-    return sorted(actions, key=lambda a: a['priority'], reverse=True)
+            for action in db.collection('groups').document(group.id).collection('actions').stream():
+                if action.id not in ids:
+                    actions.append((action, group))
+                    ids.add(action.id)
+    return sorted(actions, key=lambda pair: pair[0].get('priority'), reverse=True)
 
 
 def get_resource(resource, db):
