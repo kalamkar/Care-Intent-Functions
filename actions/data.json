@@ -1,5 +1,5 @@
 {"actions": [{
-    "id": "2yULpJaMPlzCt7O5wLVW",
+    "id": "food.end",
     "type": "Message",
     "priority": 1,
     "condition": "{{message.dialogflow.intent == 'food.end'}}",
@@ -9,7 +9,7 @@
         "sender": "$message.receiver"
     }
 }, {
-    "id": "Qx5DH1cjtQIZUJJbwzyB",
+    "id": "connect.dexcom.oauth",
     "type": "OAuth",
     "priority": 2,
     "condition": "{{message.dialogflow.action == 'connect.dexcom'}}",
@@ -18,7 +18,7 @@
         "provider": "dexcom"
     }
 }, {
-    "id": "BMUBxeYARWiYaAnRsHNFCg",
+    "id": "connect.dexcom.message",
     "type": "Message",
     "priority": 1,
     "condition": "{{message.dialogflow.action == 'connect.dexcom'}}",
@@ -28,7 +28,7 @@
         "receiver": "$message.sender"
     }
 }, {
-    "id": "UjclBjOUF88VnnhBPnzF",
+    "id": "data.pattern.dexcom",
     "type": "SimplePatternCheck",
     "priority": 2,
     "hold_secs": 3600,
@@ -40,7 +40,7 @@
         "name": "glucose"
     }
 }, {
-    "id": "5IcqdTjPalz1E310eKiF",
+    "id": "data.pattern.update",
     "type": "Update",
     "priority": 1,
     "condition": "{{data.pattern == 'slope'}}",
@@ -49,7 +49,7 @@
         "identifier": "$sender.id"
     }
 }, {
-    "id": "LPRTZpIjwEp0DHYhGFDC",
+    "id": "data.pattern.message",
     "type": "Message",
     "priority": 1,
     "condition": "{{data.pattern == 'slope'}}",
@@ -58,7 +58,7 @@
         "receiver": "$sender.id"
     }
 }, {
-    "id": "aZ4Oc5gspNy85fntVzJh",
+    "id": "food.report",
     "type": "Message",
     "priority": 1,
     "condition": "{{message.dialogflow.action == 'food.report'}}",
@@ -68,7 +68,7 @@
         "receiver": "$message.sender"
     }
 }, {
-    "id": "39J9VgIQT_OLX40Q_bzrHw",
+    "id": "medication.report",
     "type": "Message",
     "priority": 1,
     "condition": "{{message.dialogflow.intent == 'medication.report'}}",
@@ -88,7 +88,7 @@
         "sender": "$message.receiver"
     }
 }, {
-    "id": "ffWxDX4rv37InPAuro05",
+    "id": "connect.google.oauth",
     "type": "OAuth",
     "priority": 2,
     "condition": "{{message.dialogflow.action == 'connect.google'}}",
@@ -97,7 +97,7 @@
         "person_id": "$sender.id.value"
     }
 }, {
-    "id": "3lRtdErhSYKSc2K0o5u6nw",
+    "id": "connect.google.message",
     "type": "Message",
     "priority": 1,
     "condition": "{{message.dialogflow.intent == 'connect.google'}}",
@@ -107,7 +107,7 @@
         "sender": "$message.receiver"
     }
 }, {
-    "id": "skNVAa3cTkaLw9BpFVg__Q",
+    "id": "settings.update",
     "type": "Update",
     "priority": 1,
     "condition": "{{message.dialogflow.intent.split('.', 1)[0] in ['activity', 'biomarker', 'food', 'medication']}}",
