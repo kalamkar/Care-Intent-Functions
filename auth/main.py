@@ -68,7 +68,7 @@ def handle_auth(request):
 
 def create_polling(payload):
     client = tasks_v2.CloudTasksClient()
-    queue = client.queue_path('careintent', 'us-central1', payload['provider'])
+    queue = client.queue_path(config.PROJECT_ID, config.LOCATION_ID, 'actions')
 
     task = {
         'http_request': {  # Specify the type of request.
