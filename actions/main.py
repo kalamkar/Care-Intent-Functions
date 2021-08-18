@@ -117,7 +117,6 @@ def process_action(action_doc, parent_doc, context, bq):
         context.update(actrun.context_update)
         if actrun.action_update:
             action_doc.reference.update(actrun.action_update)
-        # TODO: Use firestore action_doc for storing last run and use with hold secs
         log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
                'resources': [{'type': resource_id['type'], 'id': resource_id['value']},
                              {'type': 'action', 'id': action['id']}]}
