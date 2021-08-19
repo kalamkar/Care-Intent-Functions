@@ -1,3 +1,7 @@
+import config
+import json
+import logging
+
 COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'schedule': 'schedules',
                'member': 'members', 'admin': 'admins'}
 
@@ -32,3 +36,21 @@ def get_id(doc):
     if not doc:
         return None
     return {'type': doc.reference.path.split('/')[-2][:-1], 'value': doc.id}
+
+
+def schedule_task(payload, client, timestamp=None, queue_name='actions'):
+    queue = client.queue_path(config.PROJECT_ID, 'us-central1', queue_name)
+    task = {
+        'http_request': {  # Specify the type of request.
+            'http_method': 1,  # tasks_v2.HttpMethod.POST,
+            'url': 'https://us-central1-%s.cloudfunctions.net/process-task' % config.PROJECT_ID,
+            'oidc_token': {'service_account_email': '%s@appspot.gserviceaccount.com' % config.PROJECT_ID},
+            'headers': {"Content-type": "application/json"},
+            'body': json.dumps(payload).encode()
+        }
+    }
+    if timestamp:
+        task['schedule_time'] = timestamp
+    response = client.create_task(request={'parent': queue, 'task': task})
+    logging.info("Created task {}".format(response.name))
+    return response.name

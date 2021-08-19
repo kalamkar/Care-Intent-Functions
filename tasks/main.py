@@ -34,7 +34,9 @@ def handle_task(request):
         now = datetime.datetime.utcnow()
         now = now.astimezone(pytz.timezone(action['timezone'])) if 'timezone' in action else now
         cron = croniter.croniter(action['schedule'], now)
-        task_id = schedule_task(body, cron.get_next(datetime.datetime), 'actions')
+        next_run_time = timestamp_pb2.Timestamp()
+        next_run_time.FromDatetime(cron.get_next(datetime.datetime))
+        task_id = common.schedule_task(body, tasks_v2.CloudTasksClient(), timestamp=next_run_time)
         action_doc.reference.update({'task_id': task_id})
 
     publisher = pubsub_v1.PublisherClient()
@@ -63,25 +65,3 @@ def handle_task(request):
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
     return 'OK'
-
-
-def schedule_task(payload, next_run_time, queue_name):
-    client = tasks_v2.CloudTasksClient()
-    queue = client.queue_path(config.PROJECT_ID, 'us-central1', queue_name)
-
-    timestamp = timestamp_pb2.Timestamp()
-    timestamp.FromDatetime(next_run_time)
-
-    task = {
-        'http_request': {  # Specify the type of request.
-            'http_method': tasks_v2.HttpMethod.POST,
-            'url': 'https://us-central1-%s.cloudfunctions.net/process-task' % config.PROJECT_ID,
-            'oidc_token': {'service_account_email': '%s@appspot.gserviceaccount.com' % config.PROJECT_ID},
-            'headers': {"Content-type": "application/json"},
-            'body': json.dumps(payload).encode()
-        },
-        'schedule_time': timestamp
-    }
-    response = client.create_task(request={'parent': queue, 'task': task})
-    print("Created task {}".format(response.name))
-    return response.name

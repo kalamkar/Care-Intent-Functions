@@ -1,5 +1,6 @@
 import base64
 import config
+import common
 import cipher
 import datetime
 import flask
@@ -69,24 +70,6 @@ def handle_auth(request):
     return response
 
 
-def create_polling(payload):
-    client = tasks_v2.CloudTasksClient()
-    queue = client.queue_path(config.PROJECT_ID, config.LOCATION_ID, 'actions')
-
-    task = {
-        'http_request': {  # Specify the type of request.
-            'http_method': tasks_v2.HttpMethod.POST,
-            'url': 'https://us-central1-careintent.cloudfunctions.net/process-task',
-            'oidc_token': {'service_account_email': 'careintent@appspot.gserviceaccount.com'},
-            'headers': {"Content-type": "application/json"},
-            'body': json.dumps(payload).encode()
-        }
-    }
-    response = client.create_task(request={'parent': queue, 'task': task})
-    logging.info("Created task {}".format(response.name))
-    return response.name
-
-
 def oauth(request, _):
     state = cipher.parse_auth_token(request.args.get('state'))
     data = {'client_id': config.PROVIDERS[state['action_id']]['client_id'],
@@ -109,7 +92,7 @@ def oauth(request, _):
     action = DATA_PROVIDER_ACTION | auth_response.json() | state
     action['expires'] = datetime.datetime.utcnow() \
                         + datetime.timedelta(seconds=action['expires_in'] if 'expires_in' in action else 0)
-    action['task_id'] = create_polling(state)
+    action['task_id'] = common.schedule_task(state, tasks_v2.CloudTasksClient())
     action_doc.reference.set(action)
 
     return flask.redirect('https://www.careintent.com', 302)
