@@ -100,7 +100,7 @@ def oauth(request, _):
     db = firestore.Client()
     action_doc = db.collection('persons').document(state['person_id'])\
         .collection('actions').document(state['action_id']).get()
-    if action_doc and 'task_id' in action_doc.to_dict():
+    if action_doc.exists and 'task_id' in action_doc.to_dict():
         try:
             tasks_v2.CloudTasksClient().delete_task(name=action_doc.get('task_id'))
         except:
