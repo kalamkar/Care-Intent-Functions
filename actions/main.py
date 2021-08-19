@@ -41,7 +41,7 @@ def process(event, metadata):
     """
     channel_name = metadata.resource['name'].split('/')[-1]
     message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
-    logging.info(message)
+    logging.info('Got message {}'.format(message))
 
     db = firestore.Client()
     context = Context()
@@ -71,7 +71,7 @@ def process(event, metadata):
         actions = [(action, db.collection(parent_collection).document(parent_id).get())]
     else:
         actions = get_actions([context.get('sender.id'), context.get('receiver.id')])
-    logging.info(context.data)
+    logging.info('Context {}'.format(context.data))
     bq = bigquery.Client()
     for action, parent in actions:
         process_action(action, parent, context, bq)
@@ -110,7 +110,7 @@ def process_action(action_doc, parent_doc, context, bq):
             params[param_name] = context.render(params[param_name])
 
     try:
-        logging.info(action)
+        logging.info('Triggering {}'.format(action))
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
         logging.info(actrun.context_update)
@@ -184,7 +184,9 @@ def get_actions(resource_ids):
             if action.id not in ids:
                 actions.append((action, group))
                 ids.add(action.id)
-    return sorted(actions, key=lambda pair: pair[0].get('priority'), reverse=True)
+    actions = sorted(actions, key=lambda pair: pair[0].get('priority'), reverse=True)
+    logging.info('Found actions {}'.format([action.id for action, group in actions]))
+    return actions
 
 
 def get_resource(resource, db):
