@@ -71,10 +71,6 @@ class Context(object):
         return content
 
     def set(self, name, value):
-        if type(value) == dict:
-            for param in ['login', 'tokens']:
-                if param in value:
-                    del value[param]
         merge(self.data, {name: value})
 
     def clear(self, name):
@@ -112,6 +108,8 @@ def merge(destination, source):
     True
     """
     for key, value in source.items():
+        if key in ['login', 'tokens']:
+            continue
         if isinstance(value, dict):
             # get node or create one
             if key not in destination or not destination[key]:
