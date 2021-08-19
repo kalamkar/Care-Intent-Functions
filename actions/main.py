@@ -89,8 +89,7 @@ def process_action(action_doc, parent_doc, context, bq):
     if 'hold_secs' in action:
         threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
         if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
-            logging.info('Skipping {type} {id} recently run at {runtime}'.format(type=action['type'], id=action['id'],
-                                                                                 runtime=latest_run_time))
+            logging.info('Skipping {id} recently run at {runtime}'.format(id=action['id'], runtime=latest_run_time))
             return
 
     if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
@@ -102,7 +101,7 @@ def process_action(action_doc, parent_doc, context, bq):
         selection = action['content_select'] if 'content_select' in action else 'random'
         content, content_id = get_content(params['content'], selection, latest_content_id)
         if not content:
-            logging.warning('Skipping matched {action} action because of missing content'.format(action=action['type']))
+            logging.warning('Skipping matched action {} because of missing content'.format(action['id']))
             return
         params['content'] = context.render(content)
     for param_name in filter(lambda p: p != 'content', JINJA_PARAMS):
@@ -110,7 +109,7 @@ def process_action(action_doc, parent_doc, context, bq):
             params[param_name] = context.render(params[param_name])
 
     try:
-        logging.info('Triggering {}'.format(action))
+        logging.info('Triggering {} {}'.format(action['id'], action))
         actrun = ACTIONS[action['type']](**params)
         actrun.process()
         logging.info(actrun.context_update)
