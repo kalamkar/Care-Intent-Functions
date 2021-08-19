@@ -83,8 +83,8 @@ def oauth(request, _):
     action = DATA_PROVIDER_ACTION | auth_response.json() | state
     action['expires'] = datetime.datetime.utcnow() \
                         + datetime.timedelta(seconds=action['expires_in'] if 'expires_in' in action else 0)
-    common.create_action(action, state['action_id'], firestore.Client(), tasks_v2.CloudTasksClient(),
-                         person_id=state['person_id'])
+    create_action(action, state['action_id'], firestore.Client(), tasks_v2.CloudTasksClient(),
+                  person_id=state['person_id'])
 
     return flask.redirect('https://www.careintent.com', 302)
 
@@ -165,3 +165,20 @@ def login(request, _):
     db.collection('persons').document(persons[0].id).update(person)
     expiry = datetime.datetime.utcnow() + datetime.timedelta(hours=14)
     return flask.jsonify({'status': 'ok', 'token': person['login']['token'], 'expiry': expiry.isoformat()})
+
+
+def create_action(action, action_id, db, tasks_client, group_id=None, person_id=None):
+    if not group_id and not person_id:
+        logging.error('Missing group id and person id to create action')
+        return
+    action_doc = db.collection('persons').document(person_id if person_id else group_id) \
+        .collection('actions').document(action_id)
+    if action_doc.exists and 'task_id' in action_doc.to_dict():
+        try:
+            tasks_client.delete_task(name=action_doc.get('task_id'))
+        except:
+            logging.warning('Could not delete task {}'.format(action_doc.get('task_id')))
+
+    task = {'action_id': action_id, 'person_id' if person_id else 'group_id': person_id or group_id}
+    action['task_id'] = common.schedule_task(task, tasks_client)
+    action_doc.reference.set(action)
