@@ -80,20 +80,11 @@ def oauth(request, _):
     auth_response = requests.post(config.PROVIDERS[state['action_id']]['url'], data=data)
     logging.info(auth_response.content)
 
-    db = firestore.Client()
-    action_doc = db.collection('persons').document(state['person_id'])\
-        .collection('actions').document(state['action_id']).get()
-    if action_doc.exists and 'task_id' in action_doc.to_dict():
-        try:
-            tasks_v2.CloudTasksClient().delete_task(name=action_doc.get('task_id'))
-        except:
-            logging.warning('Could not delete task {}'.format(action_doc.get('task_id')))
-
     action = DATA_PROVIDER_ACTION | auth_response.json() | state
     action['expires'] = datetime.datetime.utcnow() \
                         + datetime.timedelta(seconds=action['expires_in'] if 'expires_in' in action else 0)
-    action['task_id'] = common.schedule_task(state, tasks_v2.CloudTasksClient())
-    action_doc.reference.set(action)
+    common.create_action(action, state['action_id'], firestore.Client(), tasks_v2.CloudTasksClient(),
+                         person_id=state['person_id'])
 
     return flask.redirect('https://www.careintent.com', 302)
 
