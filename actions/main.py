@@ -74,7 +74,10 @@ def process(event, metadata):
     logging.info('Context {}'.format(context.data))
     bq = bigquery.Client()
     for action, parent in actions:
-        process_action(action, parent, context, bq)
+        try:
+            process_action(action, parent, context, bq)
+        except:
+            traceback.print_exc()
 
 
 def process_action(action_doc, parent_doc, context, bq):
@@ -95,6 +98,8 @@ def process_action(action_doc, parent_doc, context, bq):
     if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
         return
 
+    logging.info('Triggering {} {}'.format(action['id'], action))
+
     params = get_context_params(action['params'], context)
     content_id, content = None, None
     if 'content' in params:
@@ -108,24 +113,20 @@ def process_action(action_doc, parent_doc, context, bq):
         if param_name in params:
             params[param_name] = context.render(params[param_name])
 
-    try:
-        logging.info('Triggering {} {}'.format(action['id'], action))
-        actrun = ACTIONS[action['type']](**params)
-        actrun.process()
-        logging.info(actrun.context_update)
-        context.update(actrun.context_update)
-        if actrun.action_update:
-            action_doc.reference.update(actrun.action_update)
-        log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
-               'resources': [{'type': resource_id['type'], 'id': resource_id['value']},
-                             {'type': 'action', 'id': action['id']}]}
-        if content_id:
-            log['resources'].append({'type': 'content', 'id': content_id})
-        errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
-        if errors:
-            logging.warning(errors)
-    except:
-        traceback.print_exc()
+    actrun = ACTIONS[action['type']](**params)
+    actrun.process()
+    logging.info(actrun.context_update)
+    context.update(actrun.context_update)
+    if actrun.action_update:
+        action_doc.reference.update(actrun.action_update)
+    log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
+           'resources': [{'type': resource_id['type'], 'id': resource_id['value']},
+                         {'type': 'action', 'id': action['id']}]}
+    if content_id:
+        log['resources'].append({'type': 'content', 'id': content_id})
+    errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
+    if errors:
+        logging.warning(errors)
 
 
 def get_content(content, select, latest_content_id):
@@ -231,5 +232,10 @@ def get_context_params(action_params, context):
                     value = value.replace(var, json.dumps(context_value))
                 except Exception as ex:
                     logging.warning(ex)
-        params[name] = json.loads(value) if needs_json_load else value
+        try:
+            params[name] = json.loads(value) if needs_json_load else value
+        except Exception as ex:
+            logging.warning(ex)
+            logging.warning(value)
+            params[name] = value
     return params
