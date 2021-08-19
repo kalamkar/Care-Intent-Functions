@@ -2,6 +2,7 @@ import config
 import datetime
 import dateutil.parser
 import json
+import logging
 import pytz
 import requests
 
@@ -46,9 +47,9 @@ def get_dexcom_data(access_token, last_sync, source_id):
     start = (last_sync + datetime.timedelta(seconds=1)) if last_sync else (end - datetime.timedelta(days=7))
     url = 'https://sandbox-api.dexcom.com/v2/users/self/egvs?startDate=%s&endDate=%s'\
           % (start.strftime('%Y-%m-%dT%H:%M:%S'), end.strftime('%Y-%m-%dT%H:%M:%S'))
-    print(url)
+    logging.info(url)
     response = requests.get(url, headers={'Authorization': 'Bearer ' + access_token})
-    print(response.content)
+    logging.info(response.content)
     if response.status_code > 299 or not response.content or 'egvs' not in response.json():
         return []
 
@@ -81,7 +82,7 @@ def get_google_data(access_token, last_sync, source_id):
         'endTimeMillis': int(end.strftime('%s')) * 1000
     })
     response = requests.post(url, body, headers=headers)
-    print(response.content)
+    logging.info(response.content)
     if response.status_code > 299 or not response.content or 'bucket' not in response.json():
         return []
 
@@ -115,7 +116,7 @@ def get_access_token(refresh, provider_name):
     })
     response = requests.post(config.PROVIDERS[provider_name]['url'], body, headers=headers)
     if response.status_code > 299:
-        print(response.content)
+        logging.info(response.content)
         return response.json()
     return response.json()
 

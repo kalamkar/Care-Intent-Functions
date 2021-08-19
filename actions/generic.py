@@ -3,6 +3,7 @@ import cipher
 import config
 import datetime
 import json
+import logging
 import requests
 import uuid
 
@@ -152,8 +153,8 @@ class Update(Action):
         db = firestore.Client()
         collection = self.identifier['type'] + 's'
         doc_ref = db.collection(collection).document(self.identifier['value'])
-        print('Updating {collection}/{id} with {data}'.format(collection=collection, id=self.identifier['value'],
-                                                              data=self.content))
+        logging.info('Updating {collection}/{id} with {data}'.format(collection=collection, id=self.identifier['value'],
+                                                                     data=self.content))
         content = json.loads(self.content.replace('\'', '"'))
         doc_ref.update({self.list_name: firestore.ArrayUnion(content)} if self.list_name else content)
 
@@ -203,7 +204,7 @@ class Webhook(Action):
 
     def process(self):
         if not self.url or not self.name:
-            print('Missing url or name')
+            logging.error('Missing url or name')
             return
 
         headers = {'Content-Type': 'application/json'}

@@ -2,6 +2,7 @@ import common
 import config
 import datetime
 import jinja2
+import logging
 import numpy as np
 
 from inspect import getmembers, isfunction
@@ -46,9 +47,9 @@ class Context(object):
             'WHERE source.value = "{source}" AND name = "{name}" AND time > TIMESTAMP("{start}") ' \
             'AND number IS NOT NULL ' \
             'ORDER BY time'.format(project=config.PROJECT_ID, name=var, start=start_time, source=source)
-        print(q)
+        logging.info(q)
         data = [row['number'] for row in bq.query(q)]
-        print(data)
+        logging.info(data)
         return data
 
     def evaluate(self, expression):
@@ -62,7 +63,7 @@ class Context(object):
             try:
                 return self.env.from_string(content).render(self.data)
             except:
-                print('Failed rendering ' + content)
+                logging.error('Failed rendering ' + content)
         elif type(content) == list:
             return [self.render(item) for item in content]
         elif type(content) == dict:
