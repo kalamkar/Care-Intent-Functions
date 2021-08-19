@@ -184,22 +184,26 @@ class DataExtract(Action):
 
 
 class Webhook(Action):
-    def __init__(self, url=None, auth=None, content=None, content_type='application/json'):
+    def __init__(self, url=None, auth=None, email=None, content=None, content_type='application/json'):
         self.url = url
         self.auth = auth
+        self.email = email
         self.content = content
         self.content_type = content_type
         super().__init__()
 
     def process(self):
-        if not self.url:
-            logging.error('Missing url')
+        if not self.url and not self.email:
+            logging.error('Missing url and email')
             return
 
         headers = {'Content-Type': self.content_type}
         if self.auth:
             headers['Authorization'] = 'Bearer ' + self.auth
-        # requests.post(self.url, self.content, headers=headers)
-        message = Mail(from_email='support@careintent.com', to_emails='support@careintent.com',
-                       subject='Webhook', plain_text_content=Content('text/plain', self.content))
-        SendGridAPIClient('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').send(message)
+        if self.url:
+            requests.post(self.url, self.content, headers=headers)
+
+        if self.email:
+            message = Mail(from_email='support@careintent.com', to_emails=self.email,
+                           subject='Webhook', plain_text_content=Content('text/plain', self.content))
+            SendGridAPIClient('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').send(message)
