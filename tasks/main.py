@@ -42,25 +42,23 @@ def handle_task(request):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
+    member_ids = []
     if group_id:
-        for member in common.get_children_ids({'type': 'group', 'value': group_id}, 'member', db):
-            if not member or member['type'] != 'person':
-                continue
-            data = {
-                'time': datetime.datetime.utcnow().isoformat(),
-                'sender': member,
-                'tags': ['source:schedule'],
-                'content_type': 'application/json',
-                'content': {'group_id': group_id, 'action_id': action_id}
-            }
-            publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
+        member_ids = common.get_children_ids({'type': 'group', 'value': group_id}, 'member', db)
     elif person_id:
+        member_ids = [{'type': 'person', 'value': person_id}]
+
+    for member in member_ids:
+        if not member or member['type'] != 'person':
+            continue
         data = {
             'time': datetime.datetime.utcnow().isoformat(),
-            'sender': {'type': 'person', 'value': person_id},
+            'sender': member,
+            'status': 'internal',
             'tags': ['source:schedule'],
             'content_type': 'application/json',
-            'content': {'person_id': person_id, 'action_id': action_id}
+            'content': {'group_id' if group_id else 'person_id': group_id if group_id else person_id,
+                        'action_id': action_id}
         }
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
