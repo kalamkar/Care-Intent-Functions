@@ -1,4 +1,5 @@
 import base64
+import config
 import datetime
 import dateutil.parser
 import json
@@ -11,7 +12,6 @@ from google.cloud import pubsub_v1
 
 from common import COLLECTIONS
 
-PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 JSON_CACHE_SECONDS = 600
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
                  'Access-Control-Allow-Headers', 'Access-Control-Request-Method', 'Access-Control-Request-Headers',
@@ -185,7 +185,7 @@ def get_rows(start_time, end_time, source, names):
             'FROM {project}.live.tsdata, UNNEST(data) WHERE source.value = "{source}" AND name IN ({names}) ' \
             'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
             'ORDER BY time'. \
-        format(project=PROJECT_ID, source=source, names=str(names)[1:-1], start=start_time, end=end_time)
+        format(project=config.PROJECT_ID, source=source, names=str(names)[1:-1], start=start_time, end=end_time)
     print(query)
     rows = []
     for row in bq.query(query):
@@ -208,13 +208,13 @@ def get_messages(start_time, end_time, person_id, both):
                 'FROM {project}.live.messages WHERE (sender.value IN ({values}) OR receiver.value IN ({values})) ' \
                 'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
                 'ORDER BY time'. \
-            format(project=PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
+            format(project=config.PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
     else:
         query = 'SELECT time, status, sender, receiver, tags, content, content_type ' \
                 'FROM {project}.live.messages WHERE sender.value IN ({values}) ' \
                 'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
                 'ORDER BY time'. \
-            format(project=PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
+            format(project=config.PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
     print(query)
     rows = []
     for row in bq.query(query):
@@ -236,7 +236,7 @@ def send_message(person_id, message, user):
         return None
     receiver = message['receiver'] if 'receiver' in message else {'type': 'person', 'value': person_doc.id}
     publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path(PROJECT_ID, 'message')
+    topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': 'person', 'value': user.id},
