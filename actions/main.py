@@ -177,6 +177,8 @@ def get_actions(resource_ids):
     actions = []
     ids = set()
     groups = [db.collection('groups').document(config.SYSTEM_GROUP_ID).get()]
+    groups.extend([db.collection('groups').document(g['value'])
+                   for g in filter(lambda g: g['type'] == 'group', resource_ids)])
     for resource_id in resource_ids:
         groups.extend(common.get_parents(resource_id, 'member', db))
     for group in set(groups):
