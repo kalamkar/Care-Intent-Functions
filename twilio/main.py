@@ -56,7 +56,7 @@ def twilio(request):
         'sender': {'type': IdType.phone, 'value': sender},
         'receiver': {'type': IdType.phone, 'value': receiver},
         'status': 'received',
-        'tags': ['source:twilio'],
+        'tags': ['source:twilio', response.query_result.intent.display_name],
         'content_type': 'text/plain',
         'content': content,
         'dialogflow': {
@@ -67,6 +67,8 @@ def twilio(request):
             'params': MessageToDict(response.query_result.parameters)
         }
     }
+    if response.query_result.action:
+        data['tags'].append(response.query_result.action)
 
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
     return 'OK'

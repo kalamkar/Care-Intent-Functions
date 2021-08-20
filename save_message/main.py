@@ -30,11 +30,6 @@ def save_message(event, context):
         row['sender'] = {'type': message['sender']['type'], 'value': message['sender']['value']}
     if 'receiver' in message and message['receiver'] and 'type' in message['receiver']:
         row['receiver'] = {'type': message['receiver']['type'], 'value': message['receiver']['value']}
-    if 'dialogflow' in message and message['dialogflow']:
-        if 'intent' in message['dialogflow']:
-            row['tags'].append(message['dialogflow']['intent'])
-        if 'action' in message['dialogflow']:
-            row['tags'].append(message['dialogflow']['action'])
 
     client = bigquery.Client()
     table_id = '%s.live.messages' % PROJECT_ID
