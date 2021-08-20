@@ -241,6 +241,7 @@ def send_message(person_id, message, user):
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': 'person', 'value': user.id},
         'receiver': receiver,
+        'status': 'sent',
         'tags': message['tags'] if 'tags' in message else ['source:api'],
         'content_type': 'text/plain',
         'content': message['content']

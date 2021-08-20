@@ -61,6 +61,7 @@ class Message(Action):
             'time': datetime.datetime.utcnow().isoformat(),
             'sender': self.sender,
             'receiver': self.receiver,
+            'status': 'sent',
             'tags': self.tags,
             'content_type': 'text/plain',
             'content': self.content
