@@ -1,4 +1,6 @@
 import base64
+import config
+import common
 import datetime
 import json
 import flask
@@ -6,10 +8,6 @@ import uuid
 
 from google.cloud import firestore
 from google.cloud import pubsub_v1
-
-PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
-COLLECTIONS = {'person': 'persons'}
-RELATION_TYPES = ['member_of', 'admin_of']
 
 
 def api(request):
@@ -43,7 +41,7 @@ def api(request):
         response.status_code = 400
         return response
 
-    if resource_name not in COLLECTIONS:
+    if resource_name not in common.COLLECTIONS:
         response.status_code = 404
         return response
 
@@ -58,8 +56,8 @@ def api(request):
         if sub_resource_name == 'message' and resource_id:
             doc = send_message(resource_id, request.data.decode('utf-8'), group.id)
         elif request.json:
-            relation = 'admin_of' if request.args.get('role') == 'admin' else 'member_of'
-            doc = add_resource(resource_name, resource_id, sub_resource_name, request.json, relation, group.id, db)
+            doc = add_resource(resource_name, resource_id, sub_resource_name, request.json, request.args.get('role'),
+                               group.id, db)
 
     if not doc:
         response.status_code = 400
@@ -71,30 +69,30 @@ def api(request):
 
 
 def get_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db):
-    doc_ref = db.collection(COLLECTIONS[resource_name]).document(resource_id)
+    doc_ref = db.collection(common.COLLECTIONS[resource_name]).document(resource_id)
     if sub_resource_name and sub_resource_id:
-        doc_ref = doc_ref.collection(COLLECTIONS[sub_resource_name]).document(sub_resource_id)
+        doc_ref = doc_ref.collection(common.COLLECTIONS[sub_resource_name]).document(sub_resource_id)
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
 
 def get_resources(resource_name, resource_id, sub_resource_name, db):
-    collection = db.collection(COLLECTIONS[resource_name]).document(resource_id)\
-        .collection(COLLECTIONS[sub_resource_name])
+    collection = db.collection(common.COLLECTIONS[resource_name]).document(resource_id)\
+        .collection(common.COLLECTIONS[sub_resource_name])
     return {'results': [get_document_json(doc, sub_resource_name) for doc in collection.get()]}
 
 
 def update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, resource, db):
-    doc_ref = db.collection(COLLECTIONS[resource_name]).document(resource_id)
+    doc_ref = db.collection(common.COLLECTIONS[resource_name]).document(resource_id)
     if sub_resource_name and sub_resource_id:
-        doc_ref = doc_ref.collection(COLLECTIONS[sub_resource_name]).document(sub_resource_id)
+        doc_ref = doc_ref.collection(common.COLLECTIONS[sub_resource_name]).document(sub_resource_id)
     doc_ref.update(resource)
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
 
-def add_resource(resource_name, resource_id, sub_resource_name, resource, relation, group_id, db):
-    collection = db.collection(COLLECTIONS[resource_name])
+def add_resource(resource_name, resource_id, sub_resource_name, resource, role, group_id, db):
+    collection = db.collection(common.COLLECTIONS[resource_name])
     if resource_id and sub_resource_name:
-        collection = collection.document(resource_id).collection(COLLECTIONS[sub_resource_name])
+        collection = collection.document(resource_id).collection(common.COLLECTIONS[sub_resource_name])
 
     if resource_name == 'person' and not sub_resource_name:
         person = get_person(resource['identifiers'], db)
@@ -103,11 +101,10 @@ def add_resource(resource_name, resource_id, sub_resource_name, resource, relati
     doc_id = generate_id()
     doc_ref = collection.document(doc_id)
     doc_ref.set(resource)
-    db.collection('relations').document(generate_id()).set({
-        'source': {'type': resource_name, 'value': doc_id},
-        'target': {'type': 'group', 'value': group_id},
-        'type': relation
-    })
+    if resource_name == 'person':
+        db.collection('groups').document(group_id).collection(common.COLLECTIONS[role]).document().set({
+            'id': {'type': resource_name, 'value': doc_id}
+        })
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
 
@@ -123,7 +120,7 @@ def send_message(person_id, content, group_id):
         receiver = {'type': 'person', 'value': person_id}
 
     publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path(PROJECT_ID, 'message')
+    topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': 'group', 'value': group_id},
