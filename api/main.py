@@ -82,6 +82,8 @@ def api(request):
         doc = get_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db)
     elif request.method == 'PATCH' and resource_id:
         doc = update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, request.json, db)
+    elif request.method == 'DELETE' and sub_resource_id:
+        doc = delete_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db)
     elif request.method == 'POST' and request.json:
         if sub_resource_name in ['member', 'admin'] and resource_id:
             doc = add_relation(resource_name, resource_id, sub_resource_name, request.json)
@@ -157,6 +159,12 @@ def update_resource(resource_name, resource_id, sub_resource_name, sub_resource_
                 return None
     doc_ref.update(resource)
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
+
+
+def delete_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db):
+    db.collection(COLLECTIONS[resource_name]).document(resource_id)\
+        .collection(COLLECTIONS[sub_resource_name]).document(sub_resource_id).delete()
+    return {'status': 'ok'}
 
 
 def add_resource(resource_name, resource_id, sub_resource_name, resource, user_id, db):
