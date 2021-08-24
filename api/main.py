@@ -66,7 +66,7 @@ def api(request):
 
     doc = None
     if request.method == 'GET' and sub_resource_name in ['member', 'admin']:
-        doc = query(resource_name, resource_id, sub_resource_name, sub_resource_id)
+        doc = list_resources(resource_name, resource_id, sub_resource_name, sub_resource_id)
     elif request.method == 'GET' and resource_name == 'person' and sub_resource_name == 'data' and resource_id:
         start_time, end_time = get_start_end_times(request)
         doc = {'results': get_rows(start_time, end_time, resource_id, request.args.getlist('name'))}
@@ -105,7 +105,7 @@ def api(request):
     return response
 
 
-def query(resource_name, resource_id, sub_resource_name, sub_resource_id):
+def list_resources(resource_name, resource_id, sub_resource_name, sub_resource_id):
     results = []
     db = firestore.Client()
     if sub_resource_id and (not resource_id or resource_id in ['any', 'all']):
@@ -216,7 +216,8 @@ def get_messages(start_time, end_time, person_id, both):
             + '(sender.value IN ({values}) OR receiver.value IN ({values}))' if both else 'sender.value IN ({values})'\
             + ' AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
             + 'AND "source:schedule" NOT IN UNNEST(tags) ' \
-            + 'ORDER BY time'.format(project=config.PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
+            + 'ORDER BY time'
+    query = query.format(project=config.PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
     print(query)
     rows = []
     for row in bq.query(query):
