@@ -4,6 +4,7 @@ import datetime
 import dateutil.parser
 import json
 import flask
+import logging
 import uuid
 
 from google.cloud import bigquery
@@ -11,6 +12,9 @@ from google.cloud import firestore
 from google.cloud import pubsub_v1
 
 from common import COLLECTIONS
+
+import google.cloud.logging as logger
+logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 JSON_CACHE_SECONDS = 600
 ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Cookie', 'Expires', 'Origin', 'Pragma',
@@ -42,7 +46,7 @@ def api(request):
     else:
         response.status_code = 400
         return response
-    print(resource_name, resource_id, sub_resource_name, sub_resource_id)
+    logging.info(resource_name, resource_id, sub_resource_name, sub_resource_id)
 
     # TODO: Check authorization
     db = firestore.Client()
@@ -194,7 +198,7 @@ def get_rows(start_time, end_time, source, names):
             'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
             'ORDER BY time'. \
         format(project=config.PROJECT_ID, source=source, names=str(names)[1:-1], start=start_time, end=end_time)
-    print(query)
+    logging.info(query)
     rows = []
     for row in bq.query(query):
         rows.append({'time': row['time'].isoformat(),
@@ -211,14 +215,15 @@ def get_messages(start_time, end_time, person_id, both):
     person_doc = db.collection('persons').document(person_id).get()
     values = [i['value'] for i in filter(lambda i: i['active'], person_doc.get('identifiers'))]
     values.append(person_doc.id)
-    query = 'SELECT time, status, sender, receiver, tags, content, content_type ' \
+    query = 'SELECT time, status, sender, receiver, tags, content, content_type '\
             + 'FROM {project}.live.messages WHERE '\
-            + '(sender.value IN ({values}) OR receiver.value IN ({values}))' if both else 'sender.value IN ({values})'\
-            + ' AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
-            + 'AND "source:schedule" NOT IN UNNEST(tags) ' \
+            + ('(sender.value IN ({values}) OR receiver.value IN ({values})) '
+               if both else 'sender.value IN ({values}) ')\
+            + 'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") '\
+            + 'AND "source:schedule" NOT IN UNNEST(tags) '\
             + 'ORDER BY time'
     query = query.format(project=config.PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
-    print(query)
+    logging.info(query)
     rows = []
     for row in bq.query(query):
         rows.append({'time': row['time'].isoformat(),
@@ -235,7 +240,7 @@ def send_message(person_id, message, user):
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
     if 'receiver' in message and (message['receiver'] | {'active': True}) not in person_doc.to_dict()['identifiers']:
-        print('Invalid receiver {r} for person {pid}'.format(r=message['receiver'], pid=person_id))
+        logging.error('Invalid receiver {r} for person {pid}'.format(r=message['receiver'], pid=person_id))
         return None
     receiver = message['receiver'] if 'receiver' in message else {'type': 'person', 'value': person_doc.id}
     publisher = pubsub_v1.PublisherClient()
