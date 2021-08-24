@@ -212,12 +212,11 @@ def get_messages(start_time, end_time, person_id, both):
     values = [i['value'] for i in filter(lambda i: i['active'], person_doc.get('identifiers'))]
     values.append(person_doc.id)
     query = 'SELECT time, status, sender, receiver, tags, content, content_type ' \
-            'FROM {project}.live.messages WHERE '\
-            '(sender.value IN ({values}) OR receiver.value IN ({values})) ' if both else 'sender.value IN ({values}) ' \
-            'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
-            'AND "source:schedule" NOT IN UNNEST(tags) ' \
-            'ORDER BY time'. \
-        format(project=config.PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
+            + 'FROM {project}.live.messages WHERE '\
+            + '(sender.value IN ({values}) OR receiver.value IN ({values}))' if both else 'sender.value IN ({values})'\
+            + ' AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") ' \
+            + 'AND "source:schedule" NOT IN UNNEST(tags) ' \
+            + 'ORDER BY time'.format(project=config.PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
     print(query)
     rows = []
     for row in bq.query(query):
