@@ -18,9 +18,8 @@ class ContextTestCase(unittest.TestCase):
                                 'receiver': {'type': 'phone', 'value': '+16692154466'},
                                 'status': 'received', 'tags': [], 'content_type': 'text/plain',
                                 'content': 'hi',
-                                'dialogflow': {'intent': 'system.welcome', 'action': 'input.welcome',
-                                               'reply': 'Greetings! How can I assist?', 'confidence': 100,
-                                               'params': {}}})
+                                'nlp': {'intent': 'system.welcome', 'action': 'input.welcome',
+                                        'reply': 'Greetings! How can I assist?', 'confidence': 100, 'params': {}}})
         self.assertEqual('hi', context.get('message.content'))
         context.clear('message')
         self.assertEqual(None, context.get('message.content'))

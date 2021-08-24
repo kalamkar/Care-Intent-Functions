@@ -15,8 +15,7 @@ class Context(object):
             'scheduled': False,
             'data': {'systolic': None, 'diastolic': None, 'glucose': None, 'medication': None},
             'message': {'time': None, 'sender': None, 'receiver': None, 'tags': [], 'content': None,
-                        'dialogflow': {'intent': None, 'action': None, 'reply': None, 'confidence': None,
-                                       'params': {}}},
+                        'nlp': {'intent': None, 'action': None, 'reply': None, 'confidence': None, 'params': {}}},
             'sender': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
             'receiver': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
             'action': {'group': None, 'id': None}

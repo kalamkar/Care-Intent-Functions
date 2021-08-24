@@ -40,13 +40,13 @@ def twilio(request):
     session = df_client.session_path(PROJECT_ID, person_id)
     text_input = dialogflow.types.TextInput(text=content, language_code='en-US')
     query_params = None
-    if 'dialogflow' in person and 'context' in person['dialogflow']:
-        df_context = person['dialogflow']['context']
+    if 'nlp' in person and 'context' in person['nlp']:
+        df_context = person['nlp']['context']
         query_params = dialogflow.types.QueryParameters(contexts=[get_df_context(df_context, person_id)])
         if 'lifespan' in df_context:
             df_context['lifespan'] -= 1
             if df_context['lifespan'] < 1:
-                del person['dialogflow']['context']
+                del person['nlp']['context']
             db.collection('persons').document(person_id).update(person)
     query = dialogflow.types.QueryInput(text=text_input)
     response = df_client.detect_intent(session=session, query_input=query, query_params=query_params)
@@ -59,7 +59,7 @@ def twilio(request):
         'tags': ['source:twilio', response.query_result.intent.display_name],
         'content_type': 'text/plain',
         'content': content,
-        'dialogflow': {
+        'nlp': {
             'intent': response.query_result.intent.display_name,
             'action': response.query_result.action,
             'reply': response.query_result.fulfillment_text,
