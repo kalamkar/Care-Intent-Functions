@@ -46,13 +46,13 @@ def twilio(request):
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
     if 'start' not in person['session'] or (now - person['session']['start']).total_seconds() > config.SESSION_SECONDS:
         person['session']['start'] = now
-        if 'contexts' in person['session']:
-            del person['session']['contexts']
+        if 'context' in person['session']:
+            del person['session']['context']
 
     query_params = None
-    if 'contexts' in person['session']:
-        query_params = dialogflow.types.QueryParameters(
-            contexts=[build_df_context(ctx) for ctx in person['session']['contexts']])
+    if 'context' in person['session']:
+        contexts = [build_df_context(person_id, name, value) for name, value in person['session']['context'].items()]
+        query_params = dialogflow.types.QueryParameters(contexts=contexts)
     df_client = dialogflow.SessionsClient()
     text_input = dialogflow.types.TextInput(text=content, language_code='en-US')
     response = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
@@ -79,17 +79,31 @@ def twilio(request):
         data['tags'].append(response.query_result.action)
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
-    if response.query_result.output_contexts:
-        person['session']['contexts'] = [MessageToDict(ctx) for ctx in response.query_result.output_contexts]
+    context = get_context_dict(response.query_result.output_contexts)
+    if context:
+        person['session']['context'] = context
     logging.info(person['session'])
     db.collection('persons').document(person_id).update({'session': person['session']})  # Update only session part
     return 'OK'
 
 
-def build_df_context(context):
-    df_context = dialogflow.types.Context(name=context['name'])
-    if 'lifespanCount' in context:
-        df_context.lifespan_count = context['lifespanCount']
-    if 'parameters' in context:
-        df_context.parameters.update(context['parameters'])
+def build_df_context(session_id, name, data):
+    df_context = dialogflow.types.Context(name='projects/{project}/agent/sessions/{session}/contexts/{name}'.format(
+        project=config.PROJECT_ID, session=session_id, name=name))
+    if 'lifespanCount' in data:
+        df_context.lifespan_count = data['lifespanCount']
+    if 'parameters' in data:
+        df_context.parameters.update(data['parameters'])
     return df_context
+
+
+def get_context_dict(contexts):
+    context = {}
+    for ctx in contexts:
+        data = MessageToDict(ctx)
+        name = data['name'].split('/')[-1]
+        if name.startswith('__'):
+            continue
+        context[name] = data
+        del data['name']
+    return context
