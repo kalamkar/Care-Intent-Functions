@@ -3,6 +3,7 @@ import config
 import datetime
 import json
 import logging
+import pytz
 import uuid
 
 import dialogflow_v2 as dialogflow
@@ -42,9 +43,9 @@ def twilio(request):
 
     if 'session' not in person:
         person['session'] = {}
-    if 'start' not in person['session'] or \
-            (datetime.datetime.utcnow() - person['session']['start']).total_seconds() > config.SESSION_SECONDS:
-        person['session']['start'] = datetime.datetime.utcnow()
+    now = datetime.datetime.utcnow().astimezone(pytz.utc)
+    if 'start' not in person['session'] or (now - person['session']['start']).total_seconds() > config.SESSION_SECONDS:
+        person['session']['start'] = now
         if 'contexts' in person['session']:
             del person['session']['contexts']
 
