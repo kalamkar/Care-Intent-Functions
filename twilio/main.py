@@ -42,7 +42,8 @@ def twilio(request):
     if 'start' not in person['session'] or \
             (datetime.datetime.utcnow() - person['session']['start']).total_seconds() > config.SESSION_SECONDS:
         person['session']['start'] = datetime.datetime.utcnow()
-        person['session']['contexts'] = []
+        if 'contexts' in person['session']:
+            del person['session']['contexts']
 
     text_input = dialogflow.types.TextInput(text=content, language_code='en-US')
     df_contexts = person['session']['contexts'] if 'contexts' in person['session'] else None
@@ -72,6 +73,7 @@ def twilio(request):
         data['tags'].append(response.query_result.action)
 
     person['session']['contexts'] = response.query_result.output_contexts
+    logging.info(person['session'])
     db.collection('persons').document(person_id).update({'session': person['session']})  # Update only session part
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
     return 'OK'
