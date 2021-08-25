@@ -71,9 +71,9 @@ def twilio(request):
     }
     if response.query_result.action:
         data['tags'].append(response.query_result.action)
+    publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
     person['session']['contexts'] = response.query_result.output_contexts
     logging.info(person['session'])
     db.collection('persons').document(person_id).update({'session': person['session']})  # Update only session part
-    publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
     return 'OK'
