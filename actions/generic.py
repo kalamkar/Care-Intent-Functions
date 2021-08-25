@@ -6,7 +6,6 @@ import logging
 import requests
 import uuid
 
-from google.cloud import bigquery
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 
@@ -65,35 +64,6 @@ class Message(Action):
             'content': self.content
         }
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
-
-
-class SimplePatternCheck(Action):
-    def __init__(self, person_id=None, name=None, seconds=None, min_threshold=None, max_threshold=None):
-        self.person_id = person_id
-        self.name = name
-        self.seconds = seconds
-        self.min_threshold = min_threshold
-        self.max_threshold = max_threshold
-        super().__init__()
-
-    def process(self):
-        client = bigquery.Client()
-        query = 'SELECT DISTINCT time, number FROM careintent.live.tsdata, UNNEST(data) ' \
-                'WHERE source.value = "{source}" AND name = "{name}" ' \
-                'AND time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {seconds} second) ' \
-                'ORDER BY time'.\
-            format(source=self.person_id, name=self.name, seconds=self.seconds)
-        data = []
-        for row in client.query(query):
-            data.append((row['time'], row['number']))
-
-        if len(data) < 2:
-            return
-        seconds = (data[-1][0] - data[0][0]).total_seconds()
-        hour_rate = (data[-1][1] - data[0][1]) * (60 * 60) / (seconds if seconds else 1)
-        if (self.min_threshold and hour_rate < self.min_threshold) or\
-           (self.max_threshold and hour_rate > self.max_threshold):
-            self.context_update['data'] = {'pattern': 'slope', 'rate-hour': hour_rate, 'name': self.name}
 
 
 class UpdateResource(Action):

@@ -25,7 +25,6 @@ ACTIONS = {
     'DataProvider': providers.DataProvider,
     'Message': generic.Message,
     'OAuth': providers.OAuth,
-    'SimplePatternCheck': generic.SimplePatternCheck,
     'Update': generic.UpdateResource,
     'UpdateResource': generic.UpdateResource,
     'UpdateContext': generic.UpdateContext,
