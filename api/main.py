@@ -46,7 +46,7 @@ def api(request):
     else:
         response.status_code = 400
         return response
-    logging.info(resource_name, resource_id, sub_resource_name, sub_resource_id)
+    logging.info('/{}/{}/{}/{}'.format(resource_name, resource_id, sub_resource_name, sub_resource_id))
 
     # TODO: Check authorization
     db = firestore.Client()
