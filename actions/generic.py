@@ -1,5 +1,4 @@
 import base64
-import cipher
 import config
 import datetime
 import json
@@ -10,7 +9,6 @@ import uuid
 from google.cloud import bigquery
 from google.cloud import firestore
 from google.cloud import pubsub_v1
-from urllib.parse import urlencode
 
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Content
@@ -69,51 +67,6 @@ class Message(Action):
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
 
 
-def create_dexcom_auth_url(person_id):
-    return 'https://sandbox-api.dexcom.com/v2/oauth2/login?' + urlencode({
-        'client_id': config.DEXCOM_ID,
-        'redirect_uri': 'https://us-central1-%s.cloudfunctions.net/auth' % config.PROJECT_ID,
-        'response_type': 'code',
-        'scope': 'offline_access',
-        'state': cipher.create_auth_token(
-            {'person_id': person_id, 'action_id': 'dexcom', 'schedule': '0-55/5 * * * *'})
-    })
-
-
-def create_google_auth_url(person_id):
-    return 'https://accounts.google.com/o/oauth2/v2/auth?' + urlencode({
-        'prompt': 'consent',
-        'response_type': 'code',
-        'client_id': '749186156527-hl1f7u9o2cssle1n80nl09bej2bjfg97.apps.googleusercontent.com',
-        'scope': 'https://www.googleapis.com/auth/fitness.activity.read',
-        'access_type': 'offline',
-        'redirect_uri': 'https://us-central1-%s.cloudfunctions.net/auth' % config.PROJECT_ID,
-        'state': cipher.create_auth_token(
-            {'person_id': person_id, 'action_id': 'google', 'schedule': '0 * * * *'})
-    })
-
-
-PROVIDER_URLS = {'dexcom': create_dexcom_auth_url,
-                 'google': create_google_auth_url}
-
-
-class OAuth(Action):
-    def __init__(self, person_id=None, provider=None):
-        self.person_id = person_id
-        self.provider = provider
-        super().__init__()
-
-    def process(self):
-        short_code = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
-        db = firestore.Client()
-        db.collection('urls').document(short_code).set({
-            'redirect': PROVIDER_URLS[self.provider](self.person_id)
-        })
-        self.context_update['oauth'] = {
-            'url': ('https://us-central1-%s.cloudfunctions.net/u/' % config.PROJECT_ID) + short_code
-        }
-
-
 class SimplePatternCheck(Action):
     def __init__(self, person_id=None, name=None, seconds=None, min_threshold=None, max_threshold=None):
         self.person_id = person_id
@@ -143,7 +96,7 @@ class SimplePatternCheck(Action):
             self.context_update['data'] = {'pattern': 'slope', 'rate-hour': hour_rate, 'name': self.name}
 
 
-class Update(Action):
+class UpdateResource(Action):
     def __init__(self, identifier=None, content=None, list_name=None):
         self.identifier = identifier
         self.content = content
@@ -158,6 +111,18 @@ class Update(Action):
                                                                      data=self.content))
         content = json.loads(self.content.replace('\'', '"'))
         doc_ref.update({self.list_name: firestore.ArrayUnion(content)} if self.list_name else content)
+
+
+class UpdateContext(Action):
+    def __init__(self, content=None):
+        self.content = content
+        super().__init__()
+
+    def process(self):
+        try:
+            self.context_update = json.loads(self.content)
+        except:
+            logging.warning('Failed to parse json ' + self.content)
 
 
 class DataExtract(Action):

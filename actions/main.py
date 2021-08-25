@@ -24,9 +24,11 @@ ACTIONS = {
     'DataExtract': generic.DataExtract,
     'DataProvider': providers.DataProvider,
     'Message': generic.Message,
-    'OAuth': generic.OAuth,
+    'OAuth': providers.OAuth,
     'SimplePatternCheck': generic.SimplePatternCheck,
-    'Update': generic.Update,
+    'Update': generic.UpdateResource,
+    'UpdateResource': generic.UpdateResource,
+    'UpdateContext': generic.UpdateContext,
     'Webhook': generic.Webhook
 }
 

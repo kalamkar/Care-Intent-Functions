@@ -1,3 +1,5 @@
+import base64
+import cipher
 import config
 import datetime
 import dateutil.parser
@@ -5,11 +7,13 @@ import json
 import logging
 import pytz
 import requests
+import uuid
 
 from generic import Action
 
 from google.cloud import pubsub_v1
 from urllib.parse import urlencode
+from google.cloud import firestore
 
 
 class DataProvider(Action):
@@ -112,7 +116,7 @@ def get_access_token(refresh, provider_name):
         'client_secret': config.PROVIDERS[provider_name]['client_secret'],
         'refresh_token': refresh,
         'grant_type': 'refresh_token',
-        'redirect_uri': 'https://us-central1-careintent.cloudfunctions.net/auth'
+        'redirect_uri': 'https://{}-{}.cloudfunctions.net/auth'.format(config.LOCATION_ID, config.PROJECT_ID)
     })
     response = requests.post(config.PROVIDERS[provider_name]['url'], body, headers=headers)
     if response.status_code > 299:
@@ -122,3 +126,48 @@ def get_access_token(refresh, provider_name):
 
 
 PROVIDERS = {'dexcom': get_dexcom_data, 'google': get_google_data}
+
+
+def create_dexcom_auth_url(person_id):
+    return 'https://sandbox-api.dexcom.com/v2/oauth2/login?' + urlencode({
+        'client_id': config.DEXCOM_ID,
+        'redirect_uri': 'https://{}-{}.cloudfunctions.net/auth'.format(config.LOCATION_ID, config.PROJECT_ID),
+        'response_type': 'code',
+        'scope': 'offline_access',
+        'state': cipher.create_auth_token(
+            {'person_id': person_id, 'action_id': 'dexcom', 'schedule': '0-55/5 * * * *'})
+    })
+
+
+def create_google_auth_url(person_id):
+    return 'https://accounts.google.com/o/oauth2/v2/auth?' + urlencode({
+        'prompt': 'consent',
+        'response_type': 'code',
+        'client_id': '749186156527-hl1f7u9o2cssle1n80nl09bej2bjfg97.apps.googleusercontent.com',
+        'scope': 'https://www.googleapis.com/auth/fitness.activity.read',
+        'access_type': 'offline',
+        'redirect_uri': 'https://{}-{}.cloudfunctions.net/auth'.format(config.LOCATION_ID, config.PROJECT_ID),
+        'state': cipher.create_auth_token(
+            {'person_id': person_id, 'action_id': 'google', 'schedule': '0 * * * *'})
+    })
+
+
+PROVIDER_URLS = {'dexcom': create_dexcom_auth_url,
+                 'google': create_google_auth_url}
+
+
+class OAuth(Action):
+    def __init__(self, person_id=None, provider=None):
+        self.person_id = person_id
+        self.provider = provider
+        super().__init__()
+
+    def process(self):
+        short_code = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
+        db = firestore.Client()
+        db.collection('urls').document(short_code).set({
+            'redirect': PROVIDER_URLS[self.provider](self.person_id)
+        })
+        self.context_update['oauth'] = {
+            'url': 'https://{}-{}.cloudfunctions.net/u/{}'.format(config.LOCATION_ID, config.PROJECT_ID, short_code)
+        }
