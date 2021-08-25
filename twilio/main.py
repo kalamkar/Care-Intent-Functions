@@ -49,10 +49,12 @@ def twilio(request):
         if 'contexts' in person['session']:
             del person['session']['contexts']
 
-    text_input = dialogflow.types.TextInput(text=content, language_code='en-US')
-    df_contexts = person['session']['contexts'] if 'contexts' in person['session'] else None
-    query_params = dialogflow.types.QueryParameters(contexts=df_contexts) if df_contexts else None
+    query_params = None
+    if 'contexts' in person['session']:
+        query_params = dialogflow.types.QueryParameters(
+            contexts=[build_df_context(ctx) for ctx in person['session']['contexts']])
     df_client = dialogflow.SessionsClient()
+    text_input = dialogflow.types.TextInput(text=content, language_code='en-US')
     response = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
                                        query_input=dialogflow.types.QueryInput(text=text_input),
                                        query_params=query_params)
@@ -78,7 +80,16 @@ def twilio(request):
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
     if response.query_result.output_contexts:
-        person['session']['contexts'] = response.query_result.output_contexts
+        person['session']['contexts'] = [MessageToDict(ctx) for ctx in response.query_result.output_contexts]
     logging.info(person['session'])
     db.collection('persons').document(person_id).update({'session': person['session']})  # Update only session part
     return 'OK'
+
+
+def build_df_context(context):
+    df_context = dialogflow.types.Context(name=context['name'])
+    if 'lifespanCount' in context:
+        df_context.lifespan_count = context['lifespanCount']
+    if 'parameters' in context:
+        df_context.parameters.update(context['parameters'])
+    return df_context
