@@ -7,6 +7,8 @@ DEXCOM_ID = 'cfz2ttzaLK164vTJ3lkt02n7ih0YMBHg'
 
 PHONE_NUMBER = '+16692154466'
 
+SESSION_SECONDS = 6 * 60 * 60
+
 PROVIDERS = {'dexcom': {'url': 'https://sandbox-api.dexcom.com/v2/oauth2/token',
                         'client_id': 'cfz2ttzaLK164vTJ3lkt02n7ih0YMBHg',
                         'client_secret': 'NZ4sTh0n4X6AT0XE'},
