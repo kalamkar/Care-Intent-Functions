@@ -2,4 +2,5 @@
 # package>=version
 dialogflow
 google-cloud-firestore
+google-cloud-logging
 google-cloud-pubsub

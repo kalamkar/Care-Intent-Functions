@@ -10,6 +10,9 @@ from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict
 
+import google.cloud.logging as logger
+logger.handlers.setup_logging(logger.Client().get_default_handler())
+
 
 class IdType(object):
     phone = 'phone'
