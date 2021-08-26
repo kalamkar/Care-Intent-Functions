@@ -73,12 +73,19 @@ def process(event, metadata):
     else:
         action_parent_pairs = get_actions([context.get('sender.id'), context.get('receiver.id')], db)
     logging.info('Context {}'.format(context.data))
+    actions_run = []
     bq = bigquery.Client()
     for action_doc, parent_doc in action_parent_pairs:
         try:
-            process_action(action_doc, parent_doc, context, bq)
+            action_id = process_action(action_doc, parent_doc, context, bq)
+            if action_id:
+                actions_run.append(action_id)
         except:
             traceback.print_exc()
+
+    if context.get('person.id.value'):
+        db.collection('persons').document(context.get('person.id.value')).update(
+            {'session.actions': firestore.ArrayUnion(actions_run)})
 
 
 def process_action(action_doc, parent_doc, context, bq):
@@ -94,10 +101,10 @@ def process_action(action_doc, parent_doc, context, bq):
         threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=action['hold_secs'])
         if latest_run_time and latest_run_time > threshold.astimezone(pytz.UTC):
             logging.info('Skipping {id} recently run at {runtime}'.format(id=action['id'], runtime=latest_run_time))
-            return
+            return None
 
     if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
-        return
+        return None
 
     logging.info('Triggering {} {}'.format(action['id'], action))
 
@@ -108,7 +115,7 @@ def process_action(action_doc, parent_doc, context, bq):
         content, content_id = get_content(params['content'], selection, latest_content_id)
         if not content:
             logging.warning('Skipping matched action {} because of missing content'.format(action['id']))
-            return
+            return None
         params['content'] = context.render(content)
     for param_name in filter(lambda p: p != 'content', JINJA_PARAMS):
         if param_name in params:
@@ -128,6 +135,7 @@ def process_action(action_doc, parent_doc, context, bq):
     errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
     if errors:
         logging.warning(errors)
+    return action_doc.id
 
 
 def get_content(content, select, latest_content_id):
