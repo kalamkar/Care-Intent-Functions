@@ -2,8 +2,8 @@ import config
 import json
 import logging
 
-COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'schedule': 'schedules',
-               'member': 'members', 'admin': 'admins'}
+COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'member': 'members', 'admin': 'admins',
+               'schedule': 'schedules'}
 
 DURATIONS = {
     'm': 60,

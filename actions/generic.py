@@ -1,4 +1,6 @@
 import base64
+
+import common
 import config
 import datetime
 import json
@@ -75,7 +77,7 @@ class UpdateResource(Action):
 
     def process(self):
         db = firestore.Client()
-        collection = self.identifier['type'] + 's'
+        collection = common.COLLECTIONS[self.identifier['type']]
         doc_ref = db.collection(collection).document(self.identifier['value'])
         logging.info('Updating {collection}/{id} with {data}'.format(collection=collection, id=self.identifier['value'],
                                                                      data=self.content))
