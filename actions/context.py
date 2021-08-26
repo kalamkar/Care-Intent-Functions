@@ -1,3 +1,5 @@
+import pytz
+
 import common
 import config
 import datetime
@@ -23,6 +25,7 @@ class Context(object):
         self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True)
         self.env.filters['history'] = self.history
         self.env.filters['np'] = self.numpy
+        self.env.filters['timediff'] = self.timediff
 
     def numpy(self, value, function):
         functions = {name: value for name, value in getmembers(np, isfunction)}
@@ -50,6 +53,10 @@ class Context(object):
         data = [row['number'] for row in bq.query(q)]
         logging.info(data)
         return data
+
+    def timediff(self, start, end):
+        end = end if end else datetime.datetime.utcnow().astimezone(pytz.utc)
+        return (end - start).total_seconds()
 
     def evaluate(self, expression):
         try:
