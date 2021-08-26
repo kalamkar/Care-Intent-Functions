@@ -69,21 +69,21 @@ def process(event, metadata):
             parent_id, parent_collection = message['content']['person_id'], 'persons'
         action = db.collection(parent_collection).document(parent_id)\
             .collection('actions').document(message['content']['action_id']).get()
-        actions = [(action, db.collection(parent_collection).document(parent_id).get())]
+        action_parent_pairs = [(action, db.collection(parent_collection).document(parent_id).get())]
     else:
-        actions = get_actions([context.get('sender.id'), context.get('receiver.id')])
+        action_parent_pairs = get_actions([context.get('sender.id'), context.get('receiver.id')], db)
     logging.info('Context {}'.format(context.data))
     bq = bigquery.Client()
-    for action, parent in actions:
+    for action_doc, parent_doc in action_parent_pairs:
         try:
-            process_action(action, parent, context, bq)
+            process_action(action_doc, parent_doc, context, bq)
         except:
             traceback.print_exc()
 
 
 def process_action(action_doc, parent_doc, context, bq):
-    action = action_doc.to_dict() | {'id': action_doc.id, 'parent': parent_doc.to_dict()
-                                                                    | {'id': common.get_id(parent_doc)}}
+    action = action_doc.to_dict() \
+             | {'id': action_doc.id, 'parent': parent_doc.to_dict() | {'id': common.get_id(parent_doc)}}
     resource_id = context.get('sender.id') or context.get('receiver.id')
     context.clear('action')
     context.set('action', action)
@@ -173,8 +173,7 @@ def get_latest_run_time(action_id, resource_id, bq):
     return latest_run_time, latest_content_id
 
 
-def get_actions(resource_ids):
-    db = firestore.Client()
+def get_actions(resource_ids, db):
     actions = []
     ids = set()
     groups = [db.collection('groups').document(config.SYSTEM_GROUP_ID).get()]
@@ -204,8 +203,7 @@ def get_resource(resource, db):
             groups = list(db.collection('groups').where('identifiers', 'array_contains', resource).get())
             return (groups[0].to_dict() | {'id': {'type': 'group', 'value': groups[0].id}}) if groups else None
     elif resource['type'] in ['person', 'group']:
-        db = firestore.Client()
-        doc = db.collection(resource['type'] + 's').document(resource['value']).get()
+        doc = db.collection(common.COLLECTIONS[resource['type']]).document(resource['value']).get()
         return doc.to_dict() | {'id': resource}
 
 
