@@ -45,9 +45,7 @@ def twilio(request):
         person['session'] = {}
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
     if 'start' not in person['session'] or (now - person['session']['start']).total_seconds() > config.SESSION_SECONDS:
-        person['session']['start'] = now
-        if 'context' in person['session']:
-            del person['session']['context']
+        person['session'] = {'start': now}
 
     query_params = None
     if 'context' in person['session']:
