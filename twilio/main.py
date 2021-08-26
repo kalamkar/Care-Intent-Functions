@@ -80,6 +80,7 @@ def twilio(request):
     context = get_context_dict(response.query_result.output_contexts)
     if context:
         person['session']['context'] = context
+    person['session']['last_message_time'] = now
     logging.info(person['session'])
     db.collection('persons').document(person_id).update({'session': person['session']})  # Update only session part
     return 'OK'
