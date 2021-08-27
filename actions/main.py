@@ -177,11 +177,11 @@ def get_latest_run_time(action_id, resource_id, bq):
 def get_actions(resource_ids, db):
     actions = []
     ids = set()
-    groups = [db.collection('groups').document(config.SYSTEM_GROUP_ID).get()]
-    groups.extend([db.collection('groups').document(g['value']).get()
-                   for g in filter(lambda g: g and 'type' in g and g['type'] == 'group', resource_ids)])
+    groups = [db.collection('groups').document(g['value']).get()
+              for g in filter(lambda g: g and 'type' in g and g['type'] == 'group', resource_ids)]
     for resource_id in resource_ids:
         groups.extend(common.get_parents(resource_id, 'member', db))
+    groups.append(db.collection('groups').document(config.SYSTEM_GROUP_ID).get())
     for group in set(groups):
         for action in db.collection('groups').document(group.id).collection('actions').stream():
             if action.id not in ids:
