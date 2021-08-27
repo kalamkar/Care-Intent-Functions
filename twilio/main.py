@@ -8,6 +8,7 @@ import uuid
 
 import dialogflow_v2 as dialogflow
 from google.cloud import firestore
+from google.cloud import language_v1
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict
 
@@ -53,31 +54,36 @@ def twilio(request):
         query_params = dialogflow.types.QueryParameters(contexts=contexts)
     df_client = dialogflow.SessionsClient()
     text_input = dialogflow.types.TextInput(text=content, language_code='en-US')
-    response = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
-                                       query_input=dialogflow.types.QueryInput(text=text_input),
-                                       query_params=query_params)
+    df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
+                                 query_input=dialogflow.types.QueryInput(text=text_input),
+                                 query_params=query_params)
+
+    nlp_client = language_v1.LanguageServiceClient()
+    sentiment = nlp_client.analyze_sentiment(document=language_v1.Document(
+        content=content, type_=language_v1.Document.Type.PLAIN_TEXT))
 
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': IdType.phone, 'value': sender},
         'receiver': {'type': IdType.phone, 'value': receiver},
         'status': 'received',
-        'tags': ['source:twilio', response.query_result.intent.display_name],
+        'tags': ['source:twilio', df.query_result.intent.display_name],
         'content_type': 'text/plain',
         'content': content,
         'nlp': {
-            'intent': response.query_result.intent.display_name,
-            'action': response.query_result.action,
-            'reply': response.query_result.fulfillment_text,
-            'confidence': int(response.query_result.intent_detection_confidence * 100),
-            'params': MessageToDict(response.query_result.parameters)
+            'intent': df.query_result.intent.display_name,
+            'action': df.query_result.action,
+            'sentiment_score': sentiment.document_sentiment.score,
+            'reply': df.query_result.fulfillment_text,
+            'confidence': int(df.query_result.intent_detection_confidence * 100),
+            'params': MessageToDict(df.query_result.parameters)
         }
     }
-    if response.query_result.action:
-        data['tags'].append(response.query_result.action)
+    if df.query_result.action:
+        data['tags'].append(df.query_result.action)
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
-    context = get_context_dict(response.query_result.output_contexts)
+    context = get_context_dict(df.query_result.output_contexts)
     if context:
         person['session']['context'] = context
     person['session']['last_message_time'] = now

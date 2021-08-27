@@ -2,6 +2,7 @@
 # package>=version
 dialogflow
 google-cloud-firestore
+google-cloud-language
 google-cloud-logging
 google-cloud-pubsub
 pytz

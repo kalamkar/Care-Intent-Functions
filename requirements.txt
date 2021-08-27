@@ -6,6 +6,7 @@ dialogflow
 flask~=2.0.1
 google-cloud-bigquery
 google-cloud-firestore
+google-cloud-language
 google-cloud-logging
 google-cloud-pubsub
 google-cloud-tasks
