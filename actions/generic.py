@@ -97,7 +97,7 @@ class UpdateContext(Action):
             logging.warning('Failed to parse json ' + self.content)
 
 
-class DataExtract(Action):
+class UpdateData(Action):
     def __init__(self, person_id=None, params=None):
         self.person_id = person_id
         self.params = params if params else {}
