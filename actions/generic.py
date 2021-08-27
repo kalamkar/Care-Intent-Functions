@@ -98,14 +98,18 @@ class UpdateContext(Action):
 
 
 class UpdateData(Action):
-    def __init__(self, person_id=None, params=None):
+    def __init__(self, person_id=None, params=None, content=None):
         self.person_id = person_id
         self.params = params if params else {}
+        self.content = content
         super().__init__()
 
     def process(self):
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
+
+        if not self.params and self.content:
+            self.params = json.loads(self.content)
 
         row = {
             'time': datetime.datetime.utcnow().isoformat(),
