@@ -76,6 +76,7 @@ class CreateAction(Action):
         self.parent_id = kwargs['parent_id'] if 'parent_id' in kwargs else None
         self.action = kwargs['action'] if 'action' in kwargs else None
         self.delay_secs = kwargs['delay_secs'] if 'delay_secs' in kwargs else None
+        self.maxrun = kwargs['maxrun'] if 'maxrun' in kwargs else None
 
     def process(self):
         if not self.parent_id or not self.action_type:
@@ -85,7 +86,7 @@ class CreateAction(Action):
         for filtered_param in ['condition', 'parent', 'action', 'action_type', 'parent_id', 'delay_secs']:
             if filtered_param in action:
                 del action[filtered_param]
-        for top_param in ['priority', 'condition', 'schedule', 'timezone', 'hold_secs']:
+        for top_param in ['priority', 'condition', 'schedule', 'timezone', 'hold_secs', 'maxrun']:
             if top_param in action['params']:
                 action[top_param] = action['params'][top_param]
                 del action['params'][top_param]

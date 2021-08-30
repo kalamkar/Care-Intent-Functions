@@ -119,7 +119,11 @@ def process_action(action_doc, parent_doc, context, bq):
     actrun.process()
     logging.info(actrun.context_update)
     context.update(actrun.context_update)
-    if actrun.action_update:
+    if 'maxrun' in action:
+        actrun.action_update['maxrun'] = action['maxrun'] - 1
+    if 'maxrun' in actrun.action_update and actrun.action_update['maxrun'] <= 0:
+        action_doc.reference.delete()
+    elif actrun.action_update:
         action_doc.reference.update(actrun.action_update)
     log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
            'resources': [{'type': resource_id['type'], 'id': resource_id['value']},
