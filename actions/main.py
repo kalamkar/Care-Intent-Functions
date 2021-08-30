@@ -88,6 +88,13 @@ def process_action(action_doc, parent_doc, context, bq):
     resource_id = context.get('sender.id') or context.get('receiver.id')
     context.clear('action')
     context.set('action', action)
+
+    if 'maxrun' in action:
+        action['maxrun'] = action['maxrun'] - 1
+        if action['maxrun'] <= 0:
+            action_doc.reference.delete()
+            action_doc = None
+
     latest_run_time, latest_content_id = None, None
     if 'hold_secs' in action or ('content_select' in action and action['content_select'] != 'random'):
         latest_run_time, latest_content_id = get_latest_run_time(action['id'], resource_id, bq)
@@ -119,11 +126,7 @@ def process_action(action_doc, parent_doc, context, bq):
     actrun.process()
     logging.info(actrun.context_update)
     context.update(actrun.context_update)
-    if 'maxrun' in action:
-        actrun.action_update['maxrun'] = action['maxrun'] - 1
-    if 'maxrun' in actrun.action_update and actrun.action_update['maxrun'] <= 0:
-        action_doc.reference.delete()
-    elif actrun.action_update:
+    if actrun.action_update and action_doc and action_doc.exists:
         action_doc.reference.update(actrun.action_update)
     log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
            'resources': [{'type': resource_id['type'], 'id': resource_id['value']},
