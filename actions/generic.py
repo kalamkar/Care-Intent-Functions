@@ -9,6 +9,8 @@ import requests
 
 from google.cloud import firestore
 from google.cloud import pubsub_v1
+from google.cloud import tasks_v2
+from google.protobuf import timestamp_pb2
 
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Content
@@ -96,7 +98,9 @@ class CreateAction(Action):
                 now = now.astimezone(pytz.timezone(action['timezone'])) if 'timezone' in action else now
                 cron = croniter.croniter(action['schedule'], now)
                 start_time = cron.get_next(datetime.datetime)
-            action['task_id'] = common.schedule_task(payload, start_time)
+            timestamp = timestamp_pb2.Timestamp()
+            timestamp.FromDatetime(start_time)
+            action['task_id'] = common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
         elif 'condition' not in action:
             logging.warning('Create action is missing schedule, delay or condition')
             return
