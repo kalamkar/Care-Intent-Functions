@@ -1,12 +1,11 @@
-import base64
-
+import croniter
 import common
 import config
 import datetime
 import json
 import logging
+import pytz
 import requests
-import uuid
 
 from google.cloud import firestore
 from google.cloud import pubsub_v1
@@ -41,7 +40,7 @@ class Message(Action):
     def process(self):
         if self.queue:
             db = firestore.Client()
-            msg_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
+            msg_id = common.generate_id()
             msg = db.collection('persons').document(self.receiver['value']).collection('messages').document(msg_id)
             msg.set({
                 'time': datetime.datetime.utcnow().isoformat(),
@@ -66,6 +65,45 @@ class Message(Action):
             'content': self.content
         }
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
+
+
+class CreateAction(Action):
+    def __init__(self, action_type=None, parent_id=None, action=None, delay_secs=None):
+        super().__init__()
+        self.action_type = action_type
+        self.parent_id = parent_id
+        self.action = action or {}
+        self.delay_secs = delay_secs
+
+    def process(self):
+        if not self.parent_id or not self.action_type:
+            logging.warning('Missing parent id or action type for delayed action')
+            return
+        action = self.action | {'id': common.generate_id(), 'type': self.action_type}
+        del action['condition']
+        for top_param in ['priority', 'condition', 'schedule', 'timezone', 'hold_secs']:
+            if top_param in action['params']:
+                action[top_param] = action['params'][top_param]
+                del action['params'][top_param]
+
+        if 'schedule' in action or self.delay_secs:
+            payload = {'action_id': action['id'],
+                       'group_id' if self.parent_id['type'] == 'group' else 'person_id': self.parent_id['value']}
+            now = datetime.datetime.utcnow()
+            if self.delay_secs:
+                start_time = now + datetime.timedelta(seconds=self.delay_secs)
+            else:
+                now = now.astimezone(pytz.timezone(action['timezone'])) if 'timezone' in action else now
+                cron = croniter.croniter(action['schedule'], now)
+                start_time = cron.get_next(datetime.datetime)
+            action['task_id'] = common.schedule_task(payload, start_time)
+        elif 'condition' not in action:
+            logging.warning('Create action is missing schedule, delay or condition')
+            return
+
+        db = firestore.Client()
+        db.collection(common.COLLECTIONS[self.parent_id['type']]).document(self.parent_id['value'])\
+            .collection('actions').document(action['id']).set(action)
 
 
 class UpdateResource(Action):

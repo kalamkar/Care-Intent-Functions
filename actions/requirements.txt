@@ -1,5 +1,6 @@
 # Function dependencies, for example:
 # package>=version
+croniter
 google-cloud-bigquery
 google-cloud-firestore
 google-cloud-logging

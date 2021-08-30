@@ -1,6 +1,8 @@
+import base64
 import config
 import json
 import logging
+import uuid
 
 COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'member': 'members', 'admin': 'admins',
                'schedule': 'schedules'}
@@ -43,7 +45,7 @@ def schedule_task(payload, client, timestamp=None, queue_name='actions'):
     task = {
         'http_request': {  # Specify the type of request.
             'http_method': 1,  # tasks_v2.HttpMethod.POST,
-            'url': 'https://us-central1-%s.cloudfunctions.net/process-task' % config.PROJECT_ID,
+            'url': 'https://%s-%s.cloudfunctions.net/process-task' % (config.LOCATION_ID, config.PROJECT_ID),
             'oidc_token': {'service_account_email': '%s@appspot.gserviceaccount.com' % config.PROJECT_ID},
             'headers': {"Content-type": "application/json"},
             'body': json.dumps(payload).encode()
@@ -54,3 +56,7 @@ def schedule_task(payload, client, timestamp=None, queue_name='actions'):
     response = client.create_task(request={'parent': queue, 'task': task})
     logging.info("Created task {}".format(response.name))
     return response.name
+
+
+def generate_id():
+    return base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')

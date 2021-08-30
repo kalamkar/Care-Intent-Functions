@@ -21,6 +21,7 @@ import google.cloud.logging as logger
 logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 ACTIONS = {
+    'CreateAction': generic.CreateAction,
     'UpdateData': generic.UpdateData,
     'DataProvider': providers.DataProvider,
     'Message': generic.Message,
