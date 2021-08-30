@@ -68,12 +68,12 @@ class Message(Action):
 
 
 class CreateAction(Action):
-    def __init__(self, action_type=None, parent_id=None, action=None, delay_secs=None):
+    def __init__(self, **kwargs):
         super().__init__()
-        self.action_type = action_type
-        self.parent_id = parent_id
-        self.action = action or {}
-        self.delay_secs = delay_secs
+        self.action_type = kwargs['action_type'] if 'action_type' in kwargs else None
+        self.parent_id = kwargs['parent_id'] if 'parent_id' in kwargs else None
+        self.action = kwargs['action'] if 'action' in kwargs else None
+        self.delay_secs = kwargs['delay_secs'] if 'delay_secs' in kwargs else None
 
     def process(self):
         if not self.parent_id or not self.action_type:
