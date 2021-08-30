@@ -82,7 +82,9 @@ class CreateAction(Action):
             logging.warning('Missing parent id or action type for delayed action')
             return
         action = self.action | {'id': common.generate_id(), 'type': self.action_type}
-        del action['condition']
+        for filtered_param in ['condition', 'parent', 'action', 'action_type', 'parent_id', 'delay_secs']:
+            if filtered_param in action:
+                del action[filtered_param]
         for top_param in ['priority', 'condition', 'schedule', 'timezone', 'hold_secs']:
             if top_param in action['params']:
                 action[top_param] = action['params'][top_param]
