@@ -8,7 +8,6 @@ import uuid
 
 import dialogflow_v2 as dialogflow
 from google.cloud import firestore
-from google.cloud import language_v1
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict
 
@@ -59,10 +58,6 @@ def twilio(request):
                                  query_params=query_params)
     logging.info(df)
 
-    nlp_client = language_v1.LanguageServiceClient()
-    sentiment = nlp_client.analyze_sentiment(document=language_v1.Document(
-        content=content, type_=language_v1.Document.Type.PLAIN_TEXT))
-
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': IdType.phone, 'value': sender},
@@ -74,7 +69,7 @@ def twilio(request):
         'nlp': {
             'intent': df.query_result.intent.display_name,
             'action': df.query_result.action,
-            'sentiment_score': sentiment.document_sentiment.score,
+            'sentiment_score': df.query_result.sentiment_analysis_result.query_text_sentiment.score,
             'reply': df.query_result.fulfillment_text,
             'confidence': int(df.query_result.intent_detection_confidence * 100),
             'params': MessageToDict(df.query_result.parameters)
