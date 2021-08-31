@@ -29,6 +29,10 @@ class DataProvider(Action):
     def process(self):
         if not self.expiration or self.expiration < datetime.datetime.utcnow().astimezone(pytz.UTC):
             response = get_access_token(self.refresh_token, self.name)
+            if 'access_token' not in response:
+                logging.warning('Missing access token while renewing it.')
+                logging.warning(response)
+                return
             self.access_token = response['access_token']
             self.expiration = datetime.datetime.utcnow() + datetime.timedelta(seconds=response['expires_in'])
             response['expires'] = self.expiration
