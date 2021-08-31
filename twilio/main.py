@@ -57,6 +57,7 @@ def twilio(request):
     df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
                                  query_input=dialogflow.types.QueryInput(text=text_input),
                                  query_params=query_params)
+    logging.info(df)
 
     nlp_client = language_v1.LanguageServiceClient()
     sentiment = nlp_client.analyze_sentiment(document=language_v1.Document(
