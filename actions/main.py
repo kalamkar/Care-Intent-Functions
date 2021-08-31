@@ -1,6 +1,5 @@
 import base64
 
-import actions.message
 import common
 import config
 import datetime
@@ -25,7 +24,7 @@ ACTIONS = {
     'CreateAction': generic.CreateAction,
     'UpdateData': generic.UpdateData,
     'DataProvider': providers.DataProvider,
-    'Message': actions.message.Message,
+    'Message': generic.Message,
     'OAuth': providers.OAuth,
     'Update': generic.UpdateResource,
     'UpdateResource': generic.UpdateResource,
