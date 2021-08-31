@@ -6,7 +6,7 @@ import logging
 import pytz
 import uuid
 
-import dialogflow_v2 as dialogflow
+import dialogflow_v2beta1 as dialogflow
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict
@@ -47,10 +47,12 @@ def twilio(request):
     if 'start' not in person['session'] or (now - person['session']['start']).total_seconds() > config.SESSION_SECONDS:
         person['session'] = {'start': now}
 
-    query_params = None
+    knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID,
+                                                                              config.SYSTEM_KNOWLEDGE_ID)
+    query_params = dialogflow.types.QueryParameters(knowledge_base_names=[knowledge_base_path])
     if 'context' in person['session']:
-        contexts = [build_df_context(person_id, name, value) for name, value in person['session']['context'].items()]
-        query_params = dialogflow.types.QueryParameters(contexts=contexts)
+        query_params.contexts = \
+            [build_df_context(person_id, name, value) for name, value in person['session']['context'].items()]
     df_client = dialogflow.SessionsClient()
     text_input = dialogflow.types.TextInput(text=content, language_code='en-US')
     df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
