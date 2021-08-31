@@ -4,6 +4,7 @@ import common
 import datetime
 import json
 import flask
+import logging
 import uuid
 
 from google.cloud import firestore
@@ -125,7 +126,11 @@ def send_message(person_id, content, group_id):
             return None
         receiver = {'type': id_type, 'value': id_value}
     else:
-        receiver = {'type': 'person', 'value': person_id}
+        receiver = common.filter_phone_identifier(db.collection('persons').document(person_id).get())
+
+    if not receiver:
+        logging.warning('Missing receiver')
+        return {'message': 'Missing receiver'}
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')

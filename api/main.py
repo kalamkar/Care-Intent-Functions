@@ -1,4 +1,5 @@
 import base64
+import common
 import config
 import datetime
 import dateutil.parser
@@ -242,7 +243,10 @@ def send_message(person_id, message, user):
     if 'receiver' in message and (message['receiver'] | {'active': True}) not in person_doc.to_dict()['identifiers']:
         logging.error('Invalid receiver {r} for person {pid}'.format(r=message['receiver'], pid=person_id))
         return None
-    receiver = message['receiver'] if 'receiver' in message else {'type': 'person', 'value': person_doc.id}
+    receiver = message['receiver'] if 'receiver' in message else common.filter_phone_identifier(person_doc)
+    if not receiver:
+        logging.warning('Missing receiver')
+        return {'message': 'Missing receiver'}
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
     data = {

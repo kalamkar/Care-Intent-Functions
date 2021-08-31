@@ -40,8 +40,8 @@ class Message(Action):
         super().__init__()
 
     def process(self):
+        db = firestore.Client()
         if self.queue:
-            db = firestore.Client()
             msg_id = common.generate_id()
             msg = db.collection('persons').document(self.receiver['value']).collection('messages').document(msg_id)
             msg.set({
@@ -54,13 +54,19 @@ class Message(Action):
             })
             return
 
+        sender = common.get_phone_id(self.sender, db, {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
+        receiver = common.get_phone_id(self.receiver, db)
+        if not receiver:
+            logging.warning('Missing receiver for message action')
+            return
+
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
         data = {
             'time': datetime.datetime.utcnow().isoformat(),
-            'sender': self.sender,
-            'receiver': self.receiver,
+            'sender': sender,
+            'receiver': receiver,
             'status': 'sent',
             'tags': self.tags,
             'content_type': 'text/plain',

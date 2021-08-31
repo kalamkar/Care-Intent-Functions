@@ -2,7 +2,6 @@ import base64
 import json
 import logging
 
-from google.cloud import firestore
 from twilio.rest import Client
 
 import google.cloud.logging as logger
@@ -16,9 +15,9 @@ PHONE_NUMBER = '+16692154466'
 
 def send_sms(request):
     message = json.loads(base64.b64decode(request.json['message']['data']).decode('utf-8'))
-    sender = get_phone(message['sender'], PHONE_NUMBER, ['group']) if 'sender' in message else PHONE_NUMBER
-    receiver = get_phone(message['receiver']) if 'receiver' in message else None
-    print(message, sender, receiver)
+    sender = message['sender']['value'] if 'sender' in message else PHONE_NUMBER
+    receiver = message['receiver']['value'] if 'receiver' in message else None
+    logging.info('{} {} {}'.format(message, sender, receiver))
     if not receiver or 'content' not in message or not message['content'] or type(message['content']) != str:
         return 'ERROR'
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -28,19 +27,3 @@ def send_sms(request):
         logging.error(ex)
         return 'ERROR'
     return 'OK'
-
-
-def get_phone(resource, default=None, resource_types=('person', 'group')):
-    if not resource or type(resource) != dict or 'value' not in resource or 'type' not in resource:
-        return default
-    elif resource['type'] == 'phone':
-        return resource['value']
-    elif resource['type'] in resource_types:
-        db = firestore.Client()
-        doc = db.collection(resource['type'] + 's').document(resource['value']).get()
-        ids = doc.get('identifiers')
-        if not ids:
-            return default
-        phones = list(filter(lambda i: i['type'] == 'phone', ids))
-        return phones[0]['value'] if phones else default
-    return default

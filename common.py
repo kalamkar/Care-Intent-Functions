@@ -58,5 +58,26 @@ def schedule_task(payload, client, timestamp=None, queue_name='actions'):
     return response.name
 
 
+def get_phone_id(identifier, db, default=None, resource_types=('person', 'group')):
+    if not identifier or type(identifier) != dict or 'value' not in identifier or 'type' not in identifier:
+        return default
+    elif identifier['type'] == 'phone':
+        return identifier
+    elif identifier['type'] in resource_types:
+        return filter_phone_identifier(
+            db.collection(COLLECTIONS[identifier['type']]).document(identifier['value']).get())
+    return default
+
+
+def filter_phone_identifier(resource_doc, default=None):
+    if not resource_doc:
+        return default
+    ids = resource_doc.get('identifiers')
+    if not ids:
+        return default
+    phones = list(filter(lambda i: i['type'] == 'phone', ids))
+    return phones[0] if phones else default
+
+
 def generate_id():
     return base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
