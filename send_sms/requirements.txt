@@ -1,4 +1,5 @@
 # Function dependencies, for example:
 # package>=version
 twilio
+google-cloud-firestore
 google-cloud-logging
