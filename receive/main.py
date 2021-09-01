@@ -1,7 +1,4 @@
 import base64
-
-import flask
-
 import config
 import datetime
 import json
@@ -21,11 +18,12 @@ logger.handlers.setup_logging(logger.Client().get_default_handler())
 def main(request):
     tokens = request.path.split('/')
     if len(tokens) == 2 and tokens[1] == 'text':
-        process_text(request.form['From'], request.form['To'], request.form['Body'])
+        return process_text(request.form['From'], request.form['To'], request.form['Body'])
     elif len(tokens) == 2 and tokens[1] == 'voice':
         logging.info(request.data)
     elif len(tokens) == 3 and tokens[2] == 'status':
         logging.info(request.data)
+    return '', 204
 
 
 def process_text(sender, receiver, content):
