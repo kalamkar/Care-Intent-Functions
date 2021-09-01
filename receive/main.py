@@ -18,17 +18,19 @@ import google.cloud.logging as logger
 logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 
-class IdType(object):
-    phone = 'phone'
-
-
 def main(request):
+    tokens = request.path.split('/')
+    if len(tokens) == 2 and tokens[1] == 'text':
+        process_text(request.form['From'], request.form['To'], request.form['Body'])
+    elif len(tokens) == 2 and tokens[1] == 'voice':
+        logging.info(request.data)
+    elif len(tokens) == 3 and tokens[2] == 'status':
+        logging.info(request.data)
+
+
+def process_text(sender, receiver, content):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
-
-    sender = request.form['From']
-    receiver = request.form['To']
-    content = request.form['Body']
 
     db = firestore.Client()
     contact = {'type': 'phone', 'value': sender, 'active': True}
@@ -65,8 +67,8 @@ def main(request):
 
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
-        'sender': {'type': IdType.phone, 'value': sender},
-        'receiver': {'type': IdType.phone, 'value': receiver},
+        'sender': {'type': 'phone', 'value': sender},
+        'receiver': {'type': 'phone', 'value': receiver},
         'status': 'received',
         'tags': ['source:twilio', df.query_result.intent.display_name],
         'content_type': 'text/plain',
