@@ -17,12 +17,10 @@ logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 def main(request):
     tokens = request.path.split('/')
+    logging.info(tokens)
+    logging.info(request.data)
     if len(tokens) == 2 and tokens[1] == 'text':
         return process_text(request.form['From'], request.form['To'], request.form['Body'])
-    elif len(tokens) == 2 and tokens[1] == 'voice':
-        logging.info(request.data)
-    elif len(tokens) == 3 and tokens[2] == 'status':
-        logging.info(request.data)
     return '', 204
 
 
