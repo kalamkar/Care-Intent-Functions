@@ -11,7 +11,7 @@ from google.cloud import firestore
 from google.cloud import pubsub_v1
 
 
-def api(request):
+def main(request):
     response = flask.make_response()
     tokens = request.path.split('/')
     partner_id, resource_name, resource_id, sub_resource_name, sub_resource_id = None, None, None, None, None

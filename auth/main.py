@@ -41,7 +41,7 @@ DATA_PROVIDER_ACTION = {
 }
 
 
-def handle_auth(request):
+def main(request):
     response = flask.make_response()
     if request.method == 'OPTIONS':
         response.headers['Access-Control-Allow-Credentials'] = 'true'

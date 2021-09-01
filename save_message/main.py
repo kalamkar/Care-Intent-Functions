@@ -7,7 +7,7 @@ from google.cloud import bigquery
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 
 
-def save_message(event, context):
+def main(event, context):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          event (dict): Event payload.

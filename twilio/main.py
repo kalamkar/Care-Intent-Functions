@@ -19,7 +19,7 @@ class IdType(object):
     phone = 'phone'
 
 
-def twilio(request):
+def main(request):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 

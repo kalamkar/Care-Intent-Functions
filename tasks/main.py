@@ -11,7 +11,7 @@ from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
 
 
-def handle_task(request):
+def main(request):
     body = request.get_json()
     print(body)
 

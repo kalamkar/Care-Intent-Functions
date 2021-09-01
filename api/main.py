@@ -23,7 +23,7 @@ ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Co
                  'Access-Control-Allow-Credentials', 'X-Requested-With']
 
 
-def api(request):
+def main(request):
     response = flask.make_response()
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     origin = request.headers.get('origin')

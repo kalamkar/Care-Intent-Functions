@@ -35,7 +35,7 @@ ACTIONS = {
 JINJA_PARAMS = ['content', 'text']
 
 
-def process(event, metadata):
+def main(event, metadata):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          event (dict): Event payload.

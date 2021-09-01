@@ -4,7 +4,7 @@ from google.cloud import firestore
 PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
 
 
-def short_url(request):
+def main(request):
     db = firestore.Client()
     url = db.collection('urls').document(request.path[1:]).get()
     response = flask.make_response()
