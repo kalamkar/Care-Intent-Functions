@@ -15,7 +15,7 @@ TWILIO_ACCOUNT_SID = 'ACd3f03d1554da132e550d541480419d42'
 TWILIO_AUTH_TOKEN = 'c05ceb45e0fc570aa45643e3ddbb0308'
 
 
-def send_sms(request):
+def main(request):
     db = firestore.Client()
     message = json.loads(base64.b64decode(request.json['message']['data']).decode('utf-8'))
     sender = common.get_phone_id(message['sender']['value'], db, resource_types=['group'])\
