@@ -1,4 +1,7 @@
 import base64
+
+import flask
+
 import config
 import datetime
 import json
@@ -87,7 +90,7 @@ def main(request):
     person['session']['last_message_time'] = now
     logging.info(person['session'])
     db.collection('persons').document(person_id).update({'session': person['session']})  # Update only session part
-    return 'OK'
+    return '', 204
 
 
 def build_df_context(session_id, name, data):
