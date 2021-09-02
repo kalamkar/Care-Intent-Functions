@@ -35,29 +35,24 @@ def main(request):
     sender = sender['value'] if sender else None
     receiver = message['receiver']['value']
     logging.info('{} {} {}'.format(message, sender, receiver))
-    if channel == 'phone':
-        return send_sms(message['content'], sender, receiver)
-    elif channel == 'email':
-        subject = message['subject'] if 'subject' in message else 'Message'
-        return send_email(message['content'], subject, sender, receiver)
+    try:
+        if channel == 'phone':
+            send_sms(message['content'], sender, receiver)
+        elif channel == 'email':
+            subject = message['subject'] if 'subject' in message else 'Message'
+            send_email(message['content'], subject, sender, receiver)
+    except Exception as ex:
+        logging.error(ex)
+        return 'ERROR'
+    return 'OK'
 
 
 def send_sms(content, sender, receiver):
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-    try:
-        client.messages.create(to=receiver, from_=sender or config.PHONE_NUMBER, body=content)
-    except Exception as ex:
-        logging.error(ex)
-        return 'ERROR'
-    return 'OK'
+    client.messages.create(to=receiver, from_=sender or config.PHONE_NUMBER, body=content)
 
 
 def send_email(content, subject, sender, receiver):
-    try:
-        message = Mail(from_email=sender or config.EMAIL_ADDRESS, to_emails=receiver, subject=subject,
-                       plain_text_content=Content('text/plain', content))
-        SendGridAPIClient(SENDGRID_TOKEN).send(message)
-    except Exception as ex:
-        logging.error(ex)
-        return 'ERROR'
-    return 'OK'
+    message = Mail(from_email=sender or config.EMAIL_ADDRESS, to_emails=receiver, subject=subject,
+                   plain_text_content=Content('text/plain', content))
+    SendGridAPIClient(SENDGRID_TOKEN).send(message)
