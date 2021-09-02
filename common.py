@@ -58,24 +58,24 @@ def schedule_task(payload, client, timestamp=None, queue_name='actions'):
     return response.name
 
 
-def get_phone_id(identifier, db, default=None, resource_types=('person', 'group')):
+def get_identifier(identifier, id_type, db, default=None, resource_types=('person', 'group')):
     if not identifier or type(identifier) != dict or 'value' not in identifier or 'type' not in identifier:
         return default
-    elif identifier['type'] == 'phone':
+    elif identifier['type'] == id_type:
         return identifier
     elif identifier['type'] in resource_types:
-        return filter_phone_identifier(
-            db.collection(COLLECTIONS[identifier['type']]).document(identifier['value']).get())
+        return filter_identifier(db.collection(COLLECTIONS[identifier['type']]).document(identifier['value']).get(),
+                                 id_type)
     return default
 
 
-def filter_phone_identifier(resource_doc, default=None):
+def filter_identifier(resource_doc, id_type, default=None):
     if not resource_doc:
         return default
     ids = resource_doc.get('identifiers')
     if not ids:
         return default
-    phones = list(filter(lambda i: i['type'] == 'phone', ids))
+    phones = list(filter(lambda i: i['type'] == id_type, ids))
     return phones[0] if phones else default
 
 

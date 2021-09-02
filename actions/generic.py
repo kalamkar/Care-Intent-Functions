@@ -54,8 +54,9 @@ class Message(Action):
             })
             return
 
-        sender = common.get_phone_id(self.sender, db, {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
-        receiver = common.get_phone_id(self.receiver, db)
+        sender = common.get_identifier(self.sender, 'phone', db,
+                                       {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
+        receiver = common.get_identifier(self.receiver, 'phone', db)
         if not receiver:
             logging.warning('Missing receiver for message action')
             return
