@@ -173,7 +173,7 @@ def create_action(action, action_id, db, tasks_client, group_id=None, person_id=
         logging.error('Missing group id and person id to create action')
         return
     action_doc = db.collection('persons').document(person_id if person_id else group_id) \
-        .collection('actions').document(action_id)
+        .collection('actions').document(action_id).get()
     if action_doc.exists and 'task_id' in action_doc.to_dict():
         try:
             tasks_client.delete_task(name=action_doc.get('task_id'))
