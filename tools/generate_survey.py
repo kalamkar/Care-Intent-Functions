@@ -30,6 +30,7 @@ def main(filename):
             'type': 'Message',
             'priority': 10,
             'condition': condition,
+            'min_action_priority': 5,
             'params': {
                 'content': row['Message'],
                 'receiver': '$person.id'

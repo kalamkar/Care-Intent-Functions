@@ -22,13 +22,12 @@ logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 ACTIONS = {
     'CreateAction': generic.CreateAction,
-    'UpdateData': generic.UpdateData,
     'DataProvider': providers.DataProvider,
     'Message': generic.Message,
     'OAuth': providers.OAuth,
-    'Update': generic.UpdateResource,
-    'UpdateResource': generic.UpdateResource,
     'UpdateContext': generic.UpdateContext,
+    'UpdateData': generic.UpdateData,
+    'UpdateResource': generic.UpdateResource,
     'Webhook': generic.Webhook
 }
 
@@ -73,6 +72,8 @@ def main(event, metadata):
         action_parent_pairs = [(action, db.collection(parent_collection).document(parent_id).get())]
     else:
         action_parent_pairs = get_actions([context.get('sender.id'), context.get('receiver.id')], db)
+
+    context.set('min_action_priority', 0)
     logging.info('Context {}'.format(context.data))
     bq = bigquery.Client()
     for action_doc, parent_doc in action_parent_pairs:
@@ -107,6 +108,9 @@ def process_action(action_doc, parent_doc, context, bq):
     if action['type'] not in ACTIONS or ('condition' in action and not context.evaluate(action['condition'])):
         return
 
+    if action['priority'] < context.get('min_action_priority'):
+        return
+
     logging.info('Triggering {} {}'.format(action['id'], action))
 
     params = get_context_params(action['params'], context)
@@ -126,6 +130,8 @@ def process_action(action_doc, parent_doc, context, bq):
     actrun.process()
     logging.info(actrun.context_update)
     context.update(actrun.context_update)
+    if 'min_action_priority' in action:
+        context.set('min_action_priority', action['min_action_priority'])
     if actrun.action_update and action_doc and action_doc.exists:
         action_doc.reference.update(actrun.action_update)
     log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',

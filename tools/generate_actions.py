@@ -38,6 +38,8 @@ def create_action(params):
             action['content_select'] = value
         elif name == 'priority':
             action['priority'] = int(value)
+        elif name == 'min_action_priority':
+            action['min_action_priority'] = int(value)
         elif name == 'delay':
             action['params']['delay_secs'] = get_duration_secs(value)
         elif name == 'new_priority':
