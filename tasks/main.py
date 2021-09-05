@@ -16,11 +16,9 @@ def main(request):
     print(body)
 
     db = firestore.Client()
-    action_doc, group_id, person_id = None, None, None
-    action_id = body['action_id']
     parent_id = body['parent_id']
     action_doc = db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
-        .collection('actions').document(action_id).get()
+        .collection('actions').document(body['action_id']).get()
 
     if not action_doc or not action_doc.exists:
         print('Missing action for %s' % json.dumps(body))
@@ -40,10 +38,10 @@ def main(request):
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
     member_ids = []
-    if group_id:
-        member_ids = common.get_children_ids({'type': 'group', 'value': group_id}, 'member', db)
-    elif person_id:
-        member_ids = [{'type': 'person', 'value': person_id}]
+    if parent_id['type'] == 'group':
+        member_ids = common.get_children_ids(parent_id, 'member', db)
+    elif parent_id['type'] == 'person':
+        member_ids = [parent_id]
 
     for member in member_ids:
         if not member or member['type'] != 'person':
@@ -54,7 +52,7 @@ def main(request):
             'status': 'internal',
             'tags': ['source:schedule'],
             'content_type': 'application/json',
-            'content': {'parent_id': parent_id,'action_id': action_id}
+            'content': body
         }
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
