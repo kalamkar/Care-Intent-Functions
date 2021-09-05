@@ -3,9 +3,9 @@ import common
 import croniter
 import datetime
 import json
+import logging
 import pytz
 import sys
-import traceback
 
 from google.cloud import firestore
 from google.cloud import tasks_v2
@@ -18,10 +18,10 @@ PROJECT_LOCATION = 'us-central1'
 def delete_task(task_id):
     try:
         client = tasks_v2.CloudTasksClient()
-        # queue = client.queue_path(PROJECT_ID, PROJECT_LOCATION, 'actions')
+        logging.info('Deleting task %s' % task_id)
         client.delete_task(name=task_id)
     except:
-        traceback.print_exc()
+        logging.error('Error deleting task', exc_info=sys.exc_info())
 
 
 def main(argv):
@@ -39,6 +39,7 @@ def main(argv):
         for action in collection.stream():
             if 'task_id' in action.to_dict():
                 delete_task(action.get('task_id'))
+            logging.info('Deleting action %s' % action.id)
             action.reference.delete()
     elif args.delete_prefix:
         for action in collection.stream():
@@ -46,6 +47,7 @@ def main(argv):
                 continue
             if 'task_id' in action.to_dict():
                 delete_task(action.get('task_id'))
+            logging.info('Deleting action %s' % action.id)
             action.reference.delete()
 
     if not args.files:
@@ -63,7 +65,9 @@ def main(argv):
                 timestamp = timestamp_pb2.Timestamp()
                 timestamp.FromDatetime(cron.get_next(datetime.datetime))
                 action['task_id'] = common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
+                logging.info('Scheduled task %s' % action['task_id'])
             collection.document(action['id']).set(action)
+            logging.info('Added action %s' % action['id'])
 
 
 if __name__ == '__main__':
