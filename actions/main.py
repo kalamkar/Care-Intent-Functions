@@ -64,7 +64,7 @@ def main(event, metadata):
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
         context.set('scheduled', True)
         parent_id = message['content']['parent_id']
-        parent = db.collection(common.COLLECTIONS[parent_id['type']]).document(common.COLLECTIONS[parent_id['value']])
+        parent = db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])
         action = parent.collection('actions').document(message['content']['action_id']).get()
         action_parent_pairs = [(action, parent.get())]
     else:
