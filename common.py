@@ -41,7 +41,7 @@ def get_id(doc):
 
 
 def schedule_task(payload, client, timestamp=None, queue_name='actions'):
-    queue = client.queue_path(config.PROJECT_ID, 'us-central1', queue_name)
+    queue = client.queue_path(config.PROJECT_ID, config.LOCATION_ID, queue_name)
     task = {
         'http_request': {  # Specify the type of request.
             'http_method': 1,  # tasks_v2.HttpMethod.POST,

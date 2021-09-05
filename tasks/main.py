@@ -18,14 +18,11 @@ def main(request):
     db = firestore.Client()
     action_doc, group_id, person_id = None, None, None
     action_id = body['action_id']
-    if 'group_id' in body:
-        group_id = body['group_id']
-        action_doc = db.collection('groups').document(group_id).collection('actions').document(action_id).get()
-    elif 'person_id' in body:
-        person_id = body['person_id']
-        action_doc = db.collection('persons').document(person_id).collection('actions').document(action_id).get()
+    parent_id = body['parent_id']
+    action_doc = db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
+        .collection('actions').document(action_id).get()
 
-    if not action_doc:
+    if not action_doc or not action_doc.exists:
         print('Missing action for %s' % json.dumps(body))
         return
 
@@ -57,8 +54,7 @@ def main(request):
             'status': 'internal',
             'tags': ['source:schedule'],
             'content_type': 'application/json',
-            'content': {'group_id' if group_id else 'person_id': group_id if group_id else person_id,
-                        'action_id': action_id}
+            'content': {'parent_id': parent_id,'action_id': action_id}
         }
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 

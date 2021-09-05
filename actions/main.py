@@ -23,6 +23,7 @@ logger.handlers.setup_logging(logger.Client().get_default_handler())
 ACTIONS = {
     'CreateAction': generic.CreateAction,
     'DataProvider': providers.DataProvider,
+    'DelayRun': generic.DelayRun,
     'Message': generic.Message,
     'OAuth': providers.OAuth,
     'UpdateContext': generic.UpdateContext,
@@ -62,14 +63,10 @@ def main(event, metadata):
             and 'action_id' in message['content']:
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
         context.set('scheduled', True)
-        parent_id, parent_collection = None, None
-        if 'group_id' in message['content']:
-            parent_id, parent_collection = message['content']['group_id'], 'groups'
-        elif 'person_id' in message['content']:
-            parent_id, parent_collection = message['content']['person_id'], 'persons'
-        action = db.collection(parent_collection).document(parent_id)\
-            .collection('actions').document(message['content']['action_id']).get()
-        action_parent_pairs = [(action, db.collection(parent_collection).document(parent_id).get())]
+        parent_id = message['content']['parent_id']
+        parent = db.collection(common.COLLECTIONS[parent_id['type']]).document(common.COLLECTIONS[parent_id['value']])
+        action = parent.collection('actions').document(message['content']['action_id']).get()
+        action_parent_pairs = [(action, parent.get())]
     else:
         action_parent_pairs = get_actions([context.get('sender.id'), context.get('receiver.id')], db)
 

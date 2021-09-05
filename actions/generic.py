@@ -103,8 +103,7 @@ class CreateAction(Action):
                 del action['params'][top_param]
 
         if 'schedule' in action or self.delay_secs:
-            payload = {'action_id': action['id'],
-                       'group_id' if self.parent_id['type'] == 'group' else 'person_id': self.parent_id['value']}
+            payload = {'action_id': action['id'], 'parent_id': self.parent_id}
             now = datetime.datetime.utcnow()
             if self.delay_secs:
                 start_time = now + datetime.timedelta(seconds=self.delay_secs)
@@ -204,4 +203,12 @@ class Webhook(Action):
         if self.email:
             message = Mail(from_email='support@careintent.com', to_emails=self.email,
                            subject='Webhook', plain_text_content=Content('text/plain', self.content))
-            SendGridAPIClient('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').send(message)
+            SendGridAPIClient(config.SENDGRID_TOKEN).send(message)
+
+
+class DelayRun(Action):
+    def __init__(self):
+        super().__init__()
+
+    def process(self):
+        pass

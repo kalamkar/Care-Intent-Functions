@@ -10,6 +10,8 @@ SYSTEM_KNOWLEDGE_ID = 'Nzg3NTUyMTQxNDI5NDQwNTEyMA'
 PHONE_NUMBER = '+16692154466'
 EMAIL_ADDRESS = 'support@careintent.com'
 
+SENDGRID_TOKEN = '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'
+
 SESSION_SECONDS = 6 * 60 * 60
 
 PROVIDERS = {'dexcom': {'url': 'https://sandbox-api.dexcom.com/v2/oauth2/token',

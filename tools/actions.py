@@ -1,4 +1,5 @@
 import argparse
+import common
 import croniter
 import datetime
 import json
@@ -21,26 +22,6 @@ def delete_task(task_id):
         client.delete_task(name=task_id)
     except:
         traceback.print_exc()
-
-
-def schedule_task(payload, next_run_time):
-    client = tasks_v2.CloudTasksClient()
-    queue = client.queue_path(PROJECT_ID, PROJECT_LOCATION, 'actions')
-    timestamp = timestamp_pb2.Timestamp()
-    timestamp.FromDatetime(next_run_time)
-    task = {
-        'http_request': {  # Specify the type of request.
-            'http_method': tasks_v2.HttpMethod.POST,
-            'url': 'https://%s-%s.cloudfunctions.net/process-task' % (PROJECT_LOCATION, PROJECT_ID),
-            'oidc_token': {'service_account_email': 'careintent@appspot.gserviceaccount.com'},
-            'headers': {"Content-type": "application/json"},
-            'body': json.dumps(payload).encode()
-        },
-        'schedule_time': timestamp
-    }
-    response = client.create_task(request={'parent': queue, 'task': task})
-    print("Created task {}".format(response.name))
-    return response.name
 
 
 def main(argv):
@@ -75,11 +56,13 @@ def main(argv):
                 action_doc = collection.document(action['id']).get()
                 if action_doc.exists and action_doc.get('task_id'):
                     delete_task(action.get('task_id'))
-                payload = {'action_id': action['id'], 'group_id': args.group}
+                payload = {'action_id': action['id'], 'parent_id': {'type': 'group', 'value': args.group}}
                 now = datetime.datetime.utcnow()
                 now = now.astimezone(pytz.timezone(action['timezone'])) if 'timezone' in action else now
                 cron = croniter.croniter(action['schedule'], now)
-                action['task_id'] = schedule_task(payload, cron.get_next(datetime.datetime))
+                timestamp = timestamp_pb2.Timestamp()
+                timestamp.FromDatetime(cron.get_next(datetime.datetime))
+                action['task_id'] = common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
             collection.document(action['id']).set(action)
 
 

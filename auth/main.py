@@ -84,7 +84,7 @@ def oauth(request, _):
     action['expires'] = datetime.datetime.utcnow() \
                         + datetime.timedelta(seconds=action['expires_in'] if 'expires_in' in action else 0)
     create_action(action, state['action_id'], firestore.Client(), tasks_v2.CloudTasksClient(),
-                  person_id=state['person_id'])
+                  {'type': 'person', 'value': state['person_id']})
 
     return flask.redirect('https://www.careintent.com', 302)
 
@@ -168,11 +168,11 @@ def login(request, _):
     return flask.jsonify({'status': 'ok', 'token': person['login']['token'], 'expiry': expiry.isoformat()})
 
 
-def create_action(action, action_id, db, tasks_client, group_id=None, person_id=None):
-    if not group_id and not person_id:
+def create_action(action, action_id, db, tasks_client, parent_id):
+    if not parent_id:
         logging.error('Missing group id and person id to create action')
         return
-    action_doc = db.collection('persons').document(person_id if person_id else group_id) \
+    action_doc = db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value']) \
         .collection('actions').document(action_id).get()
     if action_doc.exists and 'task_id' in action_doc.to_dict():
         try:
@@ -180,6 +180,6 @@ def create_action(action, action_id, db, tasks_client, group_id=None, person_id=
         except:
             logging.warning('Could not delete task {}'.format(action_doc.get('task_id')))
 
-    task = {'action_id': action_id, 'person_id' if person_id else 'group_id': person_id or group_id}
+    task = {'action_id': action_id, 'parent_id': parent_id}
     action['task_id'] = common.schedule_task(task, tasks_client)
     action_doc.reference.set(action)
