@@ -123,8 +123,8 @@ def process_action(action_doc, parent_doc, context, bq):
         if param_name in params:
             params[param_name] = context.render(params[param_name])
 
-    actrun = ACTIONS[action['type']](**params)
-    actrun.process()
+    actrun = ACTIONS[action['type']]()
+    actrun.process(**params)
     logging.info(actrun.context_update)
     context.update(actrun.context_update)
     if 'min_action_priority' in action:

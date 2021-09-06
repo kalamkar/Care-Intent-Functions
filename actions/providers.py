@@ -17,37 +17,27 @@ from google.cloud import firestore
 
 
 class DataProvider(Action):
-    def __init__(self, name=None, source_id=None, access_token=None, expires=None, refresh_token=None, last_sync=None):
-        super().__init__()
-        self.name = name
-        self.access_token = access_token
-        self.refresh_token = refresh_token
-        self.expiration = expires
-        self.last_sync = last_sync
-        self.source_id = source_id
-
-    def process(self):
-        if not self.expiration or self.expiration < datetime.datetime.utcnow().astimezone(pytz.UTC):
-            response = get_access_token(self.refresh_token, self.name)
+    def process(self, name=None, source_id=None, access_token=None, expires=None, refresh_token=None, last_sync=None):
+        if not expires or expires < datetime.datetime.utcnow().astimezone(pytz.UTC):
+            response = get_access_token(refresh_token, name)
             if 'access_token' not in response:
                 logging.warning('Missing access token while renewing it.')
                 logging.warning(response)
                 return
-            self.access_token = response['access_token']
-            self.expiration = datetime.datetime.utcnow() + datetime.timedelta(seconds=response['expires_in'])
-            response['expires'] = self.expiration
+            access_token = response['access_token']
+            response['expires'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=response['expires_in'])
             self.action_update.update(response)
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
-        last_sync = self.last_sync
-        for row in PROVIDERS[self.name](self.access_token, last_sync, self.source_id):
+        local_last_sync = last_sync
+        for row in PROVIDERS[name](access_token, local_last_sync, source_id):
             row_time = dateutil.parser.parse(row['time']).astimezone(pytz.UTC)
-            last_sync = max(row_time, last_sync) if last_sync else row_time
+            local_last_sync = max(row_time, local_last_sync) if local_last_sync else row_time
             publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
 
-        if not self.last_sync or (last_sync and self.last_sync < last_sync):
-            self.action_update['last_sync'] = last_sync
+        if not last_sync or (local_last_sync and last_sync < local_last_sync):
+            self.action_update['last_sync'] = local_last_sync
 
 
 def get_dexcom_data(access_token, last_sync, source_id):

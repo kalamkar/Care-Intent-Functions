@@ -1,3 +1,4 @@
+import abc
 import croniter
 import common
 import config
@@ -17,46 +18,40 @@ from sendgrid.helpers.mail import Content
 from sendgrid.helpers.mail import Mail
 
 
-class Action(object):
+class Action(abc.ABC):
     def __init__(self):
         self.context_update = {}
         self.action_update = {}
 
+    @abc.abstractmethod
     def process(self):
         pass
 
 
 class Message(Action):
-    def __init__(self, receiver=None, sender=None, content=None, queue=False, tags=None):
-        self.receiver = receiver
-        self.sender = sender
-        self.content = content
-        self.queue = queue
-        self.tags = ['source:action']
+    def process(self, receiver=None, sender=None, content=None, queue=False, tags=None):
         if type(tags) == list:
-            self.tags.extend(tags)
+            tags.append('source:action')
         elif type(tags) == str:
-            self.tags.extend(tags.split(','))
-        super().__init__()
+            tags = tags.split(',') + ['source:action']
 
-    def process(self):
         db = firestore.Client()
-        if self.queue:
+        if queue:
             msg_id = common.generate_id()
-            msg = db.collection('persons').document(self.receiver['value']).collection('messages').document(msg_id)
+            msg = db.collection('persons').document(receiver['value']).collection('messages').document(msg_id)
             msg.set({
                 'time': datetime.datetime.utcnow().isoformat(),
-                'sender': self.sender,
-                'receiver': self.receiver,
-                'tags': self.tags,
+                'sender': sender,
+                'receiver': receiver,
+                'tags': tags,
                 'content_type': 'text/plain',
-                'content': self.content
+                'content': content
             })
             return
 
-        sender = common.get_identifier(self.sender, 'phone', db,
+        sender = common.get_identifier(sender, 'phone', db,
                                        {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
-        receiver = common.get_identifier(self.receiver, 'phone', db)
+        receiver = common.get_identifier(receiver, 'phone', db)
         if not receiver:
             logging.warning('Missing receiver for message action')
             return
@@ -69,27 +64,24 @@ class Message(Action):
             'sender': sender,
             'receiver': receiver,
             'status': 'sent',
-            'tags': self.tags,
+            'tags': tags,
             'content_type': 'text/plain',
-            'content': self.content
+            'content': content
         }
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
 
 
 class CreateAction(Action):
-    def __init__(self, **kwargs):
-        super().__init__()
-        self.action_type = kwargs['action_type'] if 'action_type' in kwargs else None
-        self.parent_id = kwargs['parent_id'] if 'parent_id' in kwargs else None
-        self.action = kwargs['action'] if 'action' in kwargs else None
-        self.delay_secs = kwargs['delay_secs'] if 'delay_secs' in kwargs else None
-        self.maxrun = kwargs['maxrun'] if 'maxrun' in kwargs else None
+    def process(self, **kwargs):
+        action_type = kwargs['action_type'] if 'action_type' in kwargs else None
+        parent_id = kwargs['parent_id'] if 'parent_id' in kwargs else None
+        action = kwargs['action'] if 'action' in kwargs else None
+        delay_secs = kwargs['delay_secs'] if 'delay_secs' in kwargs else None
 
-    def process(self):
-        if not self.parent_id or not self.action_type:
+        if not parent_id or not action_type:
             logging.warning('Missing parent id or action type for delayed action')
             return
-        action = self.action | {'id': common.generate_id(), 'type': self.action_type}
+        action = action | {'id': common.generate_id(), 'type': action_type}
         if 'condition' in action:
             del action['condition']
         if 'parent' in action:
@@ -102,11 +94,11 @@ class CreateAction(Action):
                 action[top_param] = action['params'][top_param]
                 del action['params'][top_param]
 
-        if 'schedule' in action or self.delay_secs:
-            payload = {'action_id': action['id'], 'parent_id': self.parent_id}
+        if 'schedule' in action or delay_secs:
+            payload = {'action_id': action['id'], 'parent_id': parent_id}
             now = datetime.datetime.utcnow()
-            if self.delay_secs:
-                start_time = now + datetime.timedelta(seconds=self.delay_secs)
+            if delay_secs:
+                start_time = now + datetime.timedelta(seconds=delay_secs)
             else:
                 now = now.astimezone(pytz.timezone(action['timezone'])) if 'timezone' in action else now
                 cron = croniter.croniter(action['schedule'], now)
@@ -119,60 +111,45 @@ class CreateAction(Action):
             return
 
         db = firestore.Client()
-        db.collection(common.COLLECTIONS[self.parent_id['type']]).document(self.parent_id['value'])\
+        db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
             .collection('actions').document(action['id']).set(action)
 
 
 class UpdateResource(Action):
-    def __init__(self, identifier=None, content=None, list_name=None):
-        self.identifier = identifier
-        self.content = content
-        self.list_name = list_name
-        super().__init__()
-
-    def process(self):
+    def process(self, identifier=None, content=None, list_name=None):
         db = firestore.Client()
-        collection = common.COLLECTIONS[self.identifier['type']]
-        doc_ref = db.collection(collection).document(self.identifier['value'])
-        logging.info('Updating {collection}/{id} with {data}'.format(collection=collection, id=self.identifier['value'],
-                                                                     data=self.content))
-        content = json.loads(self.content.replace('\'', '"'))
-        doc_ref.update({self.list_name: firestore.ArrayUnion(content)} if self.list_name else content)
+        collection = common.COLLECTIONS[identifier['type']]
+        doc_ref = db.collection(collection).document(identifier['value'])
+        logging.info('Updating {collection}/{id} with {data}'.format(collection=collection, id=identifier['value'],
+                                                                     data=content))
+        content = json.loads(content.replace('\'', '"'))
+        doc_ref.update({list_name: firestore.ArrayUnion(content)} if list_name else content)
 
 
 class UpdateContext(Action):
-    def __init__(self, content=None):
-        self.content = content
-        super().__init__()
-
-    def process(self):
+    def process(self, content=None):
         try:
-            self.context_update = json.loads(self.content)
+            self.context_update = json.loads(content)
         except:
-            logging.warning('Failed to parse json ' + self.content)
+            logging.warning('Failed to parse json ' + content)
 
 
 class UpdateData(Action):
-    def __init__(self, person_id=None, params=None, content=None):
-        self.person_id = person_id
-        self.params = params if params else {}
-        self.content = content
-        super().__init__()
-
-    def process(self):
+    def process(self, person_id=None, params=None, content=None):
+        params = params if params else {}
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
 
-        if not self.params and self.content:
-            self.params = json.loads(self.content)
+        if not params and content:
+            params = json.loads(content)
 
         row = {
             'time': datetime.datetime.utcnow().isoformat(),
-            'source': {'type': 'person', 'value': self.person_id},
+            'source': {'type': 'person', 'value': person_id},
             'tags': ['self'],
             'data': []
         }
-        for name, value in self.params.items():
+        for name, value in params.items():
             if type(value) in [int, float]:
                 row['data'].append({'name': name, 'number': value})
             elif type(value) == str:
@@ -181,34 +158,27 @@ class UpdateData(Action):
 
 
 class Webhook(Action):
-    def __init__(self, url=None, auth=None, email=None, content=None, content_type='application/json'):
-        self.url = url
-        self.auth = auth
-        self.email = email
-        self.content = content
-        self.content_type = content_type
-        super().__init__()
-
-    def process(self):
-        if not self.url and not self.email:
+    def process(self, url=None, auth=None, email=None, content=None, content_type='application/json'):
+        if not url and not email:
             logging.error('Missing url and email')
             return
 
-        headers = {'Content-Type': self.content_type}
-        if self.auth:
-            headers['Authorization'] = 'Bearer ' + self.auth
-        if self.url:
-            requests.post(self.url, self.content, headers=headers)
+        headers = {'Content-Type': content_type}
+        if auth:
+            headers['Authorization'] = 'Bearer ' + auth
+        if url:
+            requests.post(url, content, headers=headers)
 
-        if self.email:
-            message = Mail(from_email='support@careintent.com', to_emails=self.email,
-                           subject='Webhook', plain_text_content=Content('text/plain', self.content))
+        if email:
+            message = Mail(from_email='support@careintent.com', to_emails=email,
+                           subject='Webhook', plain_text_content=Content('text/plain', content))
             SendGridAPIClient(config.SENDGRID_TOKEN).send(message)
 
 
 class DelayRun(Action):
-    def __init__(self):
-        super().__init__()
-
-    def process(self):
-        pass
+    def process(self, parent_id=None, action_id=None, delay_secs=None):
+        payload = {'action_id': action_id, 'parent_id': parent_id}
+        now = datetime.datetime.utcnow()
+        timestamp = timestamp_pb2.Timestamp()
+        timestamp.FromDatetime(now + datetime.timedelta(seconds=delay_secs))
+        common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
