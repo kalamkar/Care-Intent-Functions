@@ -38,7 +38,9 @@ def main(request):
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
     member_ids = []
-    if parent_id['type'] == 'group':
+    if 'person_id' in body:
+        member_ids = [body['person_id']]
+    elif parent_id['type'] == 'group':
         member_ids = common.get_children_ids(parent_id, 'member', db)
     elif parent_id['type'] == 'person':
         member_ids = [parent_id]

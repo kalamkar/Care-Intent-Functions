@@ -176,8 +176,8 @@ class Webhook(Action):
 
 
 class DelayRun(Action):
-    def process(self, parent_id=None, action_id=None, delay_secs=None):
-        payload = {'action_id': action_id, 'parent_id': parent_id}
+    def process(self, parent_id=None, action_id=None, delay_secs=None, person_id=None):
+        payload = {'action_id': action_id, 'parent_id': parent_id, 'person_id': person_id}
         now = datetime.datetime.utcnow()
         timestamp = timestamp_pb2.Timestamp()
         timestamp.FromDatetime(now + datetime.timedelta(seconds=delay_secs))

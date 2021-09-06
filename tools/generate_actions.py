@@ -1,9 +1,10 @@
 import csv
 import json
+import logging
 import sys
 
-ACTION_TYPES = ['DataProvider', 'CreateAction', 'Message', 'OAuth', 'UpdateContext', 'UpdateData', 'UpdateResource',
-                'Webhook']
+ACTION_TYPES = ['CreateAction', 'DataProvider', 'DelayRun', 'Message', 'OAuth', 'UpdateContext', 'UpdateData',
+                'UpdateResource', 'Webhook']
 
 DURATIONS = {
     'm': 60,
@@ -66,6 +67,7 @@ def main(filename):
     for row in reader:
         count += 1
         if row['Action type'] not in ACTION_TYPES:
+            logging.error('Invalid action type %s' % row['Action type'])
             continue
         if row['Action Id'] != previous_id:
             previous_id = row['Action Id']
