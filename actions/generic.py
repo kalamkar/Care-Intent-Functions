@@ -182,3 +182,23 @@ class DelayRun(Action):
         timestamp = timestamp_pb2.Timestamp()
         timestamp.FromDatetime(now + datetime.timedelta(seconds=delay_secs))
         common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
+
+
+class UpdateGroup(Action):
+    def process(self, child_id=None, add_parent_id=None, remove_parent_id=None):
+        if not child_id:
+            logging.warning('Missing child_id for UpdateGroup')
+            return
+
+        if not add_parent_id and not remove_parent_id:
+            logging.warning('Invalid parameters for UpdateGroup')
+            return
+
+        db = firestore.Client()
+        if add_parent_id:
+            db.collection(common.COLLECTIONS[add_parent_id['type']]).document(add_parent_id['value'])\
+                .collection('members').document(child_id['type'] + ':' + child_id['value']).set({'id': child_id})
+
+        if remove_parent_id:
+            db.collection(common.COLLECTIONS[remove_parent_id['type']]).document(remove_parent_id['value']) \
+                .collection('members').document(child_id['type'] + ':' + child_id['value']).delete()
