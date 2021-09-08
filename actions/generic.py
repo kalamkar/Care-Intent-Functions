@@ -34,6 +34,8 @@ class Message(Action):
             tags.append('source:action')
         elif type(tags) == str:
             tags = tags.split(',') + ['source:action']
+        else:
+            tags = ['source:action']
 
         db = firestore.Client()
         if queue:
