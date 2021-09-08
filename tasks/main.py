@@ -3,6 +3,7 @@ import config
 import croniter
 import datetime
 import json
+import logging
 import pytz
 
 from google.cloud import firestore
@@ -10,10 +11,13 @@ from google.cloud import pubsub_v1
 from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
 
+import google.cloud.logging as logger
+logger.handlers.setup_logging(logger.Client().get_default_handler())
+
 
 def main(request):
     body = request.get_json()
-    print(body)
+    logging.info(body)
 
     db = firestore.Client()
     parent_id = body['parent_id']
@@ -21,7 +25,7 @@ def main(request):
         .collection('actions').document(body['action_id']).get()
 
     if not action_doc or not action_doc.exists:
-        print('Missing action for %s' % json.dumps(body))
+        logging.error('Missing action for %s' % json.dumps(body))
         return
 
     action = action_doc.to_dict()

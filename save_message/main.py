@@ -1,10 +1,13 @@
 import base64
+import config
 import datetime
 import json
+import logging
 
 from google.cloud import bigquery
 
-PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
+import google.cloud.logging as logger
+logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 
 def main(event, context):
@@ -32,7 +35,7 @@ def main(event, context):
         row['receiver'] = {'type': message['receiver']['type'], 'value': message['receiver']['value']}
 
     client = bigquery.Client()
-    table_id = '%s.live.messages' % PROJECT_ID
+    table_id = '%s.live.messages' % config.PROJECT_ID
     errors = client.insert_rows_json(table_id, [row])
     if errors:
-        print(errors)
+        logging.error(errors)

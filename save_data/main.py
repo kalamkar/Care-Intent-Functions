@@ -1,9 +1,12 @@
 import base64
+import config
 import json
+import logging
 
 from google.cloud import bigquery
 
-PROJECT_ID = 'careintent'  # os.environ.get('GCP_PROJECT')  # Only for py3.7
+import google.cloud.logging as logger
+logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 
 def main(event, context):
@@ -14,10 +17,10 @@ def main(event, context):
         """
 
     data = json.loads(base64.b64decode(event['data']).decode('utf-8'))
-    print(data)
+    logging.info(data)
 
     client = bigquery.Client()
-    table_id = '%s.live.tsdata' % PROJECT_ID
+    table_id = '%s.live.tsdata' % config.PROJECT_ID
     errors = client.insert_rows_json(table_id, [data])
     if errors:
-        print(errors)
+        logging.error(errors)
