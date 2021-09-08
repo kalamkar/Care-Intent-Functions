@@ -18,6 +18,7 @@ def main(event, context):
     """
     data = base64.b64decode(event['data']).decode('utf-8')
     message = json.loads(data)
+    logging.info(message)
 
     content = message['content'] if 'content' in message else None
     if content and type(content) != str:
@@ -27,7 +28,7 @@ def main(event, context):
         'status': message['status'] if 'status' in message else None,
         'content_type': message['content_type'] if 'content_type' in message else None,
         'content': content,
-        'tags': message['tags'] if 'tags' in message else []
+        'tags': message['tags'] if 'tags' in message and message['tags'] else []
     }
     if 'sender' in message and message['sender'] and 'type' in message['sender']:
         row['sender'] = {'type': message['sender']['type'], 'value': message['sender']['value']}
