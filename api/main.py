@@ -214,7 +214,7 @@ def get_messages(start_time, end_time, person_id, both):
     bq = bigquery.Client()
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
-    values = [i['value'] for i in filter(lambda i: i['active'], person_doc.get('identifiers'))]
+    values = [i['value'] for i in person_doc.get('identifiers')]
     values.append(person_doc.id)
     query = 'SELECT time, status, sender, receiver, tags, content, content_type '\
             + 'FROM {project}.live.messages WHERE '\
@@ -240,7 +240,7 @@ def get_messages(start_time, end_time, person_id, both):
 def send_message(person_id, message, user):
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
-    if 'receiver' in message and (message['receiver'] | {'active': True}) not in person_doc.to_dict()['identifiers']:
+    if 'receiver' in message and message['receiver'] not in person_doc.to_dict()['identifiers']:
         logging.error('Invalid receiver {r} for person {pid}'.format(r=message['receiver'], pid=person_id))
         return None
     receiver = message['receiver'] if 'receiver' in message else common.filter_phone_identifier(person_doc)

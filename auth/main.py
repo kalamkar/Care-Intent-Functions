@@ -94,7 +94,7 @@ def signup(request, _):
     identifier = request.json['identifier']
     hashpass = base64.b64encode(hashlib.sha256(request.json['password'].encode('utf-8')).digest()).decode('utf-8')
     id_type = 'email' if '@' in identifier else 'phone'
-    contact = {'type': id_type, 'value': identifier, 'active': True}
+    contact = {'type': id_type, 'value': identifier}
     person_ref = db.collection('persons').where('identifiers', 'array_contains', contact)
     persons = list(person_ref.get())
     if len(persons) > 0:
@@ -103,8 +103,7 @@ def signup(request, _):
         return response
 
     verify_token = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
-    del contact['active']
-    person = {'identifiers': [contact], 'name': request.json['name'],
+    person = {'identifiers': [contact | {'unverified': True}], 'name': request.json['name'],
               'login': {'verify': verify_token, 'id': identifier, 'hashpass': hashpass,
                         'signup_time': datetime.datetime.utcnow()}}
     person_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
@@ -137,7 +136,7 @@ def verify(request, response):
     person = persons[0].to_dict()
     for identifier in person['identifiers']:
         if identifier['value'] == person['login']['id']:
-            identifier['active'] = True
+            del identifier['unverified']
     del person['login']['verify']
     db.collection('persons').document(persons[0].id).update(person)
     return flask.redirect('https://app.careintent.com', 302)
@@ -148,7 +147,7 @@ def login(request, _):
     identifier = request.json['identifier']
     hashpass = base64.b64encode(hashlib.sha256(request.json['password'].encode('utf-8')).digest()).decode('utf-8')
     id_type = 'email' if '@' in identifier else 'phone'
-    contact = {'type': id_type, 'value': identifier, 'active': True}
+    contact = {'type': id_type, 'value': identifier}
     person_ref = db.collection('persons').where('identifiers', 'array_contains', contact)
     persons = list(person_ref.get())
     if len(persons) == 0:

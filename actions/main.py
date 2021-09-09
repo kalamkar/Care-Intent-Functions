@@ -208,7 +208,7 @@ def get_resource(resource, db):
     if not resource or type(resource) != dict or 'value' not in resource or 'type' not in resource:
         return None
     elif resource['type'] == 'phone':
-        person_id = resource | {'active': True}
+        person_id = resource
         persons = list(db.collection('persons').where('identifiers', 'array_contains', person_id).get())
         if len(persons) > 0:
             return persons[0].to_dict() | {'id': {'type': 'person', 'value': persons[0].id}}

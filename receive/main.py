@@ -30,7 +30,7 @@ def process_text(sender, receiver, content):
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
     db = firestore.Client()
-    contact = {'type': 'phone', 'value': sender, 'active': True}
+    contact = {'type': 'phone', 'value': sender}
     person_docs = list(db.collection('persons').where('identifiers', 'array_contains', contact).get())
     if len(person_docs) == 0:
         # Create new person since it doesn't exist

@@ -121,7 +121,7 @@ def send_message(person_id, content, group_id):
     db = firestore.Client()
     if ':' in person_id:
         id_type, id_value = person_id.split(':', 1)
-        person_doc = get_person([{'type': id_type, 'value': id_value, 'active': True}], db)
+        person_doc = get_person([{'type': id_type, 'value': id_value}], db)
         if not person_doc or id_type != 'phone':
             return None
         receiver = {'type': id_type, 'value': id_value}
