@@ -28,7 +28,7 @@ ACTIONS = {
     'OAuth': providers.OAuth,
     'UpdateContext': generic.UpdateContext,
     'UpdateData': generic.UpdateData,
-    'UpdateGroup': generic.UpdateGroup,
+    'UpdateRelation': generic.UpdateRelation,
     'UpdateResource': generic.UpdateResource,
     'Webhook': generic.Webhook
 }

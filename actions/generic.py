@@ -29,7 +29,7 @@ class Action(abc.ABC):
 
 
 class Message(Action):
-    def process(self, receiver=None, sender=None, content=None, queue=False, tags=None):
+    def process(self, receiver=None, sender=None, content=None, tags=None):
         if type(tags) == list:
             tags.append('source:action')
         elif type(tags) == str:
@@ -38,19 +38,9 @@ class Message(Action):
             tags = ['source:action']
 
         db = firestore.Client()
-        if queue:
-            msg_id = common.generate_id()
-            msg = db.collection('persons').document(receiver['value']).collection('messages').document(msg_id)
-            msg.set({
-                'time': datetime.datetime.utcnow().isoformat(),
-                'sender': sender,
-                'receiver': receiver,
-                'tags': tags,
-                'content_type': 'text/plain',
-                'content': content
-            })
-            return
-
+        if sender and type(sender) == dict and 'type' in sender and sender['type'] == 'person' and\
+                receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
+            sender = common.get_proxy_id(receiver, sender, db)
         sender = common.get_identifier(sender, 'phone', db,
                                        {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
         receiver = common.get_identifier(receiver, 'phone', db)
@@ -186,20 +176,26 @@ class DelayRun(Action):
         common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
 
 
-class UpdateGroup(Action):
+class UpdateRelation(Action):
     def process(self, child_id=None, add_parent_id=None, remove_parent_id=None):
         if not child_id:
-            logging.warning('Missing child_id for UpdateGroup')
+            logging.warning('Missing child_id for UpdateRelation')
             return
 
         if not add_parent_id and not remove_parent_id:
-            logging.warning('Invalid parameters for UpdateGroup')
+            logging.warning('Invalid parameters for UpdateRelation')
             return
 
         db = firestore.Client()
         if add_parent_id:
+            data = {'id': child_id}
+            if add_parent_id['type'] == 'person':
+                data['proxy'] = common.get_proxy_id(add_parent_id, child_id, db, assign=True)
+                if not data['proxy']:
+                    logging.error('Proxy number not available, UpdateRelation failed.')
+                    return
             db.collection(common.COLLECTIONS[add_parent_id['type']]).document(add_parent_id['value'])\
-                .collection('members').document(child_id['type'] + ':' + child_id['value']).set({'id': child_id})
+                .collection('members').document(child_id['type'] + ':' + child_id['value']).set(data)
 
         if remove_parent_id:
             db.collection(common.COLLECTIONS[remove_parent_id['type']]).document(remove_parent_id['value']) \

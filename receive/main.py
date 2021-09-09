@@ -1,4 +1,5 @@
 import base64
+import common
 import config
 import datetime
 import json
@@ -42,6 +43,12 @@ def process_text(sender, receiver, content):
         person_id = person_docs[0].id
         person = person_docs[0].to_dict()
 
+    receiver_id = {'type': 'phone', 'value': receiver}
+    if receiver in config.PROXY_PHONE_NUMBERS:
+        receiver_id = common.get_child_id({'type': 'person', 'value': person_id}, receiver_id, db)
+        if not receiver_id:
+            logging.error(f'Missing child id for {sender}{receiver}'.format(sender=sender, receiver=receiver))
+
     if 'session' not in person:
         person['session'] = {}
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
@@ -64,7 +71,7 @@ def process_text(sender, receiver, content):
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': 'phone', 'value': sender},
-        'receiver': {'type': 'phone', 'value': receiver},
+        'receiver': receiver_id,
         'status': 'received',
         'tags': ['source:twilio', df.query_result.intent.display_name],
         'content_type': 'text/plain',

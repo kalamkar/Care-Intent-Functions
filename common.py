@@ -81,3 +81,23 @@ def filter_identifier(resource_doc, id_type, default=None):
 
 def generate_id():
     return base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
+
+
+def get_proxy_id(parent_id, child_id, db, assign=False):
+    proxy_numbers = config.PROXY_PHONE_NUMBERS.copy() if assign else []
+    for child in db.collection(COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
+            .collections('members').stream():
+        proxy = child.get('proxy')
+        if child.get('id') == child_id:
+            return proxy
+        if proxy['value'] in proxy_numbers:
+            proxy_numbers.remove(proxy['value'])
+    return {'type': 'phone', 'value': proxy_numbers[0]} if proxy_numbers else None
+
+
+def get_child_id(parent_id, proxy_id, db):
+    for child in db.collection(COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
+            .collections('members').stream():
+        if child.get('proxy') == proxy_id:
+            return child.get('id')
+    return None

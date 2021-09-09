@@ -4,7 +4,7 @@ import logging
 import sys
 
 ACTION_TYPES = ['CreateAction', 'DataProvider', 'DelayRun', 'Message', 'OAuth', 'UpdateContext', 'UpdateData',
-                'UpdateResource', 'Webhook']
+                'UpdateRelation', 'UpdateResource', 'Webhook']
 
 DURATIONS = {
     'm': 60,
