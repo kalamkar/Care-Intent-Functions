@@ -61,9 +61,8 @@ def main(event, metadata):
 
     add_shorthands(context)
     parents = common.get_parents(context.get('sender.id'), 'member', db)
-    caregivers = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'persons', parents))
-    if caregivers:
-        context.set('caregiver', caregivers[0])
+    for caregiver in list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'persons', parents)):
+        context.set('caregiver', caregiver.to_dict() | {'id': {'type': 'person', 'value': caregiver.id}})
 
     if channel_name == 'message' and message['content_type'] == 'application/json'\
             and 'action_id' in message['content']:
