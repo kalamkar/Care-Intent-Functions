@@ -21,11 +21,12 @@ def get_duration_secs(duration):
     return DURATIONS[duration[-1]] * int(duration[:-1])
 
 
-def get_parents(child_id, child_type, db):
+def get_parents(child_id, child_type, db, types=('groups',)):
     if not child_id or child_type not in COLLECTIONS:
         return []
     relation_query = db.collection_group(COLLECTIONS[child_type]).where('id', '==', child_id)
-    return filter(lambda g: g, [relative.reference.parent.parent.get() for relative in relation_query.stream()])
+    return filter(lambda g: g and g.exists and g.reference.path.split('/')[0] in types,
+                  [relative.reference.parent.parent.get() for relative in relation_query.stream()])
 
 
 def get_children_ids(parent_id, child_type, db):
