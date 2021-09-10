@@ -30,7 +30,7 @@ def main(request):
         return 'ERROR'
 
     channel = message['receiver']['type']
-    sender = common.get_identifier(message['sender']['value'], channel, db, resource_types=['group']) \
+    sender = common.get_identifier(message['sender'], channel, db, resource_types=['group']) \
         if 'sender' in message else None
     sender = sender['value'] if sender else None
     receiver = message['receiver']['value']
