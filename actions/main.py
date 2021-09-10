@@ -77,6 +77,7 @@ def main(event, metadata):
         for resource_id in [context.get('sender.id'), context.get('receiver.id')]:
             if resource_id and 'type' in resource_id and resource_id['type'] == 'group':
                 groups.append(db.collection('groups').document(resource_id['value']).get())
+        groups.append(db.collection('groups').document(config.SYSTEM_GROUP_ID).get())
         action_parent_pairs = get_actions(set(groups), db)
 
     context.set('min_action_priority', 0)
