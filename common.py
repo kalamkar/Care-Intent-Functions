@@ -86,7 +86,7 @@ def generate_id():
 def get_proxy_id(parent_id, child_id, db, assign=False):
     proxy_numbers = config.PROXY_PHONE_NUMBERS.copy() if assign else []
     for child in db.collection(COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
-            .collections('members').stream():
+            .collection('members').stream():
         proxy = child.get('proxy')
         if child.get('id') == child_id:
             return proxy
@@ -97,7 +97,7 @@ def get_proxy_id(parent_id, child_id, db, assign=False):
 
 def get_child_id(parent_id, proxy_id, db):
     for child in db.collection(COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
-            .collections('members').stream():
+            .collection('members').stream():
         if child.get('proxy') == proxy_id:
             return child.get('id')
     return None
