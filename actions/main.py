@@ -63,6 +63,7 @@ def main(event, metadata):
     parents = common.get_parents(context.get('sender.id'), 'member', db)
     for coach in list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'persons', parents)):
         context.set('coach', coach.to_dict() | {'id': {'type': 'person', 'value': coach.id}})
+    parents.extend(common.get_parents(context.get('receiver.id'), 'member', db))
 
     if channel_name == 'message' and message['content_type'] == 'application/json'\
             and 'action_id' in message['content']:
