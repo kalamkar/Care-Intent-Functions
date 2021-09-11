@@ -17,7 +17,7 @@ DURATIONS = {
 def get_duration_secs(duration):
     if duration[-1] not in DURATIONS:
         return 0
-    return DURATIONS[duration[-1]] * int(duration[:-1])
+    return int(DURATIONS[duration[-1]] * float(duration[:-1]))
 
 
 def create_action(params):
