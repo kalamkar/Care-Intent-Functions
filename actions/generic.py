@@ -89,7 +89,7 @@ class CreateAction(Action):
         if content:
             action['params']['content'] = content
 
-        logging.info('Creating action ' + action)
+        logging.info('Creating action {}'.format(action))
 
         if 'schedule' in action or delay_secs:
             payload = {'action_id': action['id'], 'parent_id': parent_id}
