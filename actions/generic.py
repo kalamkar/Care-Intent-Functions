@@ -67,8 +67,9 @@ class CreateAction(Action):
     def process(self, **kwargs):
         action_type = kwargs['action_type'] if 'action_type' in kwargs else None
         parent_id = kwargs['parent_id'] if 'parent_id' in kwargs else None
-        action = kwargs['action'] if 'action' in kwargs else None
+        action = kwargs['action'] if 'action' in kwargs else {}
         delay_secs = kwargs['delay_secs'] if 'delay_secs' in kwargs else None
+        content = kwargs['content'] if 'content' in kwargs else None
 
         if not parent_id or not action_type:
             logging.warning('Missing parent id or action type for delayed action')
@@ -85,6 +86,10 @@ class CreateAction(Action):
             if top_param in action['params']:
                 action[top_param] = action['params'][top_param]
                 del action['params'][top_param]
+        if content:
+            action['params']['content'] = content
+
+        logging.info('Creating action ' + action)
 
         if 'schedule' in action or delay_secs:
             payload = {'action_id': action['id'], 'parent_id': parent_id}
@@ -99,7 +104,7 @@ class CreateAction(Action):
             timestamp.FromDatetime(start_time)
             action['task_id'] = common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
         elif 'condition' not in action:
-            logging.warning('Create action is missing schedule, delay or condition')
+            logging.error('Create action is missing schedule, delay or condition')
             return
 
         db = firestore.Client()
