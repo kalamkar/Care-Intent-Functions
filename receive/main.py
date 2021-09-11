@@ -18,7 +18,6 @@ logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 def main(request):
     tokens = request.path.split('/')
-    logging.info(tokens)
     logging.info(request.form)
     if len(tokens) == 2 and tokens[1] == 'text':
         return process_text(request.form['From'], request.form['To'], request.form['Body'])
@@ -26,6 +25,8 @@ def main(request):
 
 
 def process_text(sender, receiver, content):
+    tags = ['source:twilio']
+
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
@@ -45,6 +46,7 @@ def process_text(sender, receiver, content):
 
     receiver_id = {'type': 'phone', 'value': receiver}
     if receiver in config.PROXY_PHONE_NUMBERS:
+        tags.append('proxy')
         receiver_id = common.get_child_id({'type': 'person', 'value': person_id}, receiver_id, db)
         if not receiver_id:
             logging.error(f'Missing child id for {sender}{receiver}'.format(sender=sender, receiver=receiver))
@@ -66,14 +68,13 @@ def process_text(sender, receiver, content):
     df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
                                  query_input=dialogflow.types.QueryInput(text=text_input),
                                  query_params=query_params)
-    logging.info(df)
 
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': 'phone', 'value': sender},
         'receiver': receiver_id,
         'status': 'received',
-        'tags': ['source:twilio', df.query_result.intent.display_name],
+        'tags': tags + [df.query_result.intent.display_name],
         'content_type': 'text/plain',
         'content': content,
         'nlp': {
