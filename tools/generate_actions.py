@@ -63,7 +63,7 @@ def main(filename):
     reader = csv.DictReader(open(filename))
     action = None
     previous_id = None
-    count = 1
+    count = 0
     for row in reader:
         count += 1
         if row['Action type'] not in ACTION_TYPES:
@@ -100,16 +100,17 @@ def main(filename):
 
         if 'content' not in action['params']:
             action['params']['content'] = []
-        action['params']['content'].append({
-            'id': row['Variation Id'] or '1',
-            'message': row['Message']
-        })
-        if row['Qualifiers']:
-            try:
-                qualifiers = {q.split('=', 1)[0]: q.split('=', 1)[1] for q in row['Qualifiers'].split(';')}
-                action['params']['content'][-1]['qualifiers'] = qualifiers
-            except:
-                print(count, row['Qualifiers'])
+        if type(action['params']['content']) == list:
+            action['params']['content'].append({
+                'id': row['Variation Id'] or '1',
+                'message': row['Message']
+            })
+            if row['Qualifiers']:
+                try:
+                    qualifiers = {q.split('=', 1)[0]: q.split('=', 1)[1] for q in row['Qualifiers'].split(';')}
+                    action['params']['content'][-1]['qualifiers'] = qualifiers
+                except:
+                    print(count, row['Qualifiers'])
     if action:
         actions.append(action)
     json.dump({'actions': actions}, open(filename + '.json', 'w'), indent=2)
