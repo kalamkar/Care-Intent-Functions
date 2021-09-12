@@ -51,11 +51,10 @@ def process_text(sender, receiver, content):
         if not receiver_id:
             logging.error(f'Missing child id for {sender}{receiver}'.format(sender=sender, receiver=receiver))
 
-    if 'session' not in person:
-        person['session'] = {}
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
-    if 'start' not in person['session'] or (now - person['session']['start']).total_seconds() > config.SESSION_SECONDS:
-        person['session'] = {'start': now}
+    if 'session' not in person or 'start' not in person['session']\
+            or (now - person['session']['start']).total_seconds() > config.SESSION_SECONDS:
+        person['session'] = {'start': now, 'id': common.generate_id()}
 
     knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID,
                                                                               config.SYSTEM_KNOWLEDGE_ID)
@@ -68,19 +67,21 @@ def process_text(sender, receiver, content):
     df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
                                  query_input=dialogflow.types.QueryInput(text=text_input),
                                  query_params=query_params)
+    sentiment_score = df.query_result.sentiment_analysis_result.query_text_sentiment.score
 
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': 'phone', 'value': sender},
         'receiver': receiver_id,
         'status': 'received',
-        'tags': tags + [df.query_result.intent.display_name],
+        'tags': tags + [df.query_result.intent.display_name, 'session:' + person['session']['id'],
+                        'sentiment:' + str(sentiment_score)],
         'content_type': 'text/plain',
         'content': content,
         'nlp': {
             'intent': df.query_result.intent.display_name,
             'action': df.query_result.action,
-            'sentiment_score': df.query_result.sentiment_analysis_result.query_text_sentiment.score,
+            'sentiment_score': sentiment_score,
             'reply': df.query_result.fulfillment_text,
             'confidence': int(df.query_result.intent_detection_confidence * 100),
             'params': MessageToDict(df.query_result.parameters)
@@ -94,7 +95,6 @@ def process_text(sender, receiver, content):
     if context:
         person['session']['context'] = context
     person['session']['last_message_time'] = now
-    logging.info(person['session'])
     db.collection('persons').document(person_id).update({'session': person['session']})  # Update only session part
     return '', 204
 

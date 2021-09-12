@@ -14,7 +14,7 @@ PROXY_PHONE_NUMBERS = ['+13166130001', '+13166130002', '+13166130003', '+1316613
 
 SENDGRID_TOKEN = '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'
 
-SESSION_SECONDS = 6 * 60 * 60
+SESSION_SECONDS = 3 * 60 * 60
 
 PROVIDERS = {'dexcom': {'url': 'https://sandbox-api.dexcom.com/v2/oauth2/token',
                         'client_id': 'cfz2ttzaLK164vTJ3lkt02n7ih0YMBHg',
