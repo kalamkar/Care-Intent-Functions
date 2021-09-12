@@ -52,8 +52,13 @@ def process_text(sender, receiver, content):
             logging.error(f'Missing child id for {sender}{receiver}'.format(sender=sender, receiver=receiver))
 
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
-    if 'session' not in person or 'start' not in person['session']\
-            or (now - person['session']['start']).total_seconds() > config.SESSION_SECONDS:
+    start_new_session = \
+        'session' not in person \
+        or 'start' not in person['session'] \
+        or ((now - person['session']['start']).total_seconds() > config.SESSION_SECONDS
+            and ('last_message_time' not in person['session']
+                 or (now - person['session']['last_message_time']).total_seconds() > config.GAP_SECONDS))
+    if start_new_session:
         person['session'] = {'start': now, 'id': common.generate_id()}
 
     knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID,
