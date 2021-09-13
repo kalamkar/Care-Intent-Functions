@@ -143,10 +143,9 @@ def process_action(action_doc, parent_doc, context, bq):
     if actrun.action_update and action_doc and action_doc.exists:
         action_doc.reference.update(actrun.action_update)
     log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
-           'resources': [{'type': resource_id['type'], 'id': resource_id['value']},
-                         {'type': 'action', 'id': action['id']}]}
+           'resources': [resource_id, {'type': 'action', 'value': action['id']}]}
     if content_id:
-        log['resources'].append({'type': 'content', 'id': content_id})
+        log['resources'].append({'type': 'content', 'value': content_id})
     errors = bq.insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
     if errors:
         logging.warning(errors)
@@ -176,11 +175,11 @@ def get_latest_run_time(action_id, resource_id, bq):
         return None, None
     q = '''SELECT time, content FROM(
         SELECT time,
-            (SELECT id FROM UNNEST(resources) 
+            (SELECT value FROM UNNEST(resources) 
                 WHERE type = "action") AS action,
-            (SELECT id FROM UNNEST(resources) 
+            (SELECT value FROM UNNEST(resources) 
                 WHERE type = "{resource_type}") AS resource,
-            (SELECT id FROM UNNEST(resources) 
+            (SELECT value FROM UNNEST(resources) 
                 WHERE type = "content") AS content
         FROM `{project}.live.log`
         WHERE type = "action.run"
