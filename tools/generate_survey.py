@@ -30,7 +30,7 @@ def main(filename):
             'type': 'Message',
             'priority': 10,
             'condition': condition,
-            'min_action_priority': 5,
+            'min_action_priority': 9,
             'params': {
                 'content': row['Message'],
                 'receiver': '$person.id'
@@ -40,7 +40,7 @@ def main(filename):
             actions.append({
                 'id': row['Question'] + '.update',
                 'type': 'UpdateResource',
-                'priority': 5,
+                'priority': 9,
                 'condition': condition,
                 'params': {
                     'content': '{"session.last_question": "%s"}' % (row['Question'] if row['Exit'] != '1' else ''),
