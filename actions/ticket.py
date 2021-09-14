@@ -18,7 +18,7 @@ class List(Action):
         tickets = {}
         bq = bigquery.Client()
         q = 'SELECT name, number, value FROM {project}.live.tsdata, UNNEST(data) ' \
-            'WHERE source.value = "{source}" AND "ticket" IN tags AND number IS NOT NULL ' \
+            'WHERE source.value = "{source}" AND "ticket" IN UNNEST(tags) AND number IS NOT NULL ' \
             'ORDER BY time'.format(project=config.PROJECT_ID, source=person_id['value'])
         for row in bq.query(q):
             if row['number'] > 0:
