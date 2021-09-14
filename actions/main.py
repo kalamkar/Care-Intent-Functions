@@ -10,6 +10,7 @@ import providers
 import pytz
 import re
 import random
+import ticket
 import traceback
 
 from google.cloud import bigquery
@@ -30,6 +31,9 @@ ACTIONS = {
     'UpdateData': generic.UpdateData,
     'UpdateRelation': generic.UpdateRelation,
     'UpdateResource': generic.UpdateResource,
+    'OpenTicket': ticket.Open,
+    'CloseTicket': ticket.Close,
+    'ListTickets': ticket.List,
     'Webhook': generic.Webhook
 }
 
