@@ -50,7 +50,7 @@ class Operation(Action):
 
         row = {
             'time': datetime.datetime.utcnow().isoformat(),
-            'source': {'type': 'person', 'value': person_id},
+            'source': person_id,
             'tags': ['ticket'],
             'data': [{'name': name, 'number': self.number, 'value': message}]
         }
