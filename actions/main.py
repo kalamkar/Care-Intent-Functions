@@ -234,13 +234,13 @@ def add_shorthands(context):
     status = context.get('message.status')
     tags = context.get('message.tags') or []
     if status == 'received' and 'proxy' not in tags:
-        context.set('from_member')
+        context.set('from_member', True)
     elif status == 'received' and 'proxy' in tags:
-        context.set('from_coach')
+        context.set('from_coach', True)
     elif status == 'sent' and 'proxy' in tags:
-        context.set('to_coach')
+        context.set('to_coach', True)
     elif status == 'sent' and 'proxy' not in tags:
-        context.set('to_member')
+        context.set('to_member', True)
 
 
 def get_context_params(action_params, context):
