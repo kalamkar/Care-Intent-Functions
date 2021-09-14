@@ -41,6 +41,7 @@ class Message(Action):
         if sender and type(sender) == dict and 'type' in sender and sender['type'] == 'person' and\
                 receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
             sender = common.get_proxy_id(receiver, sender, db)
+            tags.append('proxy')
         sender = common.get_identifier(sender, 'phone', db,
                                        {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
         receiver = common.get_identifier(receiver, 'phone', db)

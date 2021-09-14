@@ -231,6 +231,16 @@ def add_shorthands(context):
         context.set('person', receiver)
     elif sender and type(sender) == dict and 'id' in sender and sender['id']['type'] == 'person':
         context.set('person', sender)
+    status = context.get('message.status')
+    tags = context.get('message.tags') or []
+    if status == 'received' and 'proxy' not in tags:
+        context.set('from_member')
+    elif status == 'received' and 'proxy' in tags:
+        context.set('from_coach')
+    elif status == 'sent' and 'proxy' in tags:
+        context.set('to_coach')
+    elif status == 'sent' and 'proxy' not in tags:
+        context.set('to_member')
 
 
 def get_context_params(action_params, context):
