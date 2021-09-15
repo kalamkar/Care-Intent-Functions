@@ -25,7 +25,7 @@ logger.handlers.setup_logging(logger.Client().get_default_handler())
 ACTIONS = {
     'CreateAction': generic.CreateAction,
     'DataProvider': providers.DataProvider,
-    'DelayRun': generic.DelayRun,
+    'RunAction': generic.RunAction,
     'Message': message.Send,
     'Broadcast': message.Broadcast,
     'OAuth': providers.OAuth,

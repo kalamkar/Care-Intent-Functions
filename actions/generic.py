@@ -137,27 +137,30 @@ class Webhook(Action):
             SendGridAPIClient(config.SENDGRID_TOKEN).send(message)
 
 
-class DelayRun(Action):
-    def process(self, action_parent_id=None, action_id=None, delay_secs=None, person_id=None, parent_id=None):
-        if not action_parent_id or not action_id or (not person_id and not parent_id):
+class RunAction(Action):
+    def process(self, action_parent_id=None, action_ids=None, delay_secs=10, person_id=None, parent_id=None):
+        if not action_parent_id or not action_ids or (not person_id and not parent_id):
             logging.error('Missing action parameters')
             return
+        action_ids = [a.strip() for a in action_ids.split(',')]
         if person_id:
-            payload = {'action_id': action_id, 'parent_id': action_parent_id, 'person_id': person_id}
             now = datetime.datetime.utcnow()
             timestamp = timestamp_pb2.Timestamp()
             timestamp.FromDatetime(now + datetime.timedelta(seconds=delay_secs))
-            common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
+            for action_id in action_ids:
+                payload = {'action_id': action_id, 'parent_id': action_parent_id, 'person_id': person_id}
+                common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
         elif parent_id:
             db = firestore.Client()
             tasks = tasks_v2.CloudTasksClient()
             for member in db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value']) \
                     .collection('members').stream():
-                payload = {'action_id': action_id, 'parent_id': action_parent_id, 'person_id': member.get('id')}
                 now = datetime.datetime.utcnow()
                 timestamp = timestamp_pb2.Timestamp()
                 timestamp.FromDatetime(now + datetime.timedelta(seconds=delay_secs))
-                common.schedule_task(payload, tasks, timestamp=timestamp)
+                for action_id in action_ids:
+                    payload = {'action_id': action_id, 'parent_id': action_parent_id, 'person_id': member.get('id')}
+                    common.schedule_task(payload, tasks, timestamp=timestamp)
 
 
 class UpdateRelation(Action):

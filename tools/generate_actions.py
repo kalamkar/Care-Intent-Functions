@@ -3,7 +3,7 @@ import json
 import logging
 import sys
 
-ACTION_TYPES = ['Broadcast', 'CreateAction', 'DataProvider', 'DelayRun', 'Message', 'OAuth',
+ACTION_TYPES = ['Broadcast', 'CreateAction', 'DataProvider', 'Message', 'OAuth', 'RunAction',
                 'UpdateContext', 'UpdateData', 'UpdateRelation', 'UpdateResource',
                 'OpenTicket', 'CloseTicket', 'ListTickets', 'Webhook']
 
