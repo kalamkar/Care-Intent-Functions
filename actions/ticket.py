@@ -28,13 +28,13 @@ class List(Action):
             'ORDER BY time'.format(project=config.PROJECT_ID, source=person_id['value'])
         for row in bq.query(q):
             if row['status'] == 'opened':
-                tickets[row['id']] = {'time': row['time'].isoformat(),
-                                      'category': row['category'], 'title': row['title']}
+                tickets[int(row['id'])] = {'time': row['time'].isoformat(), 'category': row['category'],
+                                           'title': row['title']}
             elif row['status'] == 'closed':
-                if row['id'] not in tickets:
+                if int(row['id']) not in tickets:
                     logging.error('Ticket {} for {} closed before opening'.format(row['id'], person_id))
                     continue
-                del tickets[row['id']]
+                del tickets[int(row['id'])]
         self.context_update = {'tickets': tickets}
 
 
