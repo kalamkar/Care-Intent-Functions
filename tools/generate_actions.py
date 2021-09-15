@@ -3,8 +3,9 @@ import json
 import logging
 import sys
 
-ACTION_TYPES = ['CreateAction', 'DataProvider', 'DelayRun', 'Message', 'OAuth', 'UpdateContext', 'UpdateData',
-                'UpdateRelation', 'UpdateResource', 'OpenTicket', 'CloseTicket', 'ListTickets', 'Webhook']
+ACTION_TYPES = ['Broadcast', 'CreateAction', 'DataProvider', 'DelayRun', 'Message', 'OAuth',
+                'UpdateContext', 'UpdateData', 'UpdateRelation', 'UpdateResource',
+                'OpenTicket', 'CloseTicket', 'ListTickets', 'Webhook']
 
 DURATIONS = {
     'm': 60,
