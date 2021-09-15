@@ -49,8 +49,8 @@ class Operation(Action):
         rows = bigquery.Client().query(
             'SELECT count(*) as count FROM {project}.live.tsdata, UNNEST(data) '\
             'WHERE source.value = "{source}" AND "ticket" IN UNNEST(tags) AND value = "opened" '\
-            .format(project=config.PROJECT_ID, source=person_id['value']))
-        ticket_id = rows[0]['count'] + 1
+            .format(project=config.PROJECT_ID, source=person_id['value'])).result()
+        ticket_id = list(rows)[0]['count'] + 1
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
 
