@@ -15,7 +15,7 @@ class ContextTestCase(unittest.TestCase):
         context = Context()
         context.set('message', {'time': '2021-08-13T02:58:41.007415',
                                 'sender': {'type': 'phone', 'value': '+13233376800'},
-                                'receiver': {'type': 'phone', 'value': '+16692154466'},
+                                'receiver': {'type': 'phone', 'value': '+18446000211'},
                                 'status': 'received', 'tags': [], 'content_type': 'text/plain',
                                 'content': 'hi',
                                 'nlp': {'intent': 'system.welcome', 'action': 'input.welcome',
