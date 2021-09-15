@@ -28,42 +28,6 @@ class Action(abc.ABC):
         pass
 
 
-class Message(Action):
-    def process(self, receiver=None, sender=None, content=None, tags=None):
-        if type(tags) == list:
-            tags.append('source:action')
-        elif type(tags) == str:
-            tags = tags.split(',') + ['source:action']
-        else:
-            tags = ['source:action']
-
-        db = firestore.Client()
-        if sender and type(sender) == dict and 'type' in sender and sender['type'] == 'person' and\
-                receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
-            sender = common.get_proxy_id(receiver, sender, db)
-            tags.append('proxy')
-        sender = common.get_identifier(sender, 'phone', db,
-                                       {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
-        receiver = common.get_identifier(receiver, 'phone', db)
-        if not receiver:
-            logging.warning('Missing receiver for message action')
-            return
-
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
-
-        data = {
-            'time': datetime.datetime.utcnow().isoformat(),
-            'sender': sender,
-            'receiver': receiver,
-            'status': 'sent',
-            'tags': tags,
-            'content_type': 'text/plain',
-            'content': content
-        }
-        publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
-
-
 class CreateAction(Action):
     def process(self, **kwargs):
         action_type = kwargs['action_type'] if 'action_type' in kwargs else None

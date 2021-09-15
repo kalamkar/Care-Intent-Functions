@@ -1,0 +1,80 @@
+import common
+import config
+import datetime
+import json
+import logging
+
+from google.cloud import firestore
+from google.cloud import pubsub_v1
+
+from generic import Action
+
+
+class Send(Action):
+    def process(self, receiver=None, sender=None, content=None, tags=None):
+        if type(tags) == list:
+            tags.append('source:action')
+        elif type(tags) == str:
+            tags = tags.split(',') + ['source:action']
+        else:
+            tags = ['source:action']
+
+        db = firestore.Client()
+        if sender and type(sender) == dict and 'type' in sender and sender['type'] == 'person' and\
+                receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
+            sender = common.get_proxy_id(receiver, sender, db)
+            tags.append('proxy')
+        sender = common.get_identifier(sender, 'phone', db,
+                                       {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
+        receiver = common.get_identifier(receiver, 'phone', db)
+        if not receiver:
+            logging.warning('Missing receiver for message action')
+            return
+
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+
+        data = {
+            'time': datetime.datetime.utcnow().isoformat(),
+            'sender': sender,
+            'receiver': receiver,
+            'status': 'sent',
+            'tags': tags,
+            'content_type': 'text/plain',
+            'content': content
+        }
+        publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
+
+
+class Broadcast(Action):
+    def process(self, parent_id=None, content=None, tags=None):
+        if type(tags) == list:
+            tags.append('source:action')
+        elif type(tags) == str:
+            tags = tags.split(',') + ['source:action']
+        else:
+            tags = ['source:action']
+
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+
+        db = firestore.Client()
+        sender = common.get_identifier(parent_id, 'phone', db,
+                                       {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
+        for member in db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
+                .collection('members').stream():
+            receiver = common.get_identifier(member.get('id'), 'phone', db)
+            if not receiver:
+                logging.warning('Missing receiver for broadcast action, member {}'.format(member.id))
+                continue
+
+            data = {
+                'time': datetime.datetime.utcnow().isoformat(),
+                'sender': sender,
+                'receiver': receiver,
+                'status': 'sent',
+                'tags': tags,
+                'content_type': 'text/plain',
+                'content': content
+            }
+            publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
