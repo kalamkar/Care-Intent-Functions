@@ -20,6 +20,7 @@ class Context(object):
                         'nlp': {'intent': None, 'action': None, 'reply': None, 'confidence': None, 'params': {}}},
             'sender': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
             'receiver': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
+            'members': [],
             'action': {'group': None, 'id': None}
         }
         self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True)

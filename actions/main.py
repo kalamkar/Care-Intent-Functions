@@ -64,6 +64,12 @@ def main(event, metadata):
         context.set('sender', get_resource(message['source'], db))
 
     add_shorthands(context)
+    if context.get('from_coach'):
+        members = []
+        for member in db.collection('persons').document(context.get('sender.id.value')).collection('members').stream():
+            members.append(get_resource(member.get('id'), db))
+        context.set('members', members)
+
     parents = common.get_parents(context.get('sender.id'), 'member', db)
     for coach in list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'persons', parents)):
         context.set('coach', coach.to_dict() | {'id': {'type': 'person', 'value': coach.id}})
