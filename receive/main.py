@@ -53,7 +53,9 @@ def main(request):
         receiver_doc = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
         receiver_phone = common.filter_identifier(receiver_doc, 'phone')
         if receiver_phone:
-            return process_voice_proxy(receiver_phone['value'])
+            response = process_voice_proxy(receiver_phone['value'])
+            logging.info(response)
+            return response
     return '', 204
 
 
