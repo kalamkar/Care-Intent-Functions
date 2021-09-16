@@ -74,7 +74,7 @@ def main(event, metadata):
     if channel_name == 'message' and message['content_type'] == 'application/json'\
             and 'action_id' in message['content']:
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
-        context.set('scheduled', True)
+        context.set('scheduled_action_id', message['content']['action_id'])
         parent_id = message['content']['parent_id']
         parent = db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])
         action = parent.collection('actions').document(message['content']['action_id']).get()
