@@ -12,6 +12,8 @@ from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict
 
+from twilio.twiml.voice_response import Dial, VoiceResponse, Say
+
 import google.cloud.logging as logger
 logger.handlers.setup_logging(logger.Client().get_default_handler())
 
@@ -19,38 +21,53 @@ logger.handlers.setup_logging(logger.Client().get_default_handler())
 def main(request):
     tokens = request.path.split('/')
     logging.info(request.form)
-    if len(tokens) == 2 and tokens[1] == 'text':
-        return process_text(request.form['From'], request.form['To'], request.form['Body'])
-    return '', 204
 
-
-def process_text(sender, receiver, content):
-    tags = ['source:twilio']
-
-    publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+    sender, receiver, content = request.form['From'], request.form['To'], request.form['Body']
 
     db = firestore.Client()
     contact = {'type': 'phone', 'value': sender}
     person_docs = list(db.collection('persons').where('identifiers', 'array_contains', contact).get())
     if len(person_docs) == 0:
         # Create new person since it doesn't exist
-        person_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
+        person_id = common.generate_id()
         person = {'identifiers': [contact]}
         db.collection('persons').document(person_id).set(person)
+        person['id'] = {'type': 'person', 'value': person_id}
     else:
         if len(person_docs) > 1:
             logging.warning('More than 1 person for ' + sender)
-        person_id = person_docs[0].id
         person = person_docs[0].to_dict()
+        person['id'] = {'type': 'person', 'value': person_docs[0].id}
 
+    tags = ['source:twilio']
+    sender_id = {'type': 'phone', 'value': sender}
     receiver_id = {'type': 'phone', 'value': receiver}
     if receiver in config.PROXY_PHONE_NUMBERS:
         tags.append('proxy')
-        receiver_id = common.get_child_id({'type': 'person', 'value': person_id}, receiver_id, db)
+        receiver_id = common.get_child_id(person['id'], receiver_id, db)
         if not receiver_id:
             logging.error(f'Missing child id for {sender}{receiver}'.format(sender=sender, receiver=receiver))
 
+    if len(tokens) == 2 and tokens[1] == 'text':
+        return process_text(sender_id, receiver_id, content, tags, person, db)
+    elif len(tokens) == 2 and tokens[1] == 'voice' and request.form['Direction'] == 'inbound' and 'proxy' in tags:
+        # ('CallStatus', 'ringing'), ('Direction', 'inbound')
+        receiver_doc = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
+        receiver_phone = common.filter_identifier(receiver_doc, 'phone')
+        if receiver_phone:
+            return process_voice_proxy(receiver_phone['value'])
+    return '', 204
+
+
+def process_voice_proxy(receiver):
+    response = VoiceResponse()
+    response.say('Connecting')
+    response.dial(receiver)
+    return response
+
+
+def process_text(sender_id, receiver_id, content, tags, person, db):
+    person_id = person['id']['value']
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
     start_new_session = \
         'session' not in person \
@@ -76,7 +93,7 @@ def process_text(sender, receiver, content):
 
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
-        'sender': {'type': 'phone', 'value': sender},
+        'sender': sender_id,
         'receiver': receiver_id,
         'status': 'received',
         'tags': tags + [df.query_result.intent.display_name, 'session:' + person['session']['id'],
@@ -92,6 +109,10 @@ def process_text(sender, receiver, content):
             'params': MessageToDict(df.query_result.parameters)
         }
     }
+
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+
     if df.query_result.action:
         data['tags'].append(df.query_result.action)
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
@@ -100,7 +121,8 @@ def process_text(sender, receiver, content):
     if context:
         person['session']['context'] = context
     person['session']['last_message_time'] = now
-    db.collection('persons').document(person_id).update({'session': person['session']})  # Update only session part
+    # Update only session part
+    db.collection('persons').document(person_id).update({'session': person['session']})
     return '', 204
 
 
