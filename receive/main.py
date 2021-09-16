@@ -1,11 +1,9 @@
-import base64
 import common
 import config
 import datetime
 import json
 import logging
 import pytz
-import uuid
 
 import dialogflow_v2beta1 as dialogflow
 from google.cloud import firestore
