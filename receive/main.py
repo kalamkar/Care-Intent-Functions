@@ -61,7 +61,7 @@ def process_voice_proxy(receiver):
     response = VoiceResponse()
     response.say('Connecting')
     response.dial(receiver)
-    return response
+    return str(response)
 
 
 def process_text(sender_id, receiver_id, content, tags, person, db):
