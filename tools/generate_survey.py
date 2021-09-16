@@ -6,6 +6,7 @@ import sys
 def main(filename):
     actions = []
     reader = csv.DictReader(open(filename))
+    intro = True
     for row in reader:
         condition = ''
         questions = row['Previous Question'].split('\n')
@@ -36,7 +37,20 @@ def main(filename):
                 'receiver': '$person.id'
             }
         })
-        if row['Skip Session Update'] != '1':
+        if intro:
+          intro = False
+          actions.append({
+              'id': row['Question'] + '.update',
+              'type': 'UpdateResource',
+              'priority': 9,
+              'condition': condition,
+              'params': {
+                  'content': '{"session": {"start": {{message.time}}, "id":"%s", "lead": "bot", "last_question": "%s"}}'
+                             % (row['Question'], row['Question']),
+                  'identifier': '$person.id'
+              }
+          })
+        elif row['Skip Session Update'] != '1':
             actions.append({
                 'id': row['Question'] + '.update',
                 'type': 'UpdateResource',
