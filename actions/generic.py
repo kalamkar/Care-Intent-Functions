@@ -138,16 +138,15 @@ class Webhook(Action):
 
 
 class RunAction(Action):
-    def process(self, action_parent_id=None, action_ids=None, delay_secs=10, person_id=None, parent_id=None):
-        if not action_parent_id or not action_ids or (not person_id and not parent_id):
+    def process(self, action_parent_id=None, actions=None, delay_secs=10, person_id=None, parent_id=None):
+        if not action_parent_id or not actions or (not person_id and not parent_id):
             logging.error('Missing action parameters')
             return
-        action_ids = [a.strip() for a in action_ids.split(',')]
         if person_id:
             now = datetime.datetime.utcnow()
             timestamp = timestamp_pb2.Timestamp()
             timestamp.FromDatetime(now + datetime.timedelta(seconds=delay_secs))
-            for action_id in action_ids:
+            for action_id in [a.strip() for a in actions.split(',')]:
                 payload = {'action_id': action_id, 'parent_id': action_parent_id, 'person_id': person_id}
                 common.schedule_task(payload, tasks_v2.CloudTasksClient(), timestamp=timestamp)
         elif parent_id:
@@ -158,7 +157,7 @@ class RunAction(Action):
                 now = datetime.datetime.utcnow()
                 timestamp = timestamp_pb2.Timestamp()
                 timestamp.FromDatetime(now + datetime.timedelta(seconds=delay_secs))
-                for action_id in action_ids:
+                for action_id in [a.strip() for a in actions.split(',')]:
                     payload = {'action_id': action_id, 'parent_id': action_parent_id, 'person_id': member.get('id')}
                     common.schedule_task(payload, tasks, timestamp=timestamp)
 
