@@ -3,6 +3,7 @@ import croniter
 import common
 import config
 import datetime
+import dateutil.parser
 import json
 import logging
 import pytz
@@ -84,7 +85,8 @@ class UpdateResource(Action):
         doc_ref = db.collection(collection).document(identifier['value'])
         logging.info('Updating {collection}/{id} with {data}'.format(collection=collection, id=identifier['value'],
                                                                      data=content))
-        content = json.loads(content.replace('\'', '"'))
+        content = json.loads(content.replace('\'', '"'), object_hook=lambda d:
+            (d | {'start': dateutil.parser.parse(d['start']).astimezone(pytz.utc)}) if 'start' in d else d)
         doc_ref.update({list_name: firestore.ArrayUnion(content)} if list_name else content)
 
 
