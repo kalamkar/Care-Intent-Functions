@@ -25,7 +25,7 @@ ALLOW_HEADERS = ['Accept', 'Authorization', 'Cache-Control', 'Content-Type', 'Co
 DATA_PROVIDER_ACTION = {
     'type': 'DataProvider',
     'priority': 10,
-    'condition': '{{scheduled}}',
+    'condition': '{{scheduled_action_id == action.id}}',
     'access_token': None,
     'refresh_token': None,
     'expires': datetime.datetime.utcnow(),
