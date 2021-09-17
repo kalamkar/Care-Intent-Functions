@@ -34,6 +34,8 @@ def main(request):
         if action['maxrun'] <= 0:
             action_doc.reference.delete()
             action_doc = None
+        else:
+            action_doc.reference.update({'maxrun': action['maxrun']})
 
     if 'schedule' in action and action_doc:
         now = datetime.datetime.utcnow()
