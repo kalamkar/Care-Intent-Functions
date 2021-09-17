@@ -209,8 +209,8 @@ def get_actions(groups, db):
                 if action_id not in ids:
                     actions.append(action | {'parent': group | {'id': common.get_id(group_doc)}})
                     ids.add(action_id)
-    actions = sorted(actions, key=lambda pair: pair[0]['priority'], reverse=True)
-    logging.info('Found actions {}'.format([action['id'] for action, group in actions]))
+    actions = sorted(actions, key=lambda action: action['priority'], reverse=True)
+    logging.info('Found actions {}'.format([action['id'] for action in actions]))
     return actions
 
 
