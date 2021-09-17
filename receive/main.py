@@ -48,7 +48,7 @@ def main(request):
 
     if len(tokens) == 2 and tokens[1] == 'text':
         return process_text(sender_id, receiver_id, content, tags, person, db)
-    elif len(tokens) == 2 and tokens[1] == 'voice' and request.form['Direction'] == 'inbound' and 'proxy' in tags:
+    elif len(tokens) == 2 and tokens[1] == 'voice':  # and request.form['Direction'] == 'inbound' and 'proxy' in tags:
         # ('CallStatus', 'ringing'), ('Direction', 'inbound')
         receiver_doc = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
         receiver_phone = common.filter_identifier(receiver_doc, 'phone')
