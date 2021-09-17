@@ -53,15 +53,10 @@ def main(request):
         receiver_doc = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
         receiver_phone = common.filter_identifier(receiver_doc, 'phone')
         if receiver_phone:
-            return process_voice_proxy(receiver_phone['value'])
+            return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say>Connecting</Say>'\
+                   '<Dial callerId="{caller}"><Number>{receiver}</Number></Dial></Response>'\
+                .format(receiver=receiver_phone['value'], caller=config.PHONE_NUMBER)
     return '', 204
-
-
-def process_voice_proxy(receiver):
-    response = VoiceResponse()
-    response.say('Connecting')
-    response.dial(receiver)
-    return str(response)
 
 
 def process_text(sender_id, receiver_id, content, tags, person, db):
