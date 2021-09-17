@@ -46,17 +46,21 @@ def main(request):
         if not receiver_id:
             logging.error(f'Missing child id for {sender}{receiver}'.format(sender=sender, receiver=receiver))
 
-    if len(tokens) == 2 and tokens[1] == 'text':
+    if tokens[-1] == 'text':
         return process_text(sender_id, receiver_id, request.form['Body'], tags, person, db)
-    elif len(tokens) == 2 and tokens[1] == 'voice' and request.form['Direction'] == 'inbound' and 'proxy' in tags:
+    elif tokens[-1] == 'status':
+        pass
+    elif tokens[-1] == 'voice' and request.form['Direction'] == 'inbound' and 'proxy' in tags:
         # ('CallStatus', 'ringing'), ('Direction', 'inbound')
         receiver_doc = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
         receiver_phone = common.filter_identifier(receiver_doc, 'phone')
         if receiver_phone:
             return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say>Connecting</Say>'\
-                   '<Dial callerId="{caller}"><Number>{receiver}</Number></Dial></Response>'\
-                .format(receiver=receiver_phone['value'], caller=config.PHONE_NUMBER)
-    return '', 204
+                   '<Dial callerId="{caller}" action="{status_url}"><Number>{receiver}</Number></Dial></Response>'\
+                .format(receiver=receiver_phone['value'], caller=config.PHONE_NUMBER,
+                        status_url='https://%s-%s.cloudfunctions.net/receive/status'
+                                   % (config.LOCATION_ID, config.PROJECT_ID))
+    return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
 
 
 def process_text(sender_id, receiver_id, content, tags, person, db):
