@@ -10,8 +10,6 @@ from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict
 
-from twilio.twiml.voice_response import Dial, VoiceResponse, Say
-
 import google.cloud.logging as logger
 logger.handlers.setup_logging(logger.Client().get_default_handler())
 
@@ -20,7 +18,7 @@ def main(request):
     tokens = request.path.split('/')
     logging.info(request.form)
 
-    sender, receiver = request.form['From'], request.form['To']
+    sender, receiver = request.form.get('From'), request.form.get('To')
 
     db = firestore.Client()
     contact = {'type': 'phone', 'value': sender}
@@ -46,18 +44,19 @@ def main(request):
         if not receiver_id:
             logging.error(f'Missing child id for {sender}{receiver}'.format(sender=sender, receiver=receiver))
 
-    if tokens[-1] == 'text':
-        return process_text(sender_id, receiver_id, request.form['Body'], tags, person, db)
-    elif tokens[-1] == 'status':
-        pass
-    elif tokens[-1] == 'voice' and request.form['Direction'] == 'inbound' and 'proxy' in tags:
-        # ('CallStatus', 'ringing'), ('Direction', 'inbound')
+    if len(tokens) >= 2 and tokens[1] == 'text':
+        return process_text(sender_id, receiver_id, request.form.get('Body'), tags, person, db)
+    elif len(tokens) >= 2 and tokens[1] == 'voice' and 'proxy' in tags:
+        # ('CallStatus', 'ringing' or 'in-progress'), ('Direction', 'inbound'), ('DialCallStatus', 'completed')
         receiver_doc = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
-        receiver_phone = common.filter_identifier(receiver_doc, 'phone')
-        if receiver_phone:
+        receiver_phone_id = common.filter_identifier(receiver_doc, 'phone')
+        if tokens[-1] == 'status' and receiver_phone_id and request.form.get('DialCallStatus') == 'completed':
+            params = {'coach.call.voice': 'unknown', 'phone': sender}
+            publish_data(receiver_phone_id, params, duration=int(request.form.get('DialCallDuration')))
+        elif request.form.get('Direction') == 'inbound' and receiver_phone_id:
             return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say>Connecting</Say>'\
                    '<Dial callerId="{caller}" action="{status_url}"><Number>{receiver}</Number></Dial></Response>'\
-                .format(receiver=receiver_phone['value'], caller=config.PHONE_NUMBER,
+                .format(receiver=receiver_phone_id['value'], caller=config.PHONE_NUMBER,
                         status_url='https://%s-%s.cloudfunctions.net/receive/status'
                                    % (config.LOCATION_ID, config.PROJECT_ID))
     return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
@@ -143,3 +142,23 @@ def get_context_dict(contexts):
         context[name] = data
         del data['name']
     return context
+
+
+def publish_data(person_id, params, tags=(), duration=None):
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
+
+    row = {
+        'time': datetime.datetime.utcnow().isoformat(),
+        'source': person_id,
+        'tags': tags,
+        'data': []
+    }
+    if duration is not None:
+        row['duration'] = duration
+    for name, value in params.items():
+        if type(value) in [int, float]:
+            row['data'].append({'name': name, 'number': value})
+        elif type(value) == str:
+            row['data'].append({'name': name, 'value': value})
+    publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
