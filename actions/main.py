@@ -78,37 +78,30 @@ def main(event, metadata):
         parent_id = message['content']['parent_id']
         parent = db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])
         action = parent.collection('actions').document(message['content']['action_id']).get()
-        action_parent_pairs = [(action, parent.get())]
+        parent_doc = parent.get()
+        actions = [action.to_dict() | {'parent': parent_doc.to_dict() | {'id': common.get_id(parent_doc)}}]
     else:
         groups = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'groups', parents))
         for resource_id in [context.get('sender.id'), context.get('receiver.id')]:
             if resource_id and 'type' in resource_id and resource_id['type'] == 'group':
                 groups.append(db.collection('groups').document(resource_id['value']).get())
         groups.append(db.collection('groups').document(config.SYSTEM_GROUP_ID).get())
-        action_parent_pairs = get_actions(set(groups), db)
+        actions = get_actions(set(groups), db)
 
     context.set('min_action_priority', 0)
     logging.info('Context {}'.format(context.data))
     bq = bigquery.Client()
-    for action_doc, parent_doc in action_parent_pairs:
+    for action in actions:
         try:
-            process_action(action_doc, parent_doc, context, bq)
+            process_action(action, context, bq)
         except:
             traceback.print_exc()
 
 
-def process_action(action_doc, parent_doc, context, bq):
-    action = action_doc.to_dict() \
-             | {'id': action_doc.id, 'parent': parent_doc.to_dict() | {'id': common.get_id(parent_doc)}}
+def process_action(action, context, bq):
     resource_id = context.get('sender.id') or context.get('receiver.id')
     context.clear('action')
     context.set('action', action)
-
-    if 'maxrun' in action:
-        action['maxrun'] = action['maxrun'] - 1
-        if action['maxrun'] <= 0:
-            action_doc.reference.delete()
-            action_doc = None
 
     latest_run_time, latest_content_id = None, None
     if 'hold_secs' in action or ('content_select' in action and action['content_select'] != 'random'):
@@ -146,8 +139,8 @@ def process_action(action_doc, parent_doc, context, bq):
     context.update(actrun.context_update)
     if 'min_action_priority' in action:
         context.set('min_action_priority', action['min_action_priority'])
-    if actrun.action_update and action_doc and action_doc.exists:
-        action_doc.reference.update(actrun.action_update)
+    if actrun.action_update:
+        update_action(action, actrun.action_update)
     log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
            'resources': [resource_id, {'type': 'action', 'value': action['id']}]}
     if content_id:
@@ -204,13 +197,20 @@ def get_latest_run_time(action_id, resource_id, bq):
 def get_actions(groups, db):
     actions = []
     ids = set()
-    for group in groups:
-        for action in db.collection('groups').document(group.id).collection('actions').stream():
-            if action.id not in ids:
-                actions.append((action, group))
-                ids.add(action.id)
-    actions = sorted(actions, key=lambda pair: pair[0].get('priority'), reverse=True)
-    logging.info('Found actions {}'.format([action.id for action, group in actions]))
+    for group_doc in groups:
+        group = group_doc.to_dict()
+        if 'policies' not in group:
+            continue
+        for policy_id in group['policies']:
+            policy = db.collection('policies').document(policy_id).get()
+            if not policy.exists:
+                continue
+            for action_id, action in policy.to_dict().items():
+                if action_id not in ids:
+                    actions.append(action | {'parent': group | {'id': common.get_id(group_doc)}})
+                    ids.add(action_id)
+    actions = sorted(actions, key=lambda pair: pair[0]['priority'], reverse=True)
+    logging.info('Found actions {}'.format([action['id'] for action, group in actions]))
     return actions
 
 
@@ -273,3 +273,8 @@ def get_context_params(action_params, context):
             logging.warning(value)
             params[name] = value
     return params
+
+
+def update_action(action, data):
+    db = firestore.Client()
+    db.collection(common.COLLECTIONS[action['parent']['id']['type']]).document(action['id']).update(data)
