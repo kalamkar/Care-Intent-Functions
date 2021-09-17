@@ -35,7 +35,7 @@ def main(request):
             action_doc.reference.delete()
             action_doc = None
 
-    if 'schedule' in action:
+    if 'schedule' in action and action_doc:
         now = datetime.datetime.utcnow()
         now = now.astimezone(pytz.timezone(action['timezone'])) if 'timezone' in action else now
         cron = croniter.croniter(action['schedule'], now)
