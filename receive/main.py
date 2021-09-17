@@ -57,7 +57,7 @@ def main(request):
             return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say>Connecting</Say>'\
                    '<Dial callerId="{caller}" action="{status_url}"><Number>{receiver}</Number></Dial></Response>'\
                 .format(receiver=receiver_phone_id['value'], caller=config.PHONE_NUMBER,
-                        status_url='https://%s-%s.cloudfunctions.net/receive/status'
+                        status_url='https://%s-%s.cloudfunctions.net/receive/voice/status'
                                    % (config.LOCATION_ID, config.PROJECT_ID))
     return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
 
