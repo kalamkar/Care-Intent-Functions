@@ -20,7 +20,7 @@ def main(request):
     tokens = request.path.split('/')
     logging.info(request.form)
 
-    sender, receiver, content = request.form['From'], request.form['To'], request.form['Body']
+    sender, receiver = request.form['From'], request.form['To']
 
     db = firestore.Client()
     contact = {'type': 'phone', 'value': sender}
@@ -47,16 +47,13 @@ def main(request):
             logging.error(f'Missing child id for {sender}{receiver}'.format(sender=sender, receiver=receiver))
 
     if len(tokens) == 2 and tokens[1] == 'text':
-        return process_text(sender_id, receiver_id, content, tags, person, db)
-    elif len(tokens) == 2 and tokens[1] == 'voice':  # and request.form['Direction'] == 'inbound' and 'proxy' in tags:
+        return process_text(sender_id, receiver_id, request.form['Body'], tags, person, db)
+    elif len(tokens) == 2 and tokens[1] == 'voice' and request.form['Direction'] == 'inbound' and 'proxy' in tags:
         # ('CallStatus', 'ringing'), ('Direction', 'inbound')
-        logging.info('Voice call from {}'.format(sender))
         receiver_doc = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
         receiver_phone = common.filter_identifier(receiver_doc, 'phone')
         if receiver_phone:
-            response = process_voice_proxy(receiver_phone['value'])
-            logging.info(response)
-            return response
+            return process_voice_proxy(receiver_phone['value'])
     return '', 204
 
 
