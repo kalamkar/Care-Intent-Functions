@@ -29,14 +29,6 @@ def main(request):
         return
 
     action = action_doc.to_dict()
-    if 'maxrun' in action:
-        action['maxrun'] = action['maxrun'] - 1
-        if action['maxrun'] <= 0:
-            action_doc.reference.delete()
-            action_doc = None
-        else:
-            action_doc.reference.update({'maxrun': action['maxrun']})
-
     if 'schedule' in action and action_doc:
         now = datetime.datetime.utcnow()
         now = now.astimezone(pytz.timezone(action['timezone'])) if 'timezone' in action else now

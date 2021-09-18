@@ -77,9 +77,10 @@ def main(event, metadata):
         context.set('scheduled_action_id', message['content']['action_id'])
         parent_id = message['content']['parent_id']
         parent = db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])
-        action = parent.collection('actions').document(message['content']['action_id']).get()
+        action_doc = parent.collection('actions').document(message['content']['action_id']).get()
         parent_doc = parent.get()
-        actions = [action.to_dict() | {'parent': parent_doc.to_dict() | {'id': common.get_id(parent_doc)}}]
+        actions = [action_doc.to_dict() | {'parent': parent_doc.to_dict() | {'id': common.get_id(parent_doc)}}]
+        update_maxrun(action_doc)
     else:
         groups = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'groups', parents))
         for resource_id in [context.get('sender.id'), context.get('receiver.id')]:
@@ -278,3 +279,13 @@ def get_context_params(action_params, context):
 def update_action(action, data):
     db = firestore.Client()
     db.collection(common.COLLECTIONS[action['parent']['id']['type']]).document(action['id']).update(data)
+
+
+def update_maxrun(action_doc):
+    action = action_doc.to_dict()
+    if 'maxrun' in action:
+        action['maxrun'] = action['maxrun'] - 1
+        if action['maxrun'] <= 0:
+            action_doc.reference.delete()
+        else:
+            action_doc.reference.update({'maxrun': action['maxrun']})
