@@ -73,8 +73,12 @@ def main(request):
     if request.method == 'GET' and sub_resource_name in ['member', 'admin']:
         doc = list_resources(resource_name, resource_id, sub_resource_name, sub_resource_id)
     elif request.method == 'GET' and resource_name == 'person' and sub_resource_name == 'data' and resource_id:
-        start_time, end_time = get_start_end_times(request)
-        doc = {'results': get_rows(start_time, end_time, resource_id, request.args.getlist('name'))}
+        doc = {'results': []}
+        if request.args.getlist('name'):
+            start_time, end_time = get_start_end_times(request)
+            doc['results'] = get_data_by_names(start_time, end_time, resource_id, request.args.getlist('name'))
+        elif request.args.get('tag'):
+            doc['results'] = get_data_by_tag(resource_id, request.args.get('tag'))
     elif request.method == 'GET' and resource_id and sub_resource_name and not sub_resource_id:
         doc = get_resources(resource_name, resource_id, sub_resource_name, db)
         if resource_name == 'person' and sub_resource_name == 'message':
@@ -192,7 +196,7 @@ def add_resource(resource_name, resource_id, sub_resource_name, resource, user_i
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
 
 
-def get_rows(start_time, end_time, source, names):
+def get_data_by_names(start_time, end_time, source, names):
     bq = bigquery.Client()
     query = 'SELECT time, duration, name, number, value ' \
             'FROM {project}.live.tsdata, UNNEST(data) WHERE source.value = "{source}" AND name IN ({names}) ' \
@@ -207,6 +211,18 @@ def get_rows(start_time, end_time, source, names):
                      'name': row['name'],
                      'number': row['number'],
                      'value': row['value']})
+    return rows
+
+
+def get_data_by_tag(source, tag):
+    bq = bigquery.Client()
+    query = '''SELECT time, data
+               FROM {project}.live.tsdata WHERE source.value = "{source}" AND "{tag}" IN UNNEST(tags)
+               ORDER BY time'''.format(project=config.PROJECT_ID, source=source, tag=tag)
+    logging.info(query)
+    rows = []
+    for row in bq.query(query):
+        rows.append({'time': row['time'].isoformat(), 'data': row['data']})
     return rows
 
 
