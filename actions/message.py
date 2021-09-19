@@ -3,6 +3,7 @@ import config
 import datetime
 import json
 import logging
+import pytz
 
 from google.cloud import firestore
 from google.cloud import pubsub_v1
@@ -29,6 +30,9 @@ class Send(Action):
             person = person_doc.to_dict()
             if 'session' in person and 'id' in person['session']:
                 tags.append('session:' + person['session']['id'])
+            else:
+                person_doc.reference.update({'session': {'start': datetime.datetime.utcnow().astimezone(pytz.utc),
+                                                         'id': common.generate_id()}})
         sender = common.get_identifier(sender, 'phone', db,
                                        {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
         receiver = common.get_identifier(receiver, 'phone', db)
@@ -71,6 +75,9 @@ class Broadcast(Action):
             member = member_doc.to_dict()
             if 'session' in member and 'id' in member['session']:
                 tags.append('session:' + member['session']['id'])
+            else:
+                member_doc.reference.update({'session': {'start': datetime.datetime.utcnow().astimezone(pytz.utc),
+                                                         'id': common.generate_id()}})
 
             receiver = common.filter_identifier(member_doc, 'phone')
             if not receiver:
