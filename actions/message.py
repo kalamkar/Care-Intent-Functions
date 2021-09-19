@@ -30,9 +30,11 @@ class Send(Action):
             person = person_doc.to_dict()
             if 'session' in person and 'id' in person['session']:
                 tags.append('session:' + person['session']['id'])
+                person_doc.reference.update({'session.last_send_time': datetime.datetime.utcnow().astimezone(pytz.utc)})
             else:
-                person_doc.reference.update({'session': {'start': datetime.datetime.utcnow().astimezone(pytz.utc),
-                                                         'id': common.generate_id()}})
+                now = datetime.datetime.utcnow().astimezone(pytz.utc)
+                person_doc.reference.update({'session': {'start': now, 'id': common.generate_id(),
+                                                         'last_send_time': now}})
         sender = common.get_identifier(sender, 'phone', db,
                                        {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
         receiver = common.get_identifier(receiver, 'phone', db)
@@ -75,9 +77,11 @@ class Broadcast(Action):
             member = member_doc.to_dict()
             if 'session' in member and 'id' in member['session']:
                 tags.append('session:' + member['session']['id'])
+                member_doc.reference.update({'session.last_send_time': datetime.datetime.utcnow().astimezone(pytz.utc)})
             else:
-                member_doc.reference.update({'session': {'start': datetime.datetime.utcnow().astimezone(pytz.utc),
-                                                         'id': common.generate_id()}})
+                now = datetime.datetime.utcnow().astimezone(pytz.utc)
+                member_doc.reference.update({'session': {'start': now, 'id': common.generate_id(),
+                                                         'last_send_time': now}})
 
             receiver = common.filter_identifier(member_doc, 'phone')
             if not receiver:
