@@ -28,13 +28,13 @@ class Send(Action):
         if receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
             person_doc = db.collection(common.COLLECTIONS[receiver['type']]).document(receiver['value']).get()
             person = person_doc.to_dict()
-            if 'session' in person and 'id' in person['session']:
+            now = datetime.datetime.utcnow().astimezone(pytz.utc)
+            if common.is_valid_session(person):
                 tags.append('session:' + person['session']['id'])
-                person_doc.reference.update({'session.last_send_time': datetime.datetime.utcnow().astimezone(pytz.utc)})
+                person_doc.reference.update({'session.last_message_time': now})
             else:
-                now = datetime.datetime.utcnow().astimezone(pytz.utc)
                 person_doc.reference.update({'session': {'start': now, 'id': common.generate_id(),
-                                                         'last_send_time': now}})
+                                                         'last_message_time': now}})
         sender = common.get_identifier(sender, 'phone', db,
                                        {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
         receiver = common.get_identifier(receiver, 'phone', db)
@@ -75,13 +75,13 @@ class Broadcast(Action):
         for member_doc in db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
                 .collection('members').stream():
             member = member_doc.to_dict()
-            if 'session' in member and 'id' in member['session']:
+            now = datetime.datetime.utcnow().astimezone(pytz.utc)
+            if common.is_valid_session(member):
                 tags.append('session:' + member['session']['id'])
-                member_doc.reference.update({'session.last_send_time': datetime.datetime.utcnow().astimezone(pytz.utc)})
+                member_doc.reference.update({'session.last_message_time': now})
             else:
-                now = datetime.datetime.utcnow().astimezone(pytz.utc)
                 member_doc.reference.update({'session': {'start': now, 'id': common.generate_id(),
-                                                         'last_send_time': now}})
+                                                         'last_message_time': now}})
 
             receiver = common.filter_identifier(member_doc, 'phone')
             if not receiver:

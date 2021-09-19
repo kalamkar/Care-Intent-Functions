@@ -1,7 +1,9 @@
 import base64
 import config
+import datetime
 import json
 import logging
+import pytz
 import uuid
 
 COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'member': 'members', 'admin': 'admins',
@@ -101,3 +103,11 @@ def get_child_id(parent_id, proxy_id, db):
         if child.get('proxy') == proxy_id:
             return child.get('id')
     return None
+
+
+def is_valid_session(person):
+    now = datetime.datetime.utcnow().astimezone(pytz.utc)
+    return 'session' in person and 'start' in person['session'] and 'id' in person['session']\
+           and ((now - person['session']['start']).total_seconds() < config.SESSION_SECONDS
+                or ('last_message_time' in person['session']
+                    and (now - person['session']['last_message_time']).total_seconds() < config.GAP_SECONDS))

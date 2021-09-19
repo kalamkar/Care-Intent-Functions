@@ -65,13 +65,7 @@ def main(request):
 def process_text(sender_id, receiver_id, content, tags, person, db):
     person_id = person['id']['value']
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
-    start_new_session = \
-        'session' not in person \
-        or 'start' not in person['session'] \
-        or ((now - person['session']['start']).total_seconds() > config.SESSION_SECONDS
-            and ('last_message_time' not in person['session']
-                 or (now - person['session']['last_message_time']).total_seconds() > config.GAP_SECONDS))
-    if start_new_session:
+    if not common.is_valid_session(person):
         person['session'] = {'start': now, 'id': common.generate_id()}
 
     knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID,
