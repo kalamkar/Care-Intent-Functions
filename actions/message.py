@@ -24,6 +24,11 @@ class Send(Action):
                 receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
             sender = common.get_proxy_id(receiver, sender, db)
             tags.append('proxy')
+        if receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
+            person_doc = db.collection(common.COLLECTIONS[receiver['type']]).document(receiver['value']).get()
+            person = person_doc.to_dict()
+            if 'session' in person and 'id' in person['session']:
+                tags.append('session:' + person['session']['id'])
         sender = common.get_identifier(sender, 'phone', db,
                                        {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
         receiver = common.get_identifier(receiver, 'phone', db)
@@ -61,11 +66,15 @@ class Broadcast(Action):
         db = firestore.Client()
         sender = common.get_identifier(parent_id, 'phone', db,
                                        {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
-        for member in db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
+        for member_doc in db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
                 .collection('members').stream():
-            receiver = common.get_identifier(member.get('id'), 'phone', db)
+            member = member_doc.to_dict()
+            if 'session' in member and 'id' in member['session']:
+                tags.append('session:' + member['session']['id'])
+
+            receiver = common.filter_identifier(member_doc, 'phone')
             if not receiver:
-                logging.warning('Missing receiver for broadcast action, member {}'.format(member.id))
+                logging.warning('Missing receiver for broadcast action, member {}'.format(member_doc.id))
                 continue
 
             data = {
