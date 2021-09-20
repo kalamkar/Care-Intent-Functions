@@ -45,12 +45,13 @@ def main(filename):
               'priority': 9,
               'condition': condition,
               'params': {
-                  'content': '{"session": {"start": {{message.time}}, "id":"%s", "lead": "bot", "last_question": "%s"}}'
-                             % (row['Question'], row['Question']),
+                  'content':
+                      '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "last_question": "%s"}}'
+                      % (row['Question'], row['Question']),
                   'identifier': '$person.id'
               }
           })
-        elif row['Skip Session Update'] != '1':
+        elif row['Skip Session Update'] != '1' or row['Exit'] == '1':
             actions.append({
                 'id': row['Question'] + '.update',
                 'type': 'UpdateResource',
