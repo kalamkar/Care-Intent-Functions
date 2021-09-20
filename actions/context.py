@@ -23,7 +23,8 @@ class Context(object):
             'action': {'group': None, 'id': None},
             'now': datetime.datetime.utcnow().astimezone(pytz.utc)
         }
-        self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True)
+        self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True,
+                                      undefined=SilentUndefined)
         self.env.filters['history'] = self.history
         self.env.filters['np'] = self.numpy
         self.env.filters['timediff'] = self.timediff
@@ -126,3 +127,9 @@ def merge(destination, source):
         else:
             destination[key] = value
     return destination
+
+
+class SilentUndefined(jinja2.Undefined):
+    def _fail_with_undefined_error(self, *args, **kwargs):
+        logging.error('JINJA2: something was undefined!')
+        return None
