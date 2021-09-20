@@ -51,7 +51,7 @@ def main(request):
         receiver_doc = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
         receiver_phone_id = common.filter_identifier(receiver_doc, 'phone')
         if tokens[-1] == 'status' and receiver_phone_id and request.form.get('DialCallStatus') == 'completed':
-            params = {'coach.call.voice': 'unknown', 'phone': sender}
+            params = {'coach_call_voice': 'unknown', 'phone': sender}
             publish_data(receiver_phone_id, params, duration=int(request.form.get('DialCallDuration')))
         elif request.form.get('Direction') == 'inbound' and receiver_phone_id:
             return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say>Connecting</Say>'\
