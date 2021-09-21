@@ -59,6 +59,24 @@ def main(request):
                 .format(receiver=receiver_phone_id['value'], caller=config.PHONE_NUMBER,
                         status_url='https://%s-%s.cloudfunctions.net/receive/voice/status'
                                    % (config.LOCATION_ID, config.PROJECT_ID))
+    elif len(tokens) >= 2 and tokens[1] == 'voice' and 'proxy' not in tags:
+        # ('CallStatus', 'ringing' or 'in-progress'), ('Direction', 'inbound'), ('DialCallStatus', 'completed')
+        coach_docs = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'persons',
+                                 common.get_parents(sender_id, 'member', db)))
+        if not coach_docs:
+            return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
+        receiver_phone_id = common.filter_identifier(coach_docs[0], 'phone')
+        caller_phone_id = common.get_proxy_id({'type': 'person', 'value': coach_docs[0].id}, sender_id, db)
+        if tokens[-1] == 'status' and caller_phone_id and receiver_phone_id \
+                and request.form.get('DialCallStatus') == 'completed':
+            params = {'member_call_voice': 'unknown', 'phone': sender}
+            publish_data(receiver_phone_id, params, duration=int(request.form.get('DialCallDuration')))
+        elif request.form.get('Direction') == 'inbound' and caller_phone_id and receiver_phone_id:
+            return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say>Connecting</Say>'\
+                   '<Dial callerId="{caller}" action="{status_url}"><Number>{receiver}</Number></Dial></Response>'\
+                .format(receiver=receiver_phone_id['value'], caller=caller_phone_id['value'],
+                        status_url='https://%s-%s.cloudfunctions.net/receive/voice/status'
+                                   % (config.LOCATION_ID, config.PROJECT_ID))
     return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
 
 
