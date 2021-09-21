@@ -62,11 +62,12 @@ def main(request):
     elif len(tokens) >= 2 and tokens[1] == 'voice' and 'proxy' not in tags:
         # ('CallStatus', 'ringing' or 'in-progress'), ('Direction', 'inbound'), ('DialCallStatus', 'completed')
         coach_docs = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'persons',
-                                 common.get_parents(sender_id, 'member', db)))
+                                 common.get_parents(person['id'], 'member', db)))
         if not coach_docs:
+            logging.warning('Coach not assigned to {}'.format(sender))
             return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
         receiver_phone_id = common.filter_identifier(coach_docs[0], 'phone')
-        caller_phone_id = common.get_proxy_id({'type': 'person', 'value': coach_docs[0].id}, sender_id, db)
+        caller_phone_id = common.get_proxy_id({'type': 'person', 'value': coach_docs[0].id}, person['id'], db)
         if tokens[-1] == 'status' and caller_phone_id and receiver_phone_id \
                 and request.form.get('DialCallStatus') == 'completed':
             params = {'member_call_voice': 'unknown', 'phone': sender}
