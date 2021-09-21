@@ -43,7 +43,7 @@ class Operation(Action):
         super().__init__()
         self.status = status
 
-    def process(self, person_id=None, category=None, title=None):
+    def process(self, person_id=None, category=None, content=None):
         if not category or not person_id:
             logging.error('Missing name or person_id for opening ticket')
             return
@@ -63,8 +63,8 @@ class Operation(Action):
         }
         if category:
             row['data'].append({'name': 'category', 'value': category})
-        if title:
-            row['data'].append({'name': 'title', 'value': title})
+        if content:
+            row['data'].append({'name': 'title', 'value': content})
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
 
 
