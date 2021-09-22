@@ -256,8 +256,8 @@ def get_messages(start_time, end_time, person_id, both):
 def send_message(person_id, message, user):
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
-    if 'receiver' in message and (message['receiver'] not in person_doc.to_dict()['identifiers']
-                                  or message['receiver'] != {'type': 'person', 'value': person_id}):
+    if 'receiver' in message and message['receiver'] not in person_doc.to_dict()['identifiers'] \
+            and message['receiver'] != {'type': 'person', 'value': person_id}:
         logging.error('Invalid receiver {r} for person {pid}'.format(r=message['receiver'], pid=person_id))
         return None
     receiver = message['receiver'] if 'receiver' in message else common.filter_identifier(person_doc, 'phone')
