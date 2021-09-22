@@ -259,7 +259,7 @@ def send_message(person_id, message, user):
     if 'receiver' in message and message['receiver'] not in person_doc.to_dict()['identifiers']:
         logging.error('Invalid receiver {r} for person {pid}'.format(r=message['receiver'], pid=person_id))
         return None
-    receiver = message['receiver'] if 'receiver' in message else common.filter_phone_identifier(person_doc)
+    receiver = message['receiver'] if 'receiver' in message else common.filter_identifier(person_doc, 'phone')
     if not receiver:
         logging.warning('Missing receiver')
         return {'message': 'Missing receiver'}
@@ -269,9 +269,9 @@ def send_message(person_id, message, user):
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': {'type': 'person', 'value': user.id},
         'receiver': receiver,
-        'status': 'sent',
+        'status': 'sent' if 'status' not in message else message['status'],
         'tags': message['tags'] if 'tags' in message else ['source:api'],
-        'content_type': 'text/plain',
+        'content_type': 'text/plain' if 'content_type' not in message else message['content_type'],
         'content': message['content']
     }
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
