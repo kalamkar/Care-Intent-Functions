@@ -80,11 +80,8 @@ class CreateAction(Action):
 
 class UpdateResource(Action):
     def process(self, identifier=None, content=None, list_name=None):
-        db = firestore.Client()
-        collection = common.COLLECTIONS[identifier['type']]
-        doc_ref = db.collection(collection).document(identifier['value'])
-        logging.info('Updating {collection}/{id} with {data}'.format(collection=collection, id=identifier['value'],
-                                                                     data=content))
+        doc_ref = firestore.Client().collection(common.COLLECTIONS[identifier['type']]).document(identifier['value'])
+        logging.info('Updating {id} with {data}'.format(id=doc_ref.path, data=content))
         content = json.loads(content.replace('\'', '"'), object_hook=lambda d:
             (d | {'start': dateutil.parser.parse(d['start']).astimezone(pytz.utc)}) if 'start' in d else d)
         doc_ref.update({list_name: firestore.ArrayUnion(content)} if list_name else content)

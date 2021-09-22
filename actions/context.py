@@ -15,12 +15,6 @@ class Context(object):
     def __init__(self):
         self.data = {
             'from_member': False, 'to_member': False, 'from_coach': False, 'to_coach': False,
-            'data': {'systolic': None, 'diastolic': None, 'glucose': None, 'medication': None},
-            'message': {'time': None, 'sender': None, 'receiver': None, 'tags': [], 'content': None,
-                        'nlp': {'intent': None, 'action': None, 'reply': None, 'confidence': None, 'params': {}}},
-            'sender': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
-            'receiver': {'name': {'first': None, 'last': None}, 'identifiers': [], 'id': {'type': None, 'value': None}},
-            'action': {'group': None, 'id': None},
             'now': datetime.datetime.utcnow().astimezone(pytz.utc)
         }
         self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True,
