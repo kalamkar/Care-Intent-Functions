@@ -71,7 +71,7 @@ def main(request):
             'content_type': 'application/json',
             'content': action | {'parent': person_doc.to_dict() | {'id': person_id}}
         }
-        publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
+        publisher.publish(topic_path, json.dumps(data, default=str).encode('utf-8'))
 
     return 'OK'
 
