@@ -125,5 +125,5 @@ def merge(destination, source):
 
 class SilentUndefined(jinja2.Undefined):
     def _fail_with_undefined_error(self, *args, **kwargs):
-        logging.error('%s is undefined' % self._undefined_name)
+        logging.debug('%s is undefined' % self._undefined_name)
         return None
