@@ -179,6 +179,6 @@ def create_action(action, action_id, db, tasks_client, parent_id):
         except:
             logging.warning('Could not delete task {}'.format(action_doc.get('task_id')))
 
-    task = {'action_id': action_id, 'parent_id': parent_id}
+    task = {'action_id': action_id, 'target_id': parent_id}
     action['task_id'] = common.schedule_task(task, tasks_client)
     action_doc.reference.set(action)

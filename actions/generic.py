@@ -58,7 +58,7 @@ class CreateAction(Action):
         logging.info('Creating action {}'.format(action))
 
         if 'schedule' in action or delay_secs:
-            payload = {'action_id': action['id'], 'parent_id': parent_id}
+            payload = {'action_id': action['id'], 'target_id': parent_id}
             now = datetime.datetime.utcnow()
             if delay_secs:
                 start_time = now + datetime.timedelta(seconds=delay_secs)
