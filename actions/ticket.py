@@ -43,18 +43,22 @@ class Operation(Action):
         super().__init__()
         self.status = status
 
-    def process(self, person_id=None, category=None, content=None):
-        if not category or not person_id:
-            logging.error('Missing name or person_id for opening ticket')
+    def process(self, person_id=None, ticket_id=None, category=None, content=None):
+        if not person_id:
+            logging.error('Missing person_id for ticket operation')
             return
-        rows = bigquery.Client().query(
-            'SELECT count(*) as count FROM {project}.live.tsdata, UNNEST(data) '\
-            'WHERE source.value = "{source}" AND "ticket" IN UNNEST(tags) AND value = "opened" '\
-            .format(project=config.PROJECT_ID, source=person_id['value'])).result()
-        ticket_id = list(rows)[0]['count'] + 1
+        if self.status == 'opened':
+            rows = bigquery.Client().query(
+                'SELECT count(*) as count FROM {project}.live.tsdata, UNNEST(data) '\
+                'WHERE source.value = "{source}" AND "ticket" IN UNNEST(tags) AND value = "opened" '\
+                .format(project=config.PROJECT_ID, source=person_id['value'])).result()
+            ticket_id = list(rows)[0]['count'] + 1
+        elif not ticket_id:
+            logging.error('No ticket id provided for closing ticket')
+            return
+
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
-
         row = {
             'time': datetime.datetime.utcnow().isoformat(),
             'source': person_id,
