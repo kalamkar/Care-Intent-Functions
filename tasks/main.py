@@ -27,7 +27,7 @@ def main(request):
     if 'policy' in body:
         policy_doc = db.collection('policies').document(body['policy']).get()
         if policy_doc and policy_doc.exists:
-            action = policy_doc.get('actions')[body['action_id']]
+            action = policy_doc.get(body['action_id'])
     else:
         action_doc = db.collection(common.COLLECTIONS[target_id['type']]).document(target_id['value'])\
             .collection('actions').document(body['action_id']).get()
