@@ -51,7 +51,7 @@ def main(request):
         receiver_doc = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
         receiver_phone_id = common.filter_identifier(receiver_doc, 'phone')
         if tokens[-1] == 'status' and receiver_phone_id and request.form.get('DialCallStatus') == 'completed':
-            params = {'coach_call_voice': 'unknown', 'phone': sender}
+            params = {'coach_call_voice': 'completed', 'phone': sender}
             publish_data(receiver_phone_id, params, duration=int(request.form.get('DialCallDuration')))
         elif request.form.get('Direction') == 'inbound' and receiver_phone_id:
             return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say>Connecting</Say>'\
@@ -70,7 +70,7 @@ def main(request):
         caller_phone_id = common.get_proxy_id({'type': 'person', 'value': coach_docs[0].id}, person['id'], db)
         if tokens[-1] == 'status' and caller_phone_id and receiver_phone_id \
                 and request.form.get('DialCallStatus') == 'completed':
-            params = {'member_call_voice': 'unknown', 'phone': sender}
+            params = {'member_call_voice': 'completed', 'phone': sender}
             publish_data(receiver_phone_id, params, duration=int(request.form.get('DialCallDuration')))
         elif request.form.get('Direction') == 'inbound' and caller_phone_id and receiver_phone_id:
             return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say>Connecting</Say>'\
