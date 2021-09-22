@@ -71,16 +71,10 @@ def main(event, metadata):
         context.set('coach', coach.to_dict() | {'id': {'type': 'person', 'value': coach.id}})
     parents.extend(common.get_parents(context.get('receiver.id'), 'member', db))
 
-    if channel_name == 'message' and message['content_type'] == 'application/json'\
-            and 'action_id' in message['content']:
+    if channel_name == 'message' and message['status'] == 'internal':
         # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
-        context.set('scheduled_action_id', message['content']['action_id'])
-        parent_id = message['content']['parent_id']
-        parent = db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])
-        action_doc = parent.collection('actions').document(message['content']['action_id']).get()
-        parent_doc = parent.get()
-        actions = [action_doc.to_dict() | {'parent': parent_doc.to_dict() | {'id': common.get_id(parent_doc)}}]
-        update_maxrun(action_doc)
+        context.set('scheduled_action_id', message['content']['id'])
+        actions = [message['content']]
     else:
         groups = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'groups', parents))
         for resource_id in [context.get('sender.id'), context.get('receiver.id')]:
@@ -141,7 +135,9 @@ def process_action(action, context, bq):
     if 'min_action_priority' in action:
         context.set('min_action_priority', action['min_action_priority'])
     if actrun.action_update:
-        update_action(action, actrun.action_update)
+        db = firestore.Client()
+        parent_id = action['parent']['id']
+        db.collection(common.COLLECTIONS[parent_id['type']]).document(action['id']).update(actrun.action_update)
     log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'action.run',
            'resources': [resource_id, {'type': 'action', 'value': action['id']}]}
     if content_id:
@@ -274,18 +270,3 @@ def get_context_params(action_params, context):
             logging.warning(value)
             params[name] = value
     return params
-
-
-def update_action(action, data):
-    db = firestore.Client()
-    db.collection(common.COLLECTIONS[action['parent']['id']['type']]).document(action['id']).update(data)
-
-
-def update_maxrun(action_doc):
-    action = action_doc.to_dict()
-    if 'maxrun' in action:
-        action['maxrun'] = action['maxrun'] - 1
-        if action['maxrun'] <= 0:
-            action_doc.reference.delete()
-        else:
-            action_doc.reference.update({'maxrun': action['maxrun']})

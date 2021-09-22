@@ -48,7 +48,7 @@ def main(argv):
             action_doc = collection.document(action['id']).get()
             if action_doc.exists and action_doc.get('task_id'):
                 delete_task(action.get('task_id'))
-            payload = {'action_id': action['id'], 'parent_id': {'type': 'group', 'value': args.group}}
+            payload = {'action_id': action['id'], 'target_id': {'type': 'group', 'value': args.group}}
             now = datetime.datetime.utcnow()
             now = now.astimezone(pytz.timezone(action['timezone'])) if 'timezone' in action else now
             cron = croniter.croniter(action['schedule'], now)
