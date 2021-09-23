@@ -275,7 +275,10 @@ def send_message(person_id, message, user):
         'content_type': 'text/plain' if 'content_type' not in message else message['content_type'],
         'content': message['content']
     }
-    publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send=data['status'] == 'sent')
+    if data['status'] == 'sent':
+        publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
+    else:
+        publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
     return {'message': 'ok'}
 
 
