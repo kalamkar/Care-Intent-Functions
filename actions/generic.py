@@ -79,8 +79,12 @@ class CreateAction(Action):
 
 
 class UpdateResource(Action):
-    def process(self, identifier=None, content=None, list_name=None):
+    def process(self, identifier=None, content=None, list_name=None, delete_field=None):
         doc_ref = firestore.Client().collection(common.COLLECTIONS[identifier['type']]).document(identifier['value'])
+        if delete_field:
+            logging.info('Deleting field {field} {id}'.format(field=delete_field, id=doc_ref.path))
+            doc_ref.update({delete_field: firestore.DELETE_FIELD})
+            return
         logging.info('Updating {id} with {data}'.format(id=doc_ref.path, data=content))
         content = json.loads(content.replace('\'', '"'), object_hook=lambda d:
             (d | {'start': dateutil.parser.parse(d['start']).astimezone(pytz.utc)}) if 'start' in d else d)
