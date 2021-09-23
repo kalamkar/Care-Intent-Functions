@@ -7,6 +7,7 @@ import dateutil.parser
 import json
 import logging
 import pytz
+import random
 import requests
 
 from google.cloud import firestore
@@ -159,26 +160,38 @@ class RunAction(Action):
 
 
 class UpdateRelation(Action):
-    def process(self, child_id=None, add_parent_id=None, remove_parent_id=None):
+    def process(self, child_id=None, add_parent_id=None, remove_parent_id=None, parent_ids=(), selection='random',
+                operation='add'):
         if not child_id:
             logging.warning('Missing child_id for UpdateRelation')
             return
 
-        if not add_parent_id and not remove_parent_id:
+        if not add_parent_id and not remove_parent_id and not parent_ids:
             logging.warning('Invalid parameters for UpdateRelation')
             return
 
         db = firestore.Client()
+        if parent_ids and operation == 'add':
+            if selection == 'random':
+                self.add(child_id, parent_ids[random.randint(0, len(parent_ids) - 1)], db)
+            elif selection == 'all':
+                for parent_id in parent_ids:
+                    self.add(child_id, parent_id, db)
+
         if add_parent_id:
-            data = {'id': child_id}
-            if add_parent_id['type'] == 'person':
-                data['proxy'] = common.get_proxy_id(add_parent_id, child_id, db, assign=True)
-                if not data['proxy']:
-                    logging.error('Proxy number not available, UpdateRelation failed.')
-                    return
-            db.collection(common.COLLECTIONS[add_parent_id['type']]).document(add_parent_id['value'])\
-                .collection('members').document(child_id['type'] + ':' + child_id['value']).set(data)
+            self.add(child_id, add_parent_id, db)
 
         if remove_parent_id:
             db.collection(common.COLLECTIONS[remove_parent_id['type']]).document(remove_parent_id['value']) \
                 .collection('members').document(child_id['type'] + ':' + child_id['value']).delete()
+
+    @staticmethod
+    def add(child_id, parent_id, db):
+        data = {'id': child_id}
+        if parent_id['type'] == 'person':
+            data['proxy'] = common.get_proxy_id(parent_id, child_id, db, assign=True)
+            if not data['proxy']:
+                logging.error('Proxy number not available, UpdateRelation failed.')
+                return
+        db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value']) \
+            .collection('members').document(child_id['type'] + ':' + child_id['value']).set(data)
