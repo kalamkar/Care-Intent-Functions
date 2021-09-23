@@ -41,6 +41,9 @@ class Send(Action):
         if not receiver:
             logging.warning('Missing receiver for message action')
             return
+        if sender == receiver or receiver['value'] in [config.PHONE_NUMBER] + config.PROXY_PHONE_NUMBERS:
+            logging.error('Sending message to system phone numbers to {r} from {s}'.format(r=receiver, s=sender))
+            return
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
