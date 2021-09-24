@@ -164,7 +164,7 @@ def update_resource(resource_name, resource_id, sub_resource_name, sub_resource_
         # Check if the new identifiers exist for someone else
         for person in db.collection('persons')\
                 .where('identifiers', 'array_contains_any', resource['identifiers']).stream():
-            if person.reference.path != doc_ref:
+            if person.reference.path != doc_ref.path:
                 return None
     doc_ref.update(resource)
     return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
