@@ -24,14 +24,15 @@ def csv2actions(csv_dict_reader):
                 pairs.append('(person.session.last_question == "{}")'.format(question))
         if not condition and pairs:
             condition = '{{from_member and (%s)}}' % ' or '.join(pairs)
+        priority = 10 if not row['Priority'] else int(row['Priority'])
         special = row['Special'].split('\n')
         if 'nomessage' not in special:
             actions.append({
                 'id': row['Question'] + '.message',
                 'type': 'Message',
-                'priority': 10,
+                'priority': priority,
                 'condition': condition,
-                'min_action_priority': 9,
+                'min_action_priority': priority - 1,
                 'params': {
                     'content': row['Message'],
                     'receiver': '$person.id'
@@ -41,7 +42,7 @@ def csv2actions(csv_dict_reader):
             actions.append({
                 'id': row['Question'],
                 'type': 'OpenTicket',
-                'priority': 10,
+                'priority': priority,
                 'condition': condition,
                 'params': {
                     'content': row['Message'],
@@ -50,47 +51,25 @@ def csv2actions(csv_dict_reader):
                 }
             })
         if 'profile' in special:
-            actions.append({
-                'id': row['Question'] + '.profile',
-                'type': 'UpdateResource',
-                'priority': 10,
-                'condition': condition,
-                'params': {
-                    'content': row['Tag'],
-                    'list_name': 'tags',
-                    'identifier': '$person.id'
-                }
-            })
+            actions.append(get_update_action(row['Question'] + '.profile', condition, priority,
+                                             content=row['Tag'], list_name='tags'))
         if 'start' in special:
-          actions.append({
-              'id': row['Question'] + '.update',
-              'type': 'UpdateResource',
-              'priority': 9,
-              'condition': condition,
-              'params': {
-                  'content':
-                      '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "last_question": "%s"}}'
-                      % (row['Question'], row['Question']),
-                  'identifier': '$person.id'
-              }
-          })
-        elif 'noupdate' not in special or 'end' in special:
-            actions.append({
-                'id': row['Question'] + '.update',
-                'type': 'UpdateResource',
-                'priority': 9,
-                'condition': condition,
-                'params': {
-                    'content': '{"session.last_question": "%s"}' % (row['Question'] if 'end' not in special else ''),
-                    'identifier': '$person.id'
-                }
-            })
+            content = '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "last_question": "%s"}}'\
+                      % (row['Question'], row['Question'])
+            actions.append(get_update_action(row['Question'] + '.update', condition, priority - 1, content=content))
+        elif 'end' in special:
+            actions.append(get_update_action(row['Question'] + '.update', condition, priority - 1,
+                                             delete_field='session'))
+        elif 'noupdate' not in special:
+            actions.append(get_update_action(row['Question'] + '.update', condition, priority - 1,
+                                             content='{"session.last_question": "%s"}' % row['Question']))
 
     actions.append({
         'id': 'survey.answer.record',
         'type': 'UpdateData',
         'priority': 9,
-        'condition': '{{from_member and person.session.last_question != ""}}',
+        'condition':
+            '{{from_member and person.session.last_question is defined and person.session.last_question != ""}}',
         'params': {
             'content': '{"{{person.session.last_question}}": "{{message.content}}"}',
             'tags': 'survey',
@@ -98,6 +77,18 @@ def csv2actions(csv_dict_reader):
         }
     })
     return actions
+
+
+def get_update_action(question_id, condition, priority, **kwargs):
+    return {
+        'id': question_id,
+        'type': 'UpdateResource',
+        'priority': priority,
+        'condition': condition,
+        'params': {
+            'identifier': '$person.id'
+        } | kwargs
+    }
 
 
 if __name__ == '__main__':
