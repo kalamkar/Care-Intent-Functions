@@ -28,6 +28,9 @@ class Send(Action):
         if receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
             person_doc = db.collection(common.COLLECTIONS[receiver['type']]).document(receiver['value']).get()
             person = person_doc.to_dict()
+            if 'STOP' in person['tags']:
+                logging.error('Skipping message to person who has unsubscribed messages.')
+                return
             now = datetime.datetime.utcnow().astimezone(pytz.utc)
             if common.is_valid_session(person):
                 tags.append('session:' + person['session']['id'])
@@ -78,6 +81,9 @@ class Broadcast(Action):
         for member_doc in db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
                 .collection('members').stream():
             member = member_doc.to_dict()
+            if 'STOP' in member['tags']:
+                logging.error('Skipping message to person who has unsubscribed messages.')
+                continue
             now = datetime.datetime.utcnow().astimezone(pytz.utc)
             if common.is_valid_session(member):
                 tags.append('session:' + member['session']['id'])
