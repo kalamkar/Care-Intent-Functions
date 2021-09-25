@@ -122,7 +122,10 @@ def list_resources(resource_name, resource_id, sub_resource_name, sub_resource_i
         relation_query = db.collection_group(COLLECTIONS[sub_resource_name]).where('id.value', '==', sub_resource_id)
         for relative in relation_query.stream():
             parent = relative.reference.parent.parent.get()
-            results.append(get_document_json(parent, parent.reference.path.split('/')[0][:-1]))
+            parent_type = parent.reference.path.split('/')[0][:-1]
+            if parent_type != resource_name:
+                continue
+            results.append(get_document_json(parent, None))
     elif resource_id and (not sub_resource_id or sub_resource_id in ['any', 'all']) and resource_name == 'group':
         # Get all the children
         relation_query = db.collection(COLLECTIONS[resource_name]).document(resource_id)\
@@ -291,11 +294,12 @@ def get_start_end_times(request):
     return start_time.isoformat(), end_time.isoformat()
 
 
+# TODO: Remove id_type, seems of no use since we can get the type from doc
 def get_document_json(doc, id_type):
     doc_json = doc.to_dict()
     if 'login' in doc_json:
         del doc_json['login']
-    doc_json['id'] = {'type': id_type, 'value': doc.id}
+    doc_json['id'] = {'type': doc.reference.path.split('/')[0][:-1], 'value': doc.id}
     return doc_json
 
 
