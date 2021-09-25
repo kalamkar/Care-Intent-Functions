@@ -141,6 +141,9 @@ def verify(request, response):
     if 'verify' in person['login']:
         del person['login']['verify']
     if hashpass:
+        if 'login' not in person:
+            person['login'] = {'verify': verify_token, 'id': person['identifiers'][0]['value'], 'hashpass': hashpass,
+                               'signup_time': datetime.datetime.utcnow()}
         person['login']['verify'] = hashpass
     db.collection('persons').document(persons[0].id).update(person)
     return flask.jsonify({'status': 'ok', 'message': 'Success'})
