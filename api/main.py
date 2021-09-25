@@ -125,14 +125,14 @@ def list_resources(resource_name, resource_id, sub_resource_name, sub_resource_i
             parent_type = parent.reference.path.split('/')[0][:-1]
             if parent_type != resource_name:
                 continue
-            results.append(get_document_json(parent, None))
+            results.append(get_document_json(parent))
     elif resource_id and (not sub_resource_id or sub_resource_id in ['any', 'all']) and resource_name == 'group':
         # Get all the children
         relation_query = db.collection(COLLECTIONS[resource_name]).document(resource_id)\
             .collection(COLLECTIONS[sub_resource_name])
         for doc in relation_query.stream():
             relative = db.collection(COLLECTIONS[doc.get('id.type')]).document(doc.get('id.value')).get()
-            results.append(get_document_json(relative, doc.get('id.type')))
+            results.append(get_document_json(relative))
     return {'results': results}
 
 
@@ -150,13 +150,13 @@ def get_resource(resource_name, resource_id, sub_resource_name, sub_resource_id,
     doc_ref = db.collection(COLLECTIONS[resource_name]).document(resource_id)
     if sub_resource_name and sub_resource_id:
         doc_ref = doc_ref.collection(COLLECTIONS[sub_resource_name]).document(sub_resource_id)
-    return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
+    return get_document_json(doc_ref.get())
 
 
 def get_resources(resource_name, resource_id, sub_resource_name, db):
     collection = db.collection(COLLECTIONS[resource_name]).document(resource_id) \
         .collection(COLLECTIONS[sub_resource_name])
-    return {'results': [get_document_json(doc, sub_resource_name) for doc in collection.get()]}
+    return {'results': [get_document_json(doc) for doc in collection.get()]}
 
 
 def update_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, resource, db):
@@ -170,7 +170,7 @@ def update_resource(resource_name, resource_id, sub_resource_name, sub_resource_
             if person.reference.path != doc_ref.path:
                 return None
     doc_ref.update(resource)
-    return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
+    return get_document_json(doc_ref.get())
 
 
 def delete_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db):
@@ -189,14 +189,14 @@ def add_resource(resource_name, resource_id, sub_resource_name, resource, user_i
             .where('identifiers', 'array_contains_any', resource['identifiers'])
         persons = list(person_ref.get())
         if len(persons) > 0:
-            return get_document_json(persons[0], resource_name)
+            return get_document_json(persons[0])
     doc_id = generate_id()
     doc_ref = collection.document(doc_id)
     doc_ref.set(resource)
     if resource_name == 'group' and not resource_id:
         db.collection(COLLECTIONS[resource_name]).document(doc_id).collection('admins')\
             .document('person:' + user_id).set({'id': {'type': 'person', 'value': user_id}})
-    return get_document_json(doc_ref.get(), sub_resource_name or resource_name)
+    return get_document_json(doc_ref.get())
 
 
 def get_data_by_names(start_time, end_time, source, names):
@@ -294,8 +294,7 @@ def get_start_end_times(request):
     return start_time.isoformat(), end_time.isoformat()
 
 
-# TODO: Remove id_type, seems of no use since we can get the type from doc
-def get_document_json(doc, id_type):
+def get_document_json(doc):
     doc_json = doc.to_dict()
     if 'login' in doc_json:
         del doc_json['login']
