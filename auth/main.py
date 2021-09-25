@@ -7,6 +7,7 @@ import flask
 import hashlib
 import json
 import logging
+import random
 import requests
 import uuid
 
@@ -102,7 +103,7 @@ def signup(request, _):
         response.status_code = 409
         return response
 
-    verify_token = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
+    verify_token = str(random.randint(100000, 999999))
     person = {'identifiers': [contact | {'unverified': True}], 'name': request.json['name'],
               'login': {'verify': verify_token, 'id': identifier, 'hashpass': hashpass,
                         'signup_time': datetime.datetime.utcnow()}}
@@ -111,35 +112,38 @@ def signup(request, _):
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
-    url = 'https://us-central1-%s.cloudfunctions.net/auth/verify/%s' % (config.PROJECT_ID, verify_token)
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'receiver': contact,
         'status': 'sent',
         'tags': ['source:auth'],
         'content_type': 'text/plain',
-        'content': 'Verify signup %s' % url
+        'content': 'Your requested verification code is: %s\n\nDo not share it with anyone.' % verify_token
     }
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
-
     return flask.jsonify({'status': 'ok', 'message': 'Success'})
 
 
 def verify(request, response):
-    tokens = request.path.split('/')
+    verify_token = request.json['code']
+    hashpass = base64.b64encode(hashlib.sha256(request.json['password'].encode('utf-8')).digest()).decode('utf-8') \
+        if 'password' in request.json else None
     db = firestore.Client()
-    person_ref = db.collection('persons').where('login.verify', '==', tokens[2])
+    person_ref = db.collection('persons').where('login.verify', '==', verify_token)
     persons = list(person_ref.get())
     if len(persons) == 0:
         response.status_code = 403
         return response
     person = persons[0].to_dict()
     for identifier in person['identifiers']:
-        if identifier['value'] == person['login']['id']:
+        if identifier['value'] == person['login']['id'] and 'unverified' in identifier:
             del identifier['unverified']
-    del person['login']['verify']
+    if 'verify' in person['login']:
+        del person['login']['verify']
+    if hashpass:
+        person['login']['verify'] = hashpass
     db.collection('persons').document(persons[0].id).update(person)
-    return flask.redirect('https://app.careintent.com', 302)
+    return flask.jsonify({'status': 'ok', 'message': 'Success'})
 
 
 def login(request, _):
