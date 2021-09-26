@@ -194,7 +194,7 @@ def login(request, _):
         response.status_code = 404
         return response
     person = persons[0].to_dict()
-    if person['login']['hashpass'] != hashpass:
+    if 'login' not in person or person['login']['hashpass'] != hashpass:
         response = flask.jsonify({'status': 'error', 'message': 'Forbidden'})
         response.status_code = 403
         return response
