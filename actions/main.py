@@ -113,7 +113,7 @@ def process_action(action, context, bq):
     if action['priority'] < context.get('min_action_priority'):
         return
 
-    logging.info('Triggering {} {}'.format(action['id'], action))
+    logging.info('Triggering {}'.format(action['id']))
 
     params = get_context_params(action['params'], context)
     content_id, content = None, None
@@ -198,6 +198,7 @@ def get_actions(groups, db):
         group = group_doc.to_dict()
         if 'policies' not in group:
             continue
+        logging.info('Applying {} policies {}'.format(group['title'], group['policies']))
         for policy_id in group['policies']:
             policy = db.collection('policies').document(policy_id).get()
             if not policy.exists:
@@ -207,7 +208,6 @@ def get_actions(groups, db):
                     actions.append(action | {'parent': group | {'id': common.get_id(group_doc)}})
                     ids.add(action_id)
     actions = sorted(actions, key=lambda action: action['priority'], reverse=True)
-    logging.info('Found actions {}'.format([action['id'] for action in actions]))
     return actions
 
 
