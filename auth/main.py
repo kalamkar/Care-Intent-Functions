@@ -104,7 +104,7 @@ def signup(request, _):
         return response
 
     verify_token = str(random.randint(100000, 999999))
-    person = {'identifiers': [contact | {'unverified': True}], 'name': request.json['name'],
+    person = {'identifiers': [contact | {'unverified': True}],
               'login': {'verify': verify_token, 'id': identifier, 'hashpass': hashpass,
                         'signup_time': datetime.datetime.utcnow()}}
     person_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b'=').decode('ascii')
