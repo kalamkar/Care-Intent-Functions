@@ -132,6 +132,7 @@ def verify(request, response):
     person_ref = db.collection('persons').where('login.verify', '==', verify_token)
     persons = list(person_ref.get())
     if len(persons) == 0:
+        logging.warning('Missing person for verify request %s' % json.dumps(request.json))
         response.status_code = 403
         return response
     person = persons[0].to_dict()
