@@ -57,6 +57,9 @@ class Operation(Action):
             logging.error('No ticket id provided for closing ticket')
             return
 
+        if ticket_id and type(ticket_id) == str:
+            ticket_id = int(ticket_id)
+
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'data')
         row = {
