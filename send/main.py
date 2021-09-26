@@ -49,7 +49,7 @@ def main(request):
 
 def send_sms(content, sender, receiver):
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-    client.messages.create(to=receiver, from_=sender or config.PHONE_NUMBER, body=content)
+    client.messages.create(to=receiver, from_=sender or config.PHONE_NUMBER, body=content.replace('\\n', '\n'))
 
 
 def send_email(content, subject, sender, receiver):
