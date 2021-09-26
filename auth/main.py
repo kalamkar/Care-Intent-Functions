@@ -64,6 +64,8 @@ def main(request):
         response = login(request, response)
     elif tokens[-1] == 'verify':
         response = verify(request, response)
+    elif tokens[-1] == 'recover':
+        response = recover(request, response)
 
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     origin = request.headers.get('origin')
@@ -124,6 +126,38 @@ def signup(request, _):
     return flask.jsonify({'status': 'ok', 'message': 'Success'})
 
 
+def recover(request, response):
+    db = firestore.Client()
+    identifier = request.json['identifier']
+    id_type = 'email' if '@' in identifier else 'phone'
+    contact = {'type': id_type, 'value': identifier}
+    person_ref = db.collection('persons').where('identifiers', 'array_contains', contact)
+    persons = list(person_ref.get())
+    if len(persons) == 0:
+        response.status_code = 404
+        return response
+
+    verify_token = str(random.randint(100000, 999999))
+    person = persons[0].to_dict()
+    if 'login' not in person:
+        person['login'] = {'id': identifier, 'signup_time': datetime.datetime.utcnow()}
+    person['login']['verify'] = verify_token
+    db.collection('persons').document(persons[0].id).update(person)
+
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+    data = {
+        'time': datetime.datetime.utcnow().isoformat(),
+        'receiver': contact,
+        'status': 'sent',
+        'tags': ['source:auth'],
+        'content_type': 'text/plain',
+        'content': 'Your requested verification code is: %s\n\nDo not share it with anyone.' % verify_token
+    }
+    publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
+    return flask.jsonify({'status': 'ok', 'message': 'Success'})
+
+
 def verify(request, response):
     verify_token = request.json['code']
     hashpass = base64.b64encode(hashlib.sha256(request.json['password'].encode('utf-8')).digest()).decode('utf-8') \
@@ -142,10 +176,7 @@ def verify(request, response):
     if 'verify' in person['login']:
         del person['login']['verify']
     if hashpass:
-        if 'login' not in person:
-            person['login'] = {'verify': verify_token, 'id': person['identifiers'][0]['value'], 'hashpass': hashpass,
-                               'signup_time': datetime.datetime.utcnow()}
-        person['login']['verify'] = hashpass
+        person['login']['hashpass'] = hashpass
     db.collection('persons').document(persons[0].id).update(person)
     return flask.jsonify({'status': 'ok', 'message': 'Success'})
 
