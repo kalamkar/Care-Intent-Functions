@@ -173,7 +173,9 @@ class UpdateRelation(Action):
         db = firestore.Client()
         if parent_ids and operation == 'add':
             if selection == 'random':
-                self.add(child_id, parent_ids[random.randint(0, len(parent_ids) - 1)], db)
+                selected_parent_id = parent_ids[random.randint(0, len(parent_ids) - 1)]
+                self.context_update = {'selected_parent_id': selected_parent_id}
+                self.add(child_id, selected_parent_id, db)
             elif selection == 'all':
                 for parent_id in parent_ids:
                     self.add(child_id, parent_id, db)
