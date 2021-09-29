@@ -1,34 +1,21 @@
+import argparse
 import csv
 import json
 import sys
 
+from itertools import repeat
 
-def csv2actions(csv_dict_reader):
+
+def csv2actions(prefix, csv_dict_reader):
     actions = []
     for row in csv_dict_reader:
-        condition = ''
-        questions = row['Previous Question'].split('\n')
-        answers = row['Previous Answer'].split('\n')
-        if questions and questions[0].startswith('eval:'):
-            condition = questions[0][5:]
-            questions = []
-        pairs = []
-        for i, question in enumerate(questions):
-            if i < len(answers) and answers[i] and not answers[i].startswith('!'):
-                pairs.append('(person.session.last_question == "{}" and message.nlp.intent == "generic.{}")'.
-                             format(question, answers[i]))
-            elif i < len(answers) and answers[i] and answers[i].startswith('!'):
-                pairs.append('(person.session.last_question == "{}" and message.nlp.intent != "generic.{}")'.
-                             format(question, answers[i][1:]))
-            else:
-                pairs.append('(person.session.last_question == "{}")'.format(question))
-        if not condition and pairs:
-            condition = '{{from_member and (%s)}}' % ' or '.join(pairs)
-        priority = 10 if not row['Priority'] else int(row['Priority'])
+        question_id = prefix + '.' + row['Id']
+        condition = get_condition(prefix, row['Question'], row['Intent'], row['Param'], row['Session Tag'])
+        priority = 10
         special = row['Special'].split('\n')
-        if 'nomessage' not in special:
+        if row['Id']:
             actions.append({
-                'id': row['Question'] + '.message',
+                'id': question_id + '.message',
                 'type': 'Message',
                 'priority': priority,
                 'condition': condition,
@@ -38,45 +25,89 @@ def csv2actions(csv_dict_reader):
                     'receiver': '$person.id'
                 }
             })
-        if 'ticket' in special:
+        if special and special[0].startswith('#'):
             actions.append({
-                'id': row['Question'],
+                'id': prefix + '.' + row['Question'] + '.ticket',
                 'type': 'OpenTicket',
                 'priority': priority,
                 'condition': condition,
                 'params': {
                     'content': row['Message'],
-                    'category': row['Tag'],
+                    'category': special[0][1:],
+                    'priority': int(row['Priority']) if row['Priority'] else 1,
                     'person_id': '$person.id'
                 }
             })
-        if 'profile' in special:
-            actions.append(get_update_action(row['Question'] + '.profile', condition, priority,
-                                             content=row['Tag'], list_name='tags'))
         if 'start' in special:
-            content = '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "last_question": "%s"}}'\
-                      % (row['Question'], row['Question'])
-            actions.append(get_update_action(row['Question'] + '.update', condition, priority - 1, content=content))
+            content = '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "question": "%s"}}'\
+                      % (prefix, question_id)
+            actions.append(get_update_action(question_id + '.update', condition, priority - 1, content=content))
         elif 'end' in special:
-            actions.append(get_update_action(row['Question'] + '.update', condition, priority - 1,
+            actions.append(get_update_action(question_id + '.update', condition, priority - 1,
                                              delete_field='session'))
-        elif 'noupdate' not in special:
-            actions.append(get_update_action(row['Question'] + '.update', condition, priority - 1,
-                                             content='{"session.last_question": "%s"}' % row['Question']))
+        elif 'noupdate' not in special and row['Id']:
+            actions.append(get_update_action(question_id + '.update', condition, priority - 1,
+                                             content='{"session.question": "%s"}' % question_id))
 
     actions.append({
-        'id': 'survey.answer.record',
+        'id': prefix + '.answer.record',
         'type': 'UpdateData',
         'priority': 9,
         'condition':
-            '{{from_member and person.session.last_question is defined and person.session.last_question != ""}}',
+            '{{from_member and person.session.question is defined and person.session.question != ""}}',
         'params': {
-            'content': '{"{{person.session.last_question}}": "{{message.content}}"}',
+            'content': '{"{{person.session.question}}": "{{message.content}}"}',
             'tags': 'survey',
             'source_id': '$person.id'
         }
     })
+    actions.append({
+        'id': prefix + '.session.tags.update',
+        'type': 'UpdateResource',
+        'priority': 9,
+        'condition': '{{from_member and person.session.id == "%s" and message.nlp.params is defined}}'% prefix,
+        'params': {
+            'identifier': '$person.id',
+            'list_name': 'session.tags',
+            'content': '[{% for name, value in message.nlp.params.items() %}'
+                            '{%if value is iterable and value is not string and value is not mapping %}'
+                                '{% for item in value %}"{{item}}",{% endfor %}'
+                            '{% endif %}'
+                       '{% endfor %}]'
+        }
+    })
     return actions
+
+
+def get_condition(prefix, qcell, icell, pcell, tcell):
+    questions = qcell.split('\n')
+    intents = icell.split('\n')
+    params = pcell.split('\n')
+    tags = tcell.split('\n')
+    if questions and questions[0].startswith('{{'):
+        return questions[0]
+
+    maxlen = max(len(questions), len(intents), len(params), len(tags))
+    orred = []
+    for q, i, p, t in zip(questions + list(repeat('', maxlen - len(questions))),
+                          intents + list(repeat('', maxlen - len(intents))),
+                          params + list(repeat('', maxlen - len(params))),
+                          tags + list(repeat('', maxlen - len(tags)))):
+        anded = []
+        anded.append('person.session.question == "{}"'.format(prefix + '.' + q)) if q else None
+        if i and i.startswith('!'):
+            anded.append('message.nlp.intent != "{}"'.format(i[1:]))
+        elif i:
+            anded.append('message.nlp.intent == "{}"'.format(i))
+        if p:
+            pvalue, pcheck, pname = p.split(' ')
+            anded.append('"{}" {} message.nlp.params.{}'.format(pvalue, pcheck.replace('!', 'not '), pname))
+        if t and t.startswith('!'):
+            anded.append('"{}" not in person.session.tags'.format(t[1:]))
+        elif t:
+            anded.append('"{}" in person.session.tags'.format(t))
+        orred.append('(%s)' % ' and '.join(anded))
+    return '{{from_member and (%s)}}' % (' or '.join(orred) if orred else 'False')
 
 
 def get_update_action(question_id, condition, priority, **kwargs):
@@ -91,5 +122,15 @@ def get_update_action(question_id, condition, priority, **kwargs):
     }
 
 
+def main(argv):
+    parser = argparse.ArgumentParser(description='Generate actions for a survey conversation.')
+    parser.add_argument('--prefix', help='Prefix of question and action ids.', required=True)
+    parser.add_argument('--file', help='File to read policy from.', required=True)
+    args = parser.parse_args(argv)
+
+    json.dump({'actions': csv2actions(args.prefix, csv.DictReader(open(args.file)))},
+              open(args.file + '.json', 'w'), indent=2)
+
+
 if __name__ == '__main__':
-    json.dump({'actions': csv2actions(csv.DictReader(open(sys.argv[1])))}, open(sys.argv[1] + '.json', 'w'), indent=2)
+    main(sys.argv[1:])
