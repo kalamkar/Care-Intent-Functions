@@ -43,7 +43,7 @@ class Operation(Action):
         super().__init__()
         self.status = status
 
-    def process(self, person_id=None, ticket_id=None, category=None, content=None):
+    def process(self, person_id=None, ticket_id=None, category=None, content=None, priority=1):
         if not person_id:
             logging.error('Missing person_id for ticket operation')
             return
@@ -72,6 +72,8 @@ class Operation(Action):
             row['data'].append({'name': 'category', 'value': category})
         if content:
             row['data'].append({'name': 'title', 'value': content})
+        if self.status == 'opened':
+            row['data'].append({'name': 'priority', 'number': priority})
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
 
 
