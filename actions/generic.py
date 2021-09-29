@@ -87,7 +87,7 @@ class UpdateResource(Action):
             doc_ref.update({delete_field: firestore.DELETE_FIELD})
             return
         logging.info('Updating {id} with {data}'.format(id=doc_ref.path, data=content))
-        content = json.loads(content.replace('\'', '"'), strict=False, object_hook=lambda d:
+        content = json.loads(content.replace('\'', '"').replace(',]', ']'), strict=False, object_hook=lambda d:
             (d | {'start': dateutil.parser.parse(d['start']).astimezone(pytz.utc)}) if 'start' in d else d)
         doc_ref.update({list_name: firestore.ArrayUnion(content)} if list_name else content)
 
