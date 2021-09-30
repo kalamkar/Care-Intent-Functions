@@ -13,7 +13,7 @@ from generic import Action
 
 
 class List(Action):
-    def process(self, person_id=None, parent_id=None, maxlen=5):
+    def process(self, person_id=None, parent_id=None):
         if (not person_id or 'value' not in person_id) and (not parent_id or 'value' not in parent_id):
             logging.error('Missing person_id or parent_id for list tickets')
             return
@@ -25,19 +25,19 @@ class List(Action):
         elif parent_id:
             sources.extend([pid['value'] for pid in common.get_children_ids(parent_id, 'member', db)])
 
-        tickets = self.get_tickets_from_top_persons(self.get_open_tickets(sources), maxlen) if parent_id \
-            else self.get_top_tickets_from_person(self.get_open_tickets(sources), sources[0], maxlen)
+        tickets = self.get_tickets_from_top_persons(self.get_open_tickets(sources)) if parent_id \
+            else self.get_top_tickets_from_person(self.get_open_tickets(sources), sources[0])
         self.context_update = {'tickets': tickets}
 
     @staticmethod
-    def get_top_tickets_from_person(tickets, person, maxlen):
-        return sorted(list(tickets[person].values()), key=lambda t: t['priority'], reverse=True)[:maxlen]
+    def get_top_tickets_from_person(tickets, person):
+        return sorted(list(tickets[person].values()), key=lambda t: t['priority'], reverse=True)
 
     @staticmethod
-    def get_tickets_from_top_persons(open_tickets, maxlen):
+    def get_tickets_from_top_persons(open_tickets):
         person_scores = {person: np.median([t['priority'] for t in tickets.values()]) if len(tickets) else 0
                          for person, tickets in open_tickets.items()}
-        persons = [person for person, score in sorted(person_scores.items(), key=lambda kv: kv[1], reverse=True)][:maxlen]
+        persons = [person for person, score in sorted(person_scores.items(), key=lambda kv: kv[1], reverse=True)]
         top_tickets = []
         for person in persons:
             tickets = sorted(open_tickets[person].values(), key=lambda t: t['priority'], reverse=True)
