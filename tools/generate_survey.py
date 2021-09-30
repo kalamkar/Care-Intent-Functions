@@ -9,11 +9,11 @@ from itertools import repeat
 def csv2actions(prefix, csv_dict_reader):
     actions = []
     for row in csv_dict_reader:
-        question_id = prefix + '.' + row['Id']
+        question_id = prefix + '.' + row['Id'].strip()
         condition = get_condition(prefix, row['Question'], row['Intent'], row['Param'], row['Session Tag'])
         priority = 10
-        special = row['Special'].split('\n')
-        if row['Id']:
+        special = [s.strip() for s in row['Special'].split('\n')]
+        if row['Id'].strip():
             actions.append({
                 'id': question_id + '.message',
                 'type': 'Message',
@@ -27,7 +27,7 @@ def csv2actions(prefix, csv_dict_reader):
             })
         if special and special[0].startswith('#'):
             actions.append({
-                'id': prefix + '.' + row['Question'] + '.ticket',
+                'id': prefix + '.' + row['Question'].strip() + '.ticket',
                 'type': 'OpenTicket',
                 'priority': priority,
                 'condition': condition,
@@ -39,13 +39,14 @@ def csv2actions(prefix, csv_dict_reader):
                 }
             })
         if 'start' in special:
-            content = '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "question": "%s"}}'\
+            content = '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "question": "%s",' \
+                      '"tags": ["survey"]}}'\
                       % (prefix, question_id)
             actions.append(get_update_action(question_id + '.update', condition, priority - 1, content=content))
         elif 'end' in special:
             actions.append(get_update_action(question_id + '.update', condition, priority - 1,
                                              delete_field='session'))
-        elif 'noupdate' not in special and row['Id']:
+        elif 'noupdate' not in special and row['Id'].strip():
             actions.append(get_update_action(question_id + '.update', condition, priority - 1,
                                              content='{"session.question": "%s"}' % question_id))
 
@@ -80,10 +81,10 @@ def csv2actions(prefix, csv_dict_reader):
 
 
 def get_condition(prefix, qcell, icell, pcell, tcell):
-    questions = qcell.split('\n')
-    intents = icell.split('\n')
-    params = pcell.split('\n')
-    tags = tcell.split('\n')
+    questions = [item.strip() for item in qcell.split('\n')]
+    intents = [item.strip() for item in icell.split('\n')]
+    params = [item.strip() for item in pcell.split('\n')]
+    tags = [item.strip() for item in tcell.split('\n')]
     if questions and questions[0].startswith('{{'):
         return questions[0]
 
