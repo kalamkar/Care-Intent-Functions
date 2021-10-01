@@ -9,11 +9,14 @@ from itertools import repeat
 def csv2actions(prefix, csv_dict_reader):
     actions = []
     for row in csv_dict_reader:
-        question_id = prefix + '.' + row['Id'].strip()
-        condition = get_condition(prefix, row['Question'], row['Intent'], row['Param'], row['Session Tag'])
+        row_id = row['Id'].strip()
+        if not row_id:
+            continue
+        question_id = prefix + '.' + row_id
+        condition = get_condition(prefix, row['Question'], row['Intent'], row['Param'], row['Session'])
         priority = 10
-        special = [s.strip() for s in row['Special'].split('\n')]
-        if row['Id'].strip():
+        instructions = [s.strip() for s in row['Instruction'].split('\n')]
+        if row['Message'].strip() and row_id != 'ticket':
             actions.append({
                 'id': question_id + '.message',
                 'type': 'Message',
@@ -25,7 +28,7 @@ def csv2actions(prefix, csv_dict_reader):
                     'receiver': '$person.id'
                 }
             })
-        if special and special[0].startswith('#'):
+        elif row_id == 'ticket':
             actions.append({
                 'id': prefix + '.' + row['Question'].strip() + '.ticket',
                 'type': 'OpenTicket',
@@ -33,22 +36,27 @@ def csv2actions(prefix, csv_dict_reader):
                 'condition': condition,
                 'params': {
                     'content': row['Message'],
-                    'category': special[0][1:],
+                    'category': instructions[0][1:],
                     'priority': int(row['Priority']) if row['Priority'] else 1,
                     'person_id': '$person.id'
                 }
             })
-        if 'start' in special:
+        if 'start' in instructions:
             content = '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "question": "%s",' \
                       '"tags": ["survey"]}}'\
                       % (prefix, question_id)
             actions.append(get_update_action(question_id + '.update', condition, priority - 1, content=content))
-        elif 'end' in special:
+        elif 'end' in instructions:
             actions.append(get_update_action(question_id + '.update', condition, priority - 1,
                                              delete_field='session'))
-        elif 'noupdate' not in special and row['Id'].strip():
+        elif 'noupdate' not in instructions and row_id != 'ticket' and row['Message'].strip():
             actions.append(get_update_action(question_id + '.update', condition, priority - 1,
                                              content='{"session.question": "%s"}' % question_id))
+        session_tags = list(map(lambda t: t[1:], filter(lambda i: i.startswith('#'), instructions)))
+        if session_tags and row_id != 'ticket':
+            action_id = (question_id + '.tags') if row['Message'].strip() else (prefix + '.' + row_id)
+            actions.append(get_update_action(action_id, condition, priority - 1, list_name='session.tags',
+                                             content='["%s"]' % '","'.join(session_tags)))
 
     actions.append({
         'id': prefix + '.answer.record',
