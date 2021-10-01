@@ -5,6 +5,7 @@ import json
 import logging
 import pytz
 
+from google.cloud import bigquery
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 
@@ -107,3 +108,36 @@ class Broadcast(Action):
                 'content': content
             }
             publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
+
+
+class List(Action):
+    def process(self, sender_id=None, receiver_id=None, period=12*60*60, tag=None, limit=None):
+        senders = []
+        receivers = []
+        db = firestore.Client()
+        if sender_id:
+            sender = db.collection(common.COLLECTIONS[sender_id['type']]).document(sender_id['value']).get()
+            senders.extend([i['value'] for i in sender.get('identifiers')])
+        if receiver_id:
+            receiver = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
+            receivers.extend([i['value'] for i in receiver.get('identifiers')])
+        q = 'SELECT time, status, sender, receiver, tags, content, content_type ' +\
+            'FROM {project}.live.messages WHERE ' +\
+            'time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {period} second) ' + \
+            ('AND sender.value IN ("{senders}") ' if sender_id else '') + \
+            ('AND receiver.value IN ("{receivers}") ' if receiver_id else '') +\
+            'AND "{tag}" IN UNNEST(tags) ' + \
+            'ORDER BY time' + (' LIMIT {lmt}' if limit else '')
+        q = q.format(project=config.PROJECT_ID, period=period, tag=tag, lmt=limit,
+                     senders='","'.join(senders), receivers='","'.join(receivers))
+        bq = bigquery.Client()
+        rows = []
+        for row in bq.query(q):
+            rows.append({'time': row['time'].isoformat(),
+                         'status': row['status'],
+                         'sender': row['sender'],
+                         'receiver': row['receiver'],
+                         'tags': row['tags'],
+                         'content': row['content'],
+                         'content_type': row['content_type']})
+        self.context_update = {'messages': rows}

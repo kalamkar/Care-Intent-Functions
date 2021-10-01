@@ -28,6 +28,7 @@ ACTIONS = {
     'RunAction': generic.RunAction,
     'Message': message.Send,
     'Broadcast': message.Broadcast,
+    'ListMessages': message.List,
     'OAuth': providers.OAuth,
     'UpdateContext': generic.UpdateContext,
     'UpdateData': generic.UpdateData,
