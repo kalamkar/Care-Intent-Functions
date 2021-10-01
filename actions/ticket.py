@@ -68,7 +68,7 @@ class List(Action):
                                               'time': row['time'].isoformat(), 'category': row['category']}
             elif row['status'] == 'closed':
                 if ticket_id not in tickets[person]:
-                    logging.error('Ticket {} for {} closed before opening'.format(ticket_id, person))
+                    logging.warning('Ticket {} for {} closed before opening'.format(ticket_id, person))
                     continue
                 del tickets[person][ticket_id]
         return tickets
