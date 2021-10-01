@@ -27,7 +27,7 @@ class List(Action):
 
         tickets = self.get_tickets_from_top_persons(self.get_open_tickets(sources)) if parent_id \
             else self.get_top_tickets_from_person(self.get_open_tickets(sources), sources[0])
-        self.context_update = {'tickets': tickets, 'top_ticket': tickets[0]}
+        self.context_update = {'tickets': tickets, 'top_ticket': tickets[0] if tickets else None}
 
     @staticmethod
     def get_top_tickets_from_person(tickets, person):
