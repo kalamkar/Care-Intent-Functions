@@ -134,7 +134,7 @@ class List(Action):
             ('AND sender.value IN ("{senders}") ' if sender_id else '') + \
             ('AND receiver.value IN ("{receivers}") ' if receiver_id else '') +\
             'AND "{tag}" IN UNNEST(tags) ' + \
-            'ORDER BY time' + (' LIMIT {lmt}' if limit else '')
+            'ORDER BY time' + (' DESC LIMIT {lmt}' if limit else '')
         q = q.format(project=config.PROJECT_ID, period=period, tag=tag, lmt=limit,
                      senders='","'.join(senders), receivers='","'.join(receivers))
         logging.info(q)
