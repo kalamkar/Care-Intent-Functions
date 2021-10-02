@@ -26,12 +26,12 @@ class List(Action):
             for person_id in common.get_children_ids(parent_id, 'member', db):
                 person_doc = db.collection(common.COLLECTIONS[person_id['type']]).document(person_id['value']).get()
                 person = person_doc.to_dict() if person_doc.exists else {}
-                if 'tags' in person and config.Tag.PAUSED not in person['tags']:
+                if 'tags' not in person or config.Tag.PAUSED not in person['tags']:
                     sources.append(person_id['value'])
 
         tickets = self.get_tickets_from_top_persons(self.get_open_tickets(sources)) if parent_id \
             else self.get_top_tickets_from_person(self.get_open_tickets(sources), sources[0])
-        self.context_update = {'tickets': tickets, 'top_ticket': tickets[0] if tickets else None}
+        self.context_update = {'tickets': tickets}
 
     @staticmethod
     def get_top_tickets_from_person(tickets, person):
