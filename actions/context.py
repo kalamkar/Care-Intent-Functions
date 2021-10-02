@@ -77,7 +77,7 @@ class Context(object):
             del self.data[name]
 
     def get(self, name):
-        tokens = name.split('.') if name else []
+        tokens = [int(token) if token.isnumeric() else token for token in name.split('.')] if name else []
         try:
             if len(tokens) == 1:
                 return self.data[tokens[0]]
