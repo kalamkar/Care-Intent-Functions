@@ -121,6 +121,13 @@ class List(Action):
         if receiver_id:
             receiver = db.collection(common.COLLECTIONS[receiver_id['type']]).document(receiver_id['value']).get()
             receivers.extend([i['value'] for i in receiver.get('identifiers')])
+        if sender_id and receiver_id:
+            proxy_id = common.get_proxy_id(sender_id, receiver_id, db)  # sender is parent
+            if proxy_id:
+                receivers.append(proxy_id['value'])
+            proxy_id = common.get_proxy_id(receiver_id, sender_id, db)  # receiver is parent
+            if proxy_id:
+                senders.append(proxy_id['value'])
         q = 'SELECT time, status, sender, receiver, tags, content, content_type ' +\
             'FROM {project}.live.messages WHERE ' +\
             'time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {period} second) ' + \
