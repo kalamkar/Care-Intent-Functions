@@ -99,7 +99,7 @@ class Operation(Action):
             for tag in id_tags:
                 try:
                     if tag.startswith(id_prefix):
-                        ticket_id = int(tag.replace(id_prefix))
+                        ticket_id = int(tag.replace(id_prefix, ''))
                 except:
                     pass
             if not ticket_id:
