@@ -137,6 +137,7 @@ class List(Action):
             'ORDER BY time' + (' LIMIT {lmt}' if limit else '')
         q = q.format(project=config.PROJECT_ID, period=period, tag=tag, lmt=limit,
                      senders='","'.join(senders), receivers='","'.join(receivers))
+        logging.info(q)
         bq = bigquery.Client()
         rows = []
         for row in bq.query(q):

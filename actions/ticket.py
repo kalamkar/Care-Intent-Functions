@@ -62,6 +62,7 @@ class List(Action):
             'FROM {project}.live.tsdata '\
             'WHERE source.value IN ("{sources}") AND "ticket" IN UNNEST(tags)) '\
             'ORDER BY time'.format(project=config.PROJECT_ID, sources='","'.join(sources))
+        logging.info(q)
         tickets = {person: {} for person in sources}
         for row in bq.query(q):
             person = row['source']['value']
