@@ -23,7 +23,10 @@ class List(Action):
         if person_id:
             sources.append(person_id['value'])
         elif parent_id:
-            sources.extend([pid['value'] for pid in common.get_children_ids(parent_id, 'member', db)])
+            for person_id in common.get_children_ids(parent_id, 'member', db):
+                person_doc = db.collection(common.COLLECTIONS[person_id['type']]).document(person_id['value']).get()
+                if person_doc.exists and person_doc.get('tags') and config.Tag.PAUSED not in person_doc.get('tags'):
+                    sources.append(person_id['value'])
 
         tickets = self.get_tickets_from_top_persons(self.get_open_tickets(sources)) if parent_id \
             else self.get_top_tickets_from_person(self.get_open_tickets(sources), sources[0])
@@ -79,7 +82,8 @@ class Operation(Action):
         super().__init__()
         self.status = status
 
-    def process(self, person_id=None, ticket_id=None, category=None, content=None, priority=1):
+    def process(self, person_id=None, ticket_id=None, category=None, content=None, priority=1, id_tags=(),
+                id_prefix='ticket:'):
         if not person_id:
             logging.error('Missing person_id for ticket operation')
             return
@@ -90,8 +94,15 @@ class Operation(Action):
                 .format(project=config.PROJECT_ID, source=person_id['value'])).result()
             ticket_id = list(rows)[0]['count'] + 1
         elif not ticket_id:
-            logging.error('No ticket id provided for closing ticket')
-            return
+            for tag in id_tags:
+                try:
+                    if tag.startswith(id_prefix):
+                        ticket_id = int(tag.replace(id_prefix))
+                except:
+                    pass
+            if not ticket_id:
+                logging.error('No ticket id provided for closing ticket')
+                return
 
         if ticket_id and type(ticket_id) == str:
             ticket_id = int(ticket_id)
