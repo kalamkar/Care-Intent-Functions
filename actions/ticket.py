@@ -25,7 +25,8 @@ class List(Action):
         elif parent_id:
             for person_id in common.get_children_ids(parent_id, 'member', db):
                 person_doc = db.collection(common.COLLECTIONS[person_id['type']]).document(person_id['value']).get()
-                if person_doc.exists and person_doc.get('tags') and config.Tag.PAUSED not in person_doc.get('tags'):
+                person = person_doc.to_dict() if person_doc.exists else {}
+                if 'tags' in person and config.Tag.PAUSED not in person['tags']:
                     sources.append(person_id['value'])
 
         tickets = self.get_tickets_from_top_persons(self.get_open_tickets(sources)) if parent_id \
