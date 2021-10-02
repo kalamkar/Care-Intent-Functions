@@ -258,6 +258,8 @@ def get_context_params(action_params, context):
                 value = context_value
             elif type(context_value) == str:
                 value = value.replace(var, context_value)
+            elif type(context_value) in [int, float]:
+                value = value.replace(var, str(context_value))
             else:
                 needs_json_load = True
                 try:
