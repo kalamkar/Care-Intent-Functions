@@ -5,7 +5,7 @@ import sys
 
 ACTION_TYPES = ['Broadcast', 'CreateAction', 'DataProvider', 'Message', 'OAuth', 'RunAction',
                 'UpdateContext', 'UpdateData', 'UpdateRelation', 'UpdateResource',
-                'OpenTicket', 'CloseTicket', 'ListTickets', 'Webhook']
+                'OpenTicket', 'CloseTicket', 'ListTickets', 'ListMessages', 'Webhook']
 
 DURATIONS = {
     'm': 60,

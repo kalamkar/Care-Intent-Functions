@@ -74,7 +74,8 @@ def csv2actions(prefix, csv_dict_reader):
         'id': prefix + '.session.tags.update',
         'type': 'UpdateResource',
         'priority': 9,
-        'condition': '{{from_member and person.session.id == "%s" and message.nlp.params is defined}}'% prefix,
+        'condition': '{{from_member and person.session.id == "%s" '
+                     'and message.nlp.params != {} and message.nlp.params != None}}'% prefix,
         'params': {
             'identifier': '$person.id',
             'list_name': 'session.tags',
