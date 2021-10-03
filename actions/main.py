@@ -72,17 +72,19 @@ def main(event, metadata):
     parents.extend(common.get_parents(context.get('receiver.id'), 'member', db))
 
     actions = []
+    exclude_actions = ()
     if channel_name == 'message' and message['status'] == 'internal':
         # First run the identified scheduled action for a person (invoked by scheduled task by sending a message)
         context.set('scheduled_action_id', message['content']['id'])
         actions.append(message['content'])
+        exclude_actions = (message['content']['id'])
 
     groups = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'groups', parents))
     for resource_id in [context.get('sender.id'), context.get('receiver.id')]:
         if resource_id and 'type' in resource_id and resource_id['type'] == 'group':
             groups.append(db.collection('groups').document(resource_id['value']).get())
     groups.append(db.collection('groups').document(config.SYSTEM_GROUP_ID).get())
-    actions.extend(get_actions(set(groups), db, exclude=(message['content']['id'])))
+    actions.extend(get_actions(set(groups), db, exclude_actions))
 
     context.set('min_action_priority', 0)
     logging.info('Context {}'.format(context.data))
@@ -192,9 +194,9 @@ def get_latest_run_time(action_id, resource_id, bq):
     return latest_run_time, latest_content_id
 
 
-def get_actions(groups, db, exclude=()):
+def get_actions(groups, db, exclude_actions):
     actions = []
-    ids = set(exclude)
+    ids = set(exclude_actions)
     for group_doc in groups:
         group = group_doc.to_dict()
         if 'policies' not in group:
