@@ -72,12 +72,12 @@ def main(event, metadata):
     parents.extend(common.get_parents(context.get('receiver.id'), 'member', db))
 
     actions = []
-    exclude_actions = ()
+    exclude_actions = []
     if channel_name == 'message' and message['status'] == 'internal':
         # First run the identified scheduled action for a person (invoked by scheduled task by sending a message)
         context.set('scheduled_action_id', message['content']['id'])
         actions.append(message['content'])
-        exclude_actions = (message['content']['id'])
+        exclude_actions.append(message['content']['id'])
 
     groups = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'groups', parents))
     for resource_id in [context.get('sender.id'), context.get('receiver.id')]:
@@ -211,6 +211,7 @@ def get_actions(groups, db, exclude_actions):
                     actions.append(action | {'parent': group | {'id': common.get_id(group_doc)}})
                     ids.add(action_id)
     actions = sorted(actions, key=lambda action: action['priority'], reverse=True)
+    logging.info('Found actions {}'.format(ids))
     return actions
 
 
