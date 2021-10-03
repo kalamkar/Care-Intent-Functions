@@ -8,6 +8,7 @@ ACTION_TYPES = ['Broadcast', 'CreateAction', 'DataProvider', 'Message', 'OAuth',
                 'OpenTicket', 'CloseTicket', 'ListTickets', 'ListMessages', 'Webhook']
 
 DURATIONS = {
+    's': 1,
     'm': 60,
     'h': 60 * 60,
     'd': 24 * 60 * 60,
