@@ -125,6 +125,8 @@ class Operation(Action):
             row['data'].append({'name': 'priority', 'number': priority})
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
 
+        self.context_update = {'tickets': [{'id': ticket_id}]}
+
 
 class Open(Operation):
     def __init__(self):

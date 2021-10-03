@@ -1,11 +1,12 @@
-import pytz
-
 import common
 import config
 import datetime
 import jinja2
+import json
 import logging
 import numpy as np
+import pytz
+import re
 
 from inspect import getmembers, isfunction
 from google.cloud import bigquery
@@ -95,6 +96,34 @@ class Context(object):
 
     def update(self, patch):
         self.data.update(patch)
+
+    def get_dict(self, dictionary, exclude_parsing=()):
+        params = {}
+        for name, value in dictionary.items():
+            needs_json_load = False
+            variables = re.findall(r'\$[a-z0-9-_.]+', value) if (name not in exclude_parsing) and (
+                        type(value) == str) else []
+            for var in variables:
+                context_value = self.get(var[1:])
+                if value == var:
+                    value = context_value
+                elif type(context_value) == str:
+                    value = value.replace(var, context_value)
+                elif type(context_value) in [int, float]:
+                    value = value.replace(var, str(context_value))
+                else:
+                    needs_json_load = True
+                    try:
+                        value = value.replace(var, json.dumps(context_value))
+                    except Exception as ex:
+                        logging.warning(ex)
+            try:
+                params[name] = json.loads(value) if needs_json_load else value
+            except Exception as ex:
+                logging.warning(ex)
+                logging.warning(value)
+                params[name] = value
+        return params
 
 
 def merge(destination, source):

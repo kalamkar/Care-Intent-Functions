@@ -6,10 +6,9 @@ import datetime
 import generic
 import json
 import logging
-import message
+import message as msg
 import providers
 import pytz
-import re
 import random
 import ticket
 import traceback
@@ -26,9 +25,9 @@ ACTIONS = {
     'CreateAction': generic.CreateAction,
     'DataProvider': providers.DataProvider,
     'RunAction': generic.RunAction,
-    'Message': message.Send,
-    'Broadcast': message.Broadcast,
-    'ListMessages': message.List,
+    'Message': msg.Send,
+    'Broadcast': msg.Broadcast,
+    'ListMessages': msg.List,
     'OAuth': providers.OAuth,
     'UpdateContext': generic.UpdateContext,
     'UpdateData': generic.UpdateData,
@@ -47,7 +46,7 @@ def main(event, metadata):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          event (dict): Event payload.
-         context (google.cloud.functions.Context): Metadata for the event.
+         metadata (google.cloud.functions.Context): Metadata for the event.
     """
     channel_name = metadata.resource['name'].split('/')[-1]
     message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
@@ -72,17 +71,18 @@ def main(event, metadata):
         context.set('coach', coach.to_dict() | {'id': {'type': 'person', 'value': coach.id}})
     parents.extend(common.get_parents(context.get('receiver.id'), 'member', db))
 
+    actions = []
     if channel_name == 'message' and message['status'] == 'internal':
-        # Run a single identified scheduled action for a person (invoked by scheduled task by sending a message)
+        # First run the identified scheduled action for a person (invoked by scheduled task by sending a message)
         context.set('scheduled_action_id', message['content']['id'])
-        actions = [message['content']]
-    else:
-        groups = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'groups', parents))
-        for resource_id in [context.get('sender.id'), context.get('receiver.id')]:
-            if resource_id and 'type' in resource_id and resource_id['type'] == 'group':
-                groups.append(db.collection('groups').document(resource_id['value']).get())
-        groups.append(db.collection('groups').document(config.SYSTEM_GROUP_ID).get())
-        actions = get_actions(set(groups), db)
+        actions.append(message['content'])
+
+    groups = list(filter(lambda g: g and g.exists and g.reference.path.split('/')[0] == 'groups', parents))
+    for resource_id in [context.get('sender.id'), context.get('receiver.id')]:
+        if resource_id and 'type' in resource_id and resource_id['type'] == 'group':
+            groups.append(db.collection('groups').document(resource_id['value']).get())
+    groups.append(db.collection('groups').document(config.SYSTEM_GROUP_ID).get())
+    actions.extend(get_actions(set(groups), db))
 
     context.set('min_action_priority', 0)
     logging.info('Context {}'.format(context.data))
@@ -116,7 +116,7 @@ def process_action(action, context, bq):
 
     logging.info('Triggering {}'.format(action['id']))
 
-    params = get_context_params(action['params'], context)
+    params = context.get_dict(action['params'], exclude_parsing=JINJA_PARAMS)
     content_id, content = None, None
     if 'content' in params:
         selection = action['content_select'] if 'content_select' in action else 'random'
@@ -245,31 +245,3 @@ def add_shorthands(context):
         context.set('to_coach', True)
     elif status == 'sent' and 'proxy' not in tags:
         context.set('to_member', True)
-
-
-def get_context_params(action_params, context):
-    params = {}
-    for name, value in action_params.items():
-        needs_json_load = False
-        variables = re.findall(r'\$[a-z0-9-_.]+', value) if (name not in JINJA_PARAMS) and (type(value) == str) else []
-        for var in variables:
-            context_value = context.get(var[1:])
-            if value == var:
-                value = context_value
-            elif type(context_value) == str:
-                value = value.replace(var, context_value)
-            elif type(context_value) in [int, float]:
-                value = value.replace(var, str(context_value))
-            else:
-                needs_json_load = True
-                try:
-                    value = value.replace(var, json.dumps(context_value))
-                except Exception as ex:
-                    logging.warning(ex)
-        try:
-            params[name] = json.loads(value) if needs_json_load else value
-        except Exception as ex:
-            logging.warning(ex)
-            logging.warning(value)
-            params[name] = value
-    return params
