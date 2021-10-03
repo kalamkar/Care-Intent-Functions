@@ -82,7 +82,7 @@ def main(event, metadata):
         if resource_id and 'type' in resource_id and resource_id['type'] == 'group':
             groups.append(db.collection('groups').document(resource_id['value']).get())
     groups.append(db.collection('groups').document(config.SYSTEM_GROUP_ID).get())
-    actions.extend(get_actions(set(groups), db))
+    actions.extend(get_actions(set(groups), db, exclude=message['content']['id']))
 
     context.set('min_action_priority', 0)
     logging.info('Context {}'.format(context.data))
@@ -192,9 +192,9 @@ def get_latest_run_time(action_id, resource_id, bq):
     return latest_run_time, latest_content_id
 
 
-def get_actions(groups, db):
+def get_actions(groups, db, exclude=()):
     actions = []
-    ids = set()
+    ids = set(exclude)
     for group_doc in groups:
         group = group_doc.to_dict()
         if 'policies' not in group:
