@@ -200,3 +200,28 @@ class UpdateRelation(Action):
                 return
         db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value']) \
             .collection('members').document(child_id['type'] + ':' + child_id['value']).set(data)
+
+
+class ListGroup(Action):
+    def process(self, parent_id=None, child_type=None, expand=False, include_tag=None, exclude_tag=None):
+        if not parent_id or child_type not in ['member', 'admin']:
+            logging.error('Missing parent or incorrect child type.')
+            return
+
+        db = firestore.Client()
+        children = []
+        child_ids = []
+        for child_id in common.get_children_ids(parent_id, child_type, db):
+            if expand or include_tag or exclude_tag:
+                child = db.collection(common.COLLECTIONS[child_id['type']]).document(child_id['value']).get().to_dict()
+                if (exclude_tag and ('tags' not in child or ('tags' in child and exclude_tag not in child['tags'])))\
+                        or (include_tag and 'tags' in child and include_tag in child['tags']):
+                    children.append(child)
+                    child_ids.append(child_id)
+                elif not include_tag and not exclude_tag:
+                    children.append(child)
+                    child_ids.append(child_id)
+            else:
+                child_ids.append(child_id)
+
+        self.context_update = {'child_ids': child_ids, 'children': children}
