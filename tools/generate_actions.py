@@ -45,6 +45,8 @@ def create_action(params):
             action['min_action_priority'] = int(value)
         elif name == 'delay':
             action['params']['delay_secs'] = get_duration_secs(value)
+        elif name == 'period':
+            action['params']['period'] = get_duration_secs(value)
         elif name == 'new_priority':
             action['params']['priority'] = int(value)
         elif name == 'new_eval':

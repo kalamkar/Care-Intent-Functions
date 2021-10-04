@@ -1,6 +1,7 @@
 import argparse
 import csv
 import json
+import logging
 import sys
 
 from itertools import repeat
@@ -15,8 +16,14 @@ def csv2actions(prefix, csv_dict_reader):
         question_id = prefix + '.' + row_id
         condition = get_condition(prefix, row['Question'], row['Intent'], row['Param'], row['Session'])
         priority = 10
+        try:
+            row['Message'].strip().encode('ascii').decode()
+        except:
+            logging.error('Unicode char in %s' % row['Message'])
+            sys.exit(-1)
+        message = row['Message'].strip()
         instructions = [s.strip() for s in row['Instruction'].split('\n')]
-        if row['Message'].strip() and row_id != 'ticket':
+        if message and row_id != 'ticket':
             actions.append({
                 'id': question_id + '.message',
                 'type': 'Message',
@@ -24,18 +31,18 @@ def csv2actions(prefix, csv_dict_reader):
                 'condition': condition,
                 'min_action_priority': priority - 1,
                 'params': {
-                    'content': row['Message'],
+                    'content': message,
                     'receiver': '$person.id'
                 }
             })
         elif row_id == 'ticket':
             actions.append({
-                'id': prefix + '.' + row['Question'].strip() + '.ticket',
+                'id': prefix + '.' + row['Question'].strip().split('\n')[0] + '.ticket',
                 'type': 'OpenTicket',
                 'priority': priority,
                 'condition': condition,
                 'params': {
-                    'content': row['Message'],
+                    'content': message,
                     'category': instructions[0][1:],
                     'priority': int(row['Priority']) if row['Priority'] else 1,
                     'person_id': '$person.id'
@@ -49,12 +56,12 @@ def csv2actions(prefix, csv_dict_reader):
         elif 'end' in instructions:
             actions.append(get_update_action(question_id + '.update', condition, priority - 1,
                                              delete_field='session'))
-        elif 'noupdate' not in instructions and row_id != 'ticket' and row['Message'].strip():
+        elif 'noupdate' not in instructions and row_id != 'ticket' and message:
             actions.append(get_update_action(question_id + '.update', condition, priority - 1,
                                              content='{"session.question": "%s"}' % question_id))
         session_tags = list(map(lambda t: t[1:], filter(lambda i: i.startswith('#'), instructions)))
         if session_tags and row_id != 'ticket':
-            action_id = (question_id + '.tags') if row['Message'].strip() else (prefix + '.' + row_id)
+            action_id = (question_id + '.tags') if message else (prefix + '.' + row_id)
             actions.append(get_update_action(action_id, condition, priority - 1, list_name='session.tags',
                                              content='["%s"]' % '","'.join(session_tags)))
 
@@ -93,7 +100,7 @@ def get_condition(prefix, qcell, icell, pcell, tcell):
     questions = [item.strip() for item in qcell.split('\n')]
     intents = [item.strip() for item in icell.split('\n')]
     params = [item.strip() for item in pcell.split('\n')]
-    tags = [item.strip() for item in tcell.split('\n')]
+    tags = [item.strip().replace('#', '') for item in tcell.split('\n')]
     if questions and questions[0].startswith('{{'):
         return questions[0]
 
@@ -138,8 +145,11 @@ def main(argv):
     parser.add_argument('--file', help='File to read policy from.', required=True)
     args = parser.parse_args(argv)
 
-    json.dump({'actions': csv2actions(args.prefix, csv.DictReader(open(args.file)))},
-              open(args.file + '.json', 'w'), indent=2)
+    actions = csv2actions(args.prefix, csv.DictReader(open(args.file)))
+    if len(actions) != len(set([a['id'] for a in actions])):
+        logging.error('Duplicate action ids')
+        return
+    json.dump({'actions': actions}, open(args.file + '.json', 'w'), indent=2)
 
 
 if __name__ == '__main__':
