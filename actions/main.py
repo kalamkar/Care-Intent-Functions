@@ -33,6 +33,7 @@ ACTIONS = {
     'UpdateData': generic.UpdateData,
     'UpdateRelation': generic.UpdateRelation,
     'UpdateResource': generic.UpdateResource,
+    'ListGroup': generic.ListGroup,
     'OpenTicket': ticket.Open,
     'CloseTicket': ticket.Close,
     'ListTickets': ticket.List,
