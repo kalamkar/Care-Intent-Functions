@@ -4,7 +4,7 @@ import logging
 import sys
 
 ACTION_TYPES = ['Broadcast', 'CreateAction', 'DataProvider', 'Message', 'OAuth', 'RunAction',
-                'UpdateContext', 'UpdateData', 'UpdateRelation', 'UpdateResource',
+                'UpdateContext', 'UpdateData', 'UpdateRelation', 'UpdateResource', 'ListGroup',
                 'OpenTicket', 'CloseTicket', 'ListTickets', 'ListMessages', 'Webhook']
 
 DURATIONS = {
