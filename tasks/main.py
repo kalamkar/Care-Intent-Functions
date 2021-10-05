@@ -23,6 +23,7 @@ def main(request):
 
     db = firestore.Client()
     target_id = body['target_id']
+    child_type = 'member' if 'child_type' not in body else body['child_type']
     action = None
     if 'policy' in body:
         policy_doc = db.collection('policies').document(body['policy']).get()
@@ -55,7 +56,7 @@ def main(request):
 
     person_ids = []
     if target_id['type'] == 'group':
-        person_ids = common.get_children_ids(target_id, 'member', db)
+        person_ids = common.get_children_ids(target_id, child_type, db)
     elif target_id['type'] == 'person':
         person_ids = [target_id]
 
