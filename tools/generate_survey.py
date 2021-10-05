@@ -21,7 +21,7 @@ def csv2actions(prefix, csv_dict_reader):
         except:
             logging.error('Unicode char in %s' % row['Message'])
             sys.exit(-1)
-        message = row['Message'].strip()
+        message = row['Message'].strip().replace('\\n', '\n')
         instructions = [s.strip() for s in row['Instruction'].split('\n')]
         if message and row_id != 'ticket':
             actions.append({

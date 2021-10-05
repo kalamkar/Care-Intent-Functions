@@ -35,6 +35,8 @@ def create_action(params):
             action['schedule'] = value
         elif name == 'tz':
             action['timezone'] = value
+        elif name == 'for':
+            action['child_type'] = value
         elif name == 'actionhold':
             action['hold_secs'] = get_duration_secs(value)
         elif name == 'msgselect':
@@ -81,12 +83,10 @@ def main(filename):
                 'id': row['Action Id'],
                 'type': row['Action type'],
                 'condition': 'False',  # In case of missing eval, default disabled rule
-                'priority': 10
+                'priority': 10,
+                'params': {}
             }
             action.update(create_action(row['Params']))
-
-        if action['type'] not in ['Message', 'CreateAction']:
-            continue
 
         if action['type'] == 'Message' and 'receiver' not in action['params']:
             action['params']['receiver'] = '$person.id'
@@ -102,19 +102,14 @@ def main(filename):
             if action['params']['action_type'] == 'Message' and 'receiver' not in action['params']:
                 action['params']['receiver'] = '$person.id'
 
-        if 'content' not in action['params']:
-            action['params']['content'] = []
-        if type(action['params']['content']) == list:
-            action['params']['content'].append({
-                'id': row['Variation Id'] or '1',
-                'message': row['Message']
-            })
-            if row['Qualifiers']:
-                try:
-                    qualifiers = {q.split('=', 1)[0]: q.split('=', 1)[1] for q in row['Qualifiers'].split(';')}
-                    action['params']['content'][-1]['qualifiers'] = qualifiers
-                except:
-                    print(count, row['Qualifiers'])
+        if row['Message'].strip():
+            if 'content' not in action['params']:
+                action['params']['content'] = []
+            if type(action['params']['content']) == list:
+                action['params']['content'].append({
+                    'id': row['Variation Id'] or '1',
+                    'message': row['Message'].strip()
+                })
     if action:
         actions.append(action)
     json.dump({'actions': actions}, open(filename + '.json', 'w'), indent=2)
