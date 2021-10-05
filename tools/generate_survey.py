@@ -78,6 +78,17 @@ def csv2actions(prefix, csv_dict_reader):
         }
     })
     actions.append({
+        'id': prefix + '.answer.update',
+        'type': 'UpdateResource',
+        'priority': 9,
+        'condition':
+            '{{from_member and person.session.question is defined and person.session.question != ""}}',
+        'params': {
+            'content': '{"session.{{person.session.question}}": "{{message.content}}"}',
+            'identifier': '$person.id'
+        }
+    })
+    actions.append({
         'id': prefix + '.session.tags.update',
         'type': 'UpdateResource',
         'priority': 9,
