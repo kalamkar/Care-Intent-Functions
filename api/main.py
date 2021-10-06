@@ -126,7 +126,7 @@ def list_resources(resource_name, resource_id, sub_resource_name, sub_resource_i
             if parent_type != resource_name:
                 continue
             results.append(get_document_json(parent))
-    elif resource_id and (not sub_resource_id or sub_resource_id in ['any', 'all']) and resource_name == 'group':
+    elif resource_id and (not sub_resource_id or sub_resource_id in ['any', 'all']):
         # Get all the children
         relation_query = db.collection(COLLECTIONS[resource_name]).document(resource_id)\
             .collection(COLLECTIONS[sub_resource_name])
