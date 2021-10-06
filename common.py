@@ -105,6 +105,18 @@ def get_child_id(parent_id, proxy_id, db):
     return None
 
 
+def add_child(child_id, parent_id, relation_type, db):
+    data = {'id': child_id}
+    if parent_id['type'] == 'person':
+        data['proxy'] = get_proxy_id(parent_id, child_id, db, assign=True)
+        if not data['proxy']:
+            logging.error('Proxy number not available, UpdateRelation failed.')
+            return None
+    db.collection(COLLECTIONS[parent_id['type']]).document(parent_id['value']) \
+        .collection(COLLECTIONS[relation_type]).document(child_id['type'] + ':' + child_id['value']).set(data)
+    return data
+
+
 def is_valid_session(person):
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
     return 'session' in person and 'start' in person['session'] and 'id' in person['session']\

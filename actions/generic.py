@@ -178,28 +178,17 @@ class UpdateRelation(Action):
             if selection == 'random':
                 selected_parent_id = parent_ids[random.randint(0, len(parent_ids) - 1)]
                 self.context_update = {'selected_parent_id': selected_parent_id}
-                self.add(child_id, selected_parent_id, db)
+                common.add_child(child_id, selected_parent_id, 'member', db)
             elif selection == 'all':
                 for parent_id in parent_ids:
-                    self.add(child_id, parent_id, db)
+                    common.add_child(child_id, parent_id, 'member', db)
 
         if add_parent_id:
-            self.add(child_id, add_parent_id, db)
+            common.add_child(child_id, add_parent_id, 'member', db)
 
         if remove_parent_id:
             db.collection(common.COLLECTIONS[remove_parent_id['type']]).document(remove_parent_id['value']) \
                 .collection('members').document(child_id['type'] + ':' + child_id['value']).delete()
-
-    @staticmethod
-    def add(child_id, parent_id, db):
-        data = {'id': child_id}
-        if parent_id['type'] == 'person':
-            data['proxy'] = common.get_proxy_id(parent_id, child_id, db, assign=True)
-            if not data['proxy']:
-                logging.error('Proxy number not available, UpdateRelation failed.')
-                return
-        db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value']) \
-            .collection('members').document(child_id['type'] + ':' + child_id['value']).set(data)
 
 
 class ListGroup(Action):

@@ -139,11 +139,9 @@ def list_resources(resource_name, resource_id, sub_resource_name, sub_resource_i
 def add_relation(resource_name, resource_id, sub_resource_name, identifier):
     if 'type' not in identifier or 'value' not in identifier:
         return None
-
     db = firestore.Client()
-    db.collection(COLLECTIONS[resource_name]).document(resource_id).collection(COLLECTIONS[sub_resource_name])\
-        .document(identifier['type'] + ':' + identifier['value']).set({'id': identifier})
-    return {'status': 'ok'}
+    data = common.add_child(identifier, {'type': resource_name, 'value': resource_id}, sub_resource_name, db)
+    return {'status': 'ok'} if data else None
 
 
 def get_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db):
