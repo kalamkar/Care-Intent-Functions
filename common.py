@@ -5,7 +5,6 @@ import json
 import logging
 import pytz
 import uuid
-import dateutil.parser
 
 COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'member': 'members', 'admin': 'admins',
                'schedule': 'schedules'}
@@ -108,15 +107,7 @@ def get_child_id(parent_id, proxy_id, db):
 
 def is_valid_session(person):
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
-    if 'session' not in person or 'start' not in person['session'] or 'id' not in person['session']:
-        return False
-    start = person['session']['start'] if type(person['session']['start']) == datetime\
-        else dateutil.parser.parse(person['session']['start'])
-    if (now - start).total_seconds() < config.SESSION_SECONDS:
-        return True
-    last_message_time = None
-    if 'last_message_time' in person['session'] and type(person['session']['last_message_time']) == str:
-        last_message_time = dateutil.parser.parse(person['session']['last_message_time'])
-    elif 'last_message_time' in person['session'] and type(person['session']['last_message_time']) == datetime:
-        last_message_time = person['session']['last_message_time']
-    return last_message_time and (now - last_message_time).total_seconds() < config.GAP_SECONDS
+    return 'session' in person and 'start' in person['session'] and 'id' in person['session']\
+           and ((now - person['session']['start']).total_seconds() < config.SESSION_SECONDS
+                or ('last_message_time' in person['session']
+                    and (now - person['session']['last_message_time']).total_seconds() < config.GAP_SECONDS))

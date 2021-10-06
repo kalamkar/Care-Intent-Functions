@@ -6,5 +6,4 @@ google-cloud-pubsub
 google-cloud-tasks
 requests
 PyCryptodome
-python-dateutil
 pytz

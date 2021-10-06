@@ -4,5 +4,3 @@ twilio
 google-cloud-firestore
 google-cloud-logging
 sendgrid
-python-dateutil
-pytz
