@@ -137,7 +137,7 @@ def list_resources(resource_name, resource_id, sub_resource_name, sub_resource_i
 
 
 def add_relation(resource_name, resource_id, sub_resource_name, identifier):
-    if 'type' not in identifier or 'value' not in identifier or resource_name != 'group':
+    if 'type' not in identifier or 'value' not in identifier:
         return None
 
     db = firestore.Client()
