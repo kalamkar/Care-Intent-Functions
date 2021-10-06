@@ -15,8 +15,7 @@ from google.cloud import bigquery
 class Context(object):
     def __init__(self):
         self.data = {'from_member': False, 'to_member': False, 'from_coach': False, 'to_coach': False}
-        self.env = jinja2.Environment(loader=jinja2.BaseLoader(), trim_blocks=True, lstrip_blocks=True,
-                                      undefined=SilentUndefined)
+        self.env = jinja2.Environment(loader=jinja2.BaseLoader(), undefined=SilentUndefined)
         self.env.filters['history'] = self.history
         self.env.filters['np'] = self.numpy
         self.env.filters['timediff'] = self.timediff
