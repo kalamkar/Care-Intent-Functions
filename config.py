@@ -23,7 +23,3 @@ PROVIDERS = {'dexcom': {'url': 'https://sandbox-api.dexcom.com/v2/oauth2/token',
              'google': {'url': 'https://oauth2.googleapis.com/token',
                         'client_id': '749186156527-hl1f7u9o2cssle1n80nl09bej2bjfg97.apps.googleusercontent.com',
                         'client_secret': 'GnBZGO7unmlgmko2CwqgRbBk'}}
-
-
-class Tag(object):
-    PAUSED = 'PAUSED'
