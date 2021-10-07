@@ -85,7 +85,8 @@ def main(request):
             for qmessage in doc['results']:
                 qmessage['status'] = 'queued'
             start_time, end_time = get_start_end_times(request)
-            doc['results'].extend(get_messages(start_time, end_time, resource_id, request.args.get('both')))
+            doc['results'].extend(get_messages(start_time, end_time, resource_id, request.args.get('both'),
+                                               request.args.get('tag')))
     elif request.method == 'GET' and resource_id:
         resource_id = user.id if resource_id == 'me' else resource_id
         doc = get_resource(resource_name, resource_id, sub_resource_name, sub_resource_id, db)
@@ -227,7 +228,7 @@ def get_data_by_tag(source, tag):
     return rows
 
 
-def get_messages(start_time, end_time, person_id, both):
+def get_messages(start_time, end_time, person_id, both, tag):
     bq = bigquery.Client()
     db = firestore.Client()
     person_doc = db.collection('persons').document(person_id).get()
@@ -239,8 +240,9 @@ def get_messages(start_time, end_time, person_id, both):
                if both else 'sender.value IN ({values}) ')\
             + 'AND TIMESTAMP("{start}") < time AND time < TIMESTAMP("{end}") '\
             + 'AND "source:schedule" NOT IN UNNEST(tags) '\
+            + ('AND "{tag}" IN UNNEST(tags) ' if tag else '')\
             + 'ORDER BY time'
-    query = query.format(project=config.PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time)
+    query = query.format(project=config.PROJECT_ID, values=str(values)[1:-1], start=start_time, end=end_time, tag=tag)
     logging.info(query)
     rows = []
     for row in bq.query(query):
