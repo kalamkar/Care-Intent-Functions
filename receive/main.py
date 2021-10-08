@@ -24,6 +24,10 @@ def main(request):
     contact = {'type': 'phone', 'value': sender}
     person_docs = list(db.collection('persons').where('identifiers', 'array_contains', contact).get())
     if len(person_docs) == 0:
+        if receiver in config.PROXY_PHONE_NUMBERS:
+            # This is spam, new person shouldn't be reaching out to proxy number themselves
+            logging.warning('Received spam from %s on %s' % (sender, receiver))
+            return '', 204
         # Create new person since it doesn't exist
         person_id = common.generate_id()
         person = {'identifiers': [contact]}
