@@ -43,9 +43,11 @@ def main(request):
                 else:
                     task_id = schedule_task(body, action['schedule'], timezone)
                     action_doc.reference.update({'maxrun': action['maxrun'], 'task_id': task_id})
-            if 'schedule' in action:
+            elif 'schedule' in action:
                 task_id = schedule_task(body, action['schedule'], timezone)
                 action_doc.reference.update({'task_id': task_id})
+            else:
+                action_doc.reference.delete()
 
     if not action:
         logging.error('Missing action for %s' % json.dumps(body))
