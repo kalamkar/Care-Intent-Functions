@@ -296,6 +296,8 @@ def get_start_end_times(request):
 
 def get_document_json(doc):
     doc_json = doc.to_dict()
+    if not doc_json:
+        return {}
     if 'login' in doc_json:
         del doc_json['login']
     doc_json['id'] = {'type': doc.reference.path.split('/')[0][:-1], 'value': doc.id}

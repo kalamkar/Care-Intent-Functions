@@ -7,7 +7,6 @@ SMS = 'https://us-central1-careintent.cloudfunctions.net/receive/text'
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 
-
 def buy_numbers(numbers):
     for number in numbers:
         client.incoming_phone_numbers.create(phone_number=number, sms_url=SMS, voice_url=VOICE)
