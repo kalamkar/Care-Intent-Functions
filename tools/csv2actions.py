@@ -1,3 +1,4 @@
+import argparse
 import csv
 import json
 import logging
@@ -64,9 +65,9 @@ def create_action(params):
     return action
 
 
-def main(filename):
+def csv2actions(file):
     actions = []
-    reader = csv.DictReader(open(filename))
+    reader = csv.DictReader(file)
     action = None
     previous_id = None
     count = 0
@@ -112,8 +113,16 @@ def main(filename):
                 })
     if action:
         actions.append(action)
-    json.dump({'actions': actions}, open(filename + '.json', 'w'), indent=2)
+    return actions
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(description='Add or replace actions for a group.')
+    parser.add_argument('--file', help='CSV file to read policy from.', type=argparse.FileType('r'), required=True)
+    args = parser.parse_args(argv)
+    actions = csv2actions(args.file)
+    json.dump({'actions': actions}, open(args.file.name + '.json', 'w'), indent=2)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    main(sys.argv[1:])

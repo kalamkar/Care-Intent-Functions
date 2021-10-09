@@ -11,6 +11,10 @@ from google.cloud import firestore
 from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
 
+from csv2actions import csv2actions
+from survey2actions import csv2actions as survey_csv2actions
+
+
 PROJECT_ID = 'careintent'
 PROJECT_LOCATION = 'us-central1'
 
@@ -29,22 +33,35 @@ def main(argv):
     parser.add_argument('--policy', help='Id of the policy for the given policy file.')
     parser.add_argument('--group', help='Id of the group for the scheduled actions.')
     parser.add_argument('--delete_prefix', help='Delete scheduled actions with given prefix of action id.')
-    parser.add_argument('--file', help='File to read policy from.', type=argparse.FileType('r'))
+    parser.add_argument('--json', help='JSON file to read policy from.', type=argparse.FileType('r'))
+    parser.add_argument('--csv', help='CSV file to read policy from.', type=argparse.FileType('r'))
+    parser.add_argument('--survey', help='CSV survey file to read policy from.', type=argparse.FileType('r'))
+    parser.add_argument('--save', help='JSON file to write policy actions to.', type=argparse.FileType('w'))
     args = parser.parse_args(argv)
 
-    policy = json.load(args.file)
-    len_scheduled = len(list(filter(lambda a: 'schedule' in a, policy['actions'])))
-    if 0 < len_scheduled < len(policy['actions']):
+    actions = []
+    if args.json:
+        actions = json.load(args.json)['actions']
+    elif args.csv:
+        actions = csv2actions(args.csv)
+    elif args.survey and args.policy:
+        actions = survey_csv2actions(args.policy, args.csv)
+
+    if args.save:
+        json.dump({'actions': actions}, args.save, indent=2)
+
+    len_scheduled = len(list(filter(lambda a: 'schedule' in a, actions)))
+    if 0 < len_scheduled < len(actions):
         # Either none or all should be schedule actions
         logging.error('Mixed scheduled and reactive actions')
         return
 
     db = firestore.Client()
     if len_scheduled == 0 and args.policy:
-        db.collection('policies').document(args.policy).set({action['id']:action for action in policy['actions']})
+        db.collection('policies').document(args.policy).set({action['id']: action for action in actions})
     elif len_scheduled != 0 and args.group:
         collection = db.collection('groups').document(args.group).collection('actions')
-        for action in policy['actions']:
+        for action in actions:
             action_doc = collection.document(action['id']).get()
             if action_doc.exists and 'task_id' in action_doc.to_dict():
                 delete_task(action_doc.get('task_id'))
