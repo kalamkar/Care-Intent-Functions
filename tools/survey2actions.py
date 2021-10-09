@@ -7,9 +7,9 @@ import sys
 from itertools import repeat
 
 
-def csv2actions(prefix, csv_dict_reader):
+def csv2actions(prefix, file):
     actions = []
-    for row in csv_dict_reader:
+    for row in csv.DictReader(file):
         row_id = row['Id'].strip()
         if not row_id:
             continue
@@ -156,7 +156,7 @@ def main(argv):
     parser.add_argument('--file', help='File to read policy from.', required=True)
     args = parser.parse_args(argv)
 
-    actions = csv2actions(args.prefix, csv.DictReader(open(args.file)))
+    actions = csv2actions(args.prefix, open(args.file))
     if len(actions) != len(set([a['id'] for a in actions])):
         logging.error('Duplicate action ids')
         return

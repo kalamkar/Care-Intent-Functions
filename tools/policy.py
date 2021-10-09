@@ -45,7 +45,7 @@ def main(argv):
     elif args.csv:
         actions = csv2actions(args.csv)
     elif args.survey and args.policy:
-        actions = survey_csv2actions(args.policy, args.csv)
+        actions = survey_csv2actions(args.policy, args.survey)
 
     if args.save:
         json.dump({'actions': actions}, args.save, indent=2)
