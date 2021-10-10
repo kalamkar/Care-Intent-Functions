@@ -47,7 +47,15 @@ def main(request):
     else:
         response.status_code = 400
         return response
-    logging.info('/{}/{}/{}/{}'.format(resource_name, resource_id, sub_resource_name, sub_resource_id))
+    logging.info('{} /{}/{}/{}/{}'.format(request.method, resource_name, resource_id,
+                                          sub_resource_name, sub_resource_id))
+    log = {'time': datetime.datetime.utcnow().isoformat(), 'type': 'api.' + request.method.lower(),
+           'resources': [{'type': resource_name, 'value': resource_id}]}
+    if sub_resource_id:
+        log['resources'].append({'type': sub_resource_name, 'value': sub_resource_id if sub_resource_id else ''})
+    errors = bigquery.Client().insert_rows_json('%s.live.log' % config.PROJECT_ID, [log])
+    if errors:
+        logging.warning(errors)
 
     # TODO: Check authorization
     db = firestore.Client()
