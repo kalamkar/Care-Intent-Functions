@@ -39,7 +39,7 @@ def main(request):
         person = person_docs[0].to_dict()
         person['id'] = {'type': 'person', 'value': person_docs[0].id}
 
-    tags = ['source:twilio']
+    tags = ['source:twilio', 'zip:' + request.form.get('FromZip')]
     sender_id = {'type': 'phone', 'value': sender}
     receiver_id = {'type': 'phone', 'value': receiver}
     if receiver in config.PROXY_PHONE_NUMBERS:
