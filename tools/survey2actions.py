@@ -6,6 +6,8 @@ import sys
 
 from itertools import repeat
 
+PRIORITY = 12
+
 
 def csv2actions(prefix, file):
     actions = []
@@ -15,7 +17,6 @@ def csv2actions(prefix, file):
             continue
         question_id = prefix + '.' + row_id
         condition = get_condition(prefix, row['Question'], row['Intent'], row['Param'], row['Session'])
-        priority = 10
         try:
             row['Message'].strip().encode('ascii').decode()
         except:
@@ -27,9 +28,9 @@ def csv2actions(prefix, file):
             actions.append({
                 'id': question_id + '.message',
                 'type': 'Message',
-                'priority': priority,
+                'priority': PRIORITY,
                 'condition': condition,
-                'min_action_priority': priority - 1,
+                'min_action_priority': PRIORITY - 1,
                 'params': {
                     'content': message,
                     'receiver': '$person.id'
@@ -39,7 +40,7 @@ def csv2actions(prefix, file):
             actions.append({
                 'id': prefix + '.' + row['Question'].strip().split('\n')[0] + '.ticket',
                 'type': 'OpenTicket',
-                'priority': priority,
+                'priority': PRIORITY,
                 'condition': condition,
                 'params': {
                     'content': message,
@@ -52,23 +53,23 @@ def csv2actions(prefix, file):
             content = '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "question": "%s",' \
                       '"tags": ["survey"]}}'\
                       % (prefix, question_id)
-            actions.append(get_update_action(question_id + '.update', condition, priority - 1, content=content))
+            actions.append(get_update_action(question_id + '.update', condition, PRIORITY - 1, content=content))
         elif 'end' in instructions:
-            actions.append(get_update_action(question_id + '.update', condition, priority - 1,
+            actions.append(get_update_action(question_id + '.update', condition, PRIORITY - 1,
                                              delete_field='session'))
         elif 'noupdate' not in instructions and row_id != 'ticket' and message:
-            actions.append(get_update_action(question_id + '.update', condition, priority - 1,
+            actions.append(get_update_action(question_id + '.update', condition, PRIORITY - 1,
                                              content='{"session.question": "%s"}' % question_id))
         session_tags = list(map(lambda t: t[1:], filter(lambda i: i.startswith('#'), instructions)))
         if session_tags and row_id != 'ticket':
             action_id = (question_id + '.tags') if message else (prefix + '.' + row_id)
-            actions.append(get_update_action(action_id, condition, priority - 1, list_name='session.tags',
+            actions.append(get_update_action(action_id, condition, PRIORITY - 1, list_name='session.tags',
                                              content='["%s"]' % '","'.join(session_tags)))
 
     actions.append({
         'id': prefix + '.answer.record',
         'type': 'UpdateData',
-        'priority': 9,
+        'priority': PRIORITY - 1,
         'condition':
             '{{from_member and person.session.question is defined and person.session.question != ""}}',
         'params': {
@@ -80,7 +81,7 @@ def csv2actions(prefix, file):
     actions.append({
         'id': prefix + '.answer.update',
         'type': 'UpdateResource',
-        'priority': 9,
+        'priority': PRIORITY - 1,
         'condition':
             '{{from_member and person.session.question is defined and person.session.question != ""}}',
         'params': {
@@ -91,7 +92,7 @@ def csv2actions(prefix, file):
     actions.append({
         'id': prefix + '.session.tags.update',
         'type': 'UpdateResource',
-        'priority': 9,
+        'priority': PRIORITY - 1,
         'condition': '{{from_member and person.session.id == "%s" '
                      'and message.nlp.params != {} and message.nlp.params != None}}'% prefix,
         'params': {
