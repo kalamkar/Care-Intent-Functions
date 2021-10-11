@@ -60,6 +60,8 @@ def create_action(params):
             action['params']['timezone'] = value
         elif name == 'new_actionhold':
             action['params']['hold_secs'] = get_duration_secs(value)
+        elif name == 'ticket_priority':
+            action['params']['priority'] = int(value)
         else:
             action['params'][name] = value
     return action
