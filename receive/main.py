@@ -87,7 +87,7 @@ def main(request):
 
 def process_text(sender_id, receiver_id, content, tags, person, db):
     if not content:
-        logging.warning('Empty message body from ' + sender_id)
+        logging.warning('Empty message body from ' + sender_id['value'])
         return '', 204
     person_id = person['id']['value']
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
