@@ -100,7 +100,7 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
     df_client = dialogflow.SessionsClient()
     text_input = dialogflow.types.TextInput(text=content, language_code='en-US')
     df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
-                                 query_input=dialogflow.types.QueryInput(text=text_input),
+                                 query_input=dialogflow.types.QueryInput(text=text_input[:255]),
                                  query_params=query_params)
     sentiment_score = df.query_result.sentiment_analysis_result.query_text_sentiment.score
 
