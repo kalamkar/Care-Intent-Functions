@@ -50,9 +50,8 @@ def csv2actions(prefix, file):
                 }
             })
         if 'start' in instructions:
-            content = '{"session": {"start": "{{message.time}}", "id":"%s", "lead": "bot", "question": "%s",' \
-                      '"tags": ["survey"]}}'\
-                      % (prefix, question_id)
+            content = '{"session.id":"%s", "session.lead": "bot", "session.question": "%s", "session.norouting": true,'\
+                      '"session.tags": ["survey"]}' % (prefix, question_id)
             actions.append(get_update_action(question_id + '.update', condition, PRIORITY - 1, content=content))
         elif 'end' in instructions:
             actions.append(get_update_action(question_id + '.update', condition, PRIORITY - 1,
