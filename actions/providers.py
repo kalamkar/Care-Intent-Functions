@@ -162,6 +162,4 @@ class OAuth(Action):
         db.collection('urls').document(short_code).set({
             'redirect': PROVIDER_URLS[self.provider](self.person_id)
         })
-        self.context_update['oauth'] = {
-            'url': 'https://{}-{}.cloudfunctions.net/u/{}'.format(config.LOCATION_ID, config.PROJECT_ID, short_code)
-        }
+        self.context_update['oauth'] = {'url': 'https://u.careintent.com/{}'.format(short_code)}
