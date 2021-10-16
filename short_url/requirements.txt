@@ -1,3 +1,5 @@
 # Function dependencies, for example:
 # package>=version
 google-cloud-firestore
+Flask==2.0.1
+gunicorn

@@ -1,0 +1,7 @@
+
+dispatch:
+- url: "app.careintent.com/*"
+  service: default
+
+- url: "u.careintent.com/*"
+  service: url

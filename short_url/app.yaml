@@ -1,0 +1,9 @@
+runtime: python39
+service: url
+
+entrypoint: gunicorn -b :$PORT main:app
+
+handlers:
+- url: /u/.*
+  secure: always
+  script: auto
