@@ -27,7 +27,7 @@ def main(request):
         if receiver in config.PROXY_PHONE_NUMBERS:
             # This is spam, new person shouldn't be reaching out to proxy number themselves
             logging.warning('Received spam from %s on %s' % (sender, receiver))
-            return '', 204
+            return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
         # Create new person since it doesn't exist
         person_id = common.generate_id()
         person = {'identifiers': [contact]}
