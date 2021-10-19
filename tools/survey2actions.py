@@ -69,8 +69,7 @@ def csv2actions(prefix, file):
         'id': prefix + '.answer.record',
         'type': 'UpdateData',
         'priority': PRIORITY - 1,
-        'condition':
-            '{{from_member and person.session.question is defined and person.session.question != ""}}',
+        'condition': '{{from_member and person.session.id == "%s"}}' % prefix,
         'params': {
             'content': '{"{{person.session.question}}": "{{message.content}}"}',
             'tags': 'survey',
@@ -81,8 +80,7 @@ def csv2actions(prefix, file):
         'id': prefix + '.answer.update',
         'type': 'UpdateResource',
         'priority': PRIORITY - 1,
-        'condition':
-            '{{from_member and person.session.question is defined and person.session.question != ""}}',
+        'condition': '{{from_member and person.session.id == "%s"}}' % prefix,
         'params': {
             'content': '{"session.{{person.session.question}}": "{{message.content}}"}',
             'identifier': '$person.id'
