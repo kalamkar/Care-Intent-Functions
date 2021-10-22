@@ -279,7 +279,7 @@ def send_message(person_id, message, user):
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
-        'sender': {'type': 'person', 'value': user.id},
+        'sender': {'type': 'person', 'value': user.id} if 'sender' not in message else message['sender'],
         'receiver': receiver,
         'status': 'sent' if 'status' not in message else message['status'],
         'tags': message['tags'] if 'tags' in message else ['source:api'],
