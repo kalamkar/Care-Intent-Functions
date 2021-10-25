@@ -87,8 +87,7 @@ class UpdateResource(Action):
             doc_ref.update({delete_field: firestore.DELETE_FIELD})
             return
         logging.info('Updating {id} with {data}'.format(id=doc_ref.path, data=content))
-        # TODO: Don't replace ' (single quote), change that in policies or csv2action scripts
-        content = json.loads(content.replace('\'', '"').replace(',]', ']'), strict=False, object_hook=lambda d:
+        content = json.loads(content.replace(',]', ']'), strict=False, object_hook=lambda d:
             (d | {'start': dateutil.parser.parse(d['start']).astimezone(pytz.utc)}) if 'start' in d else d)
         if not content:
             logging.warning('Empty content ' + str(content))
