@@ -111,8 +111,7 @@ def csv2actions(file):
             if type(action['params']['content']) == list:
                 action['params']['content'].append({
                     'id': row['Variation Id'] or '1',
-                    'message': row['Message'].strip() if action['type'] != 'UpdateResource'
-                        else row['Message'].strip().replace('\'', '"')
+                    'message': row['Message'].strip()
                 })
     if action:
         actions.append(action)
