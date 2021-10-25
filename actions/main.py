@@ -7,6 +7,7 @@ import generic
 import json
 import logging
 import message as msg
+import nlp
 import providers
 import pytz
 import random
@@ -28,6 +29,7 @@ ACTIONS = {
     'Message': msg.Send,
     'Broadcast': msg.Broadcast,
     'ListMessages': msg.List,
+    'DialogFlow': nlp.DialogFlow,
     'OAuth': providers.OAuth,
     'UpdateContext': generic.UpdateContext,
     'UpdateData': generic.UpdateData,
