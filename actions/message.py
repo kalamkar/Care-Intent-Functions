@@ -33,12 +33,14 @@ class Send(Action):
                 logging.error('Skipping message to person who has unsubscribed messages.')
                 return
             now = datetime.datetime.utcnow().astimezone(pytz.utc)
-            if common.is_valid_session(person):
+            if 'session' in person and 'id' in person['session']:
                 tags.append('session:' + person['session']['id'])
                 person_doc.reference.update({'session.last_message_time': now})
             else:
-                person_doc.reference.update({'session': {'start': now, 'id': common.generate_id(),
-                                                         'last_message_time': now}})
+                session_id = common.generate_id()
+                tags.append('session:' + session_id)
+                person_doc.reference.update({'session.start': now, 'session.id': session_id,
+                                             'session.last_message_time': now})
         sender = common.get_identifier(sender, 'phone', db,
                                        {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
         receiver = common.get_identifier(receiver, 'phone', db)
@@ -62,52 +64,6 @@ class Send(Action):
             'content': content
         }
         publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
-
-
-class Broadcast(Action):
-    def process(self, parent_id=None, content=None, tags=None):
-        if type(tags) == list:
-            tags.append('source:action')
-        elif type(tags) == str:
-            tags = tags.split(',') + ['source:action']
-        else:
-            tags = ['source:action']
-
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
-
-        db = firestore.Client()
-        sender = common.get_identifier(parent_id, 'phone', db,
-                                       {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
-        for member_doc in db.collection(common.COLLECTIONS[parent_id['type']]).document(parent_id['value'])\
-                .collection('members').stream():
-            member = member_doc.to_dict()
-            if 'stopped' in member:
-                logging.error('Skipping message to person who has unsubscribed messages.')
-                continue
-            now = datetime.datetime.utcnow().astimezone(pytz.utc)
-            if common.is_valid_session(member):
-                tags.append('session:' + member['session']['id'])
-                member_doc.reference.update({'session.last_message_time': now})
-            else:
-                member_doc.reference.update({'session': {'start': now, 'id': common.generate_id(),
-                                                         'last_message_time': now}})
-
-            receiver = common.filter_identifier(member_doc, 'phone')
-            if not receiver:
-                logging.warning('Missing receiver for broadcast action, member {}'.format(member_doc.id))
-                continue
-
-            data = {
-                'time': datetime.datetime.utcnow().isoformat(),
-                'sender': sender,
-                'receiver': receiver,
-                'status': 'sent',
-                'tags': tags,
-                'content_type': 'text/plain',
-                'content': content
-            }
-            publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
 
 
 class List(Action):

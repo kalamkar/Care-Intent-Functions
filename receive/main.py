@@ -91,7 +91,7 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
         return '', 204
     person_id = person['id']['value']
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
-    if not common.is_valid_session(person):
+    if 'session' not in person:
         person['session'] = {'start': now, 'id': common.generate_id()}
 
     knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID,

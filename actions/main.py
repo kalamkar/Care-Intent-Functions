@@ -27,7 +27,6 @@ ACTIONS = {
     'DataProvider': providers.DataProvider,
     'RunAction': generic.RunAction,
     'Message': msg.Send,
-    'Broadcast': msg.Broadcast,
     'ListMessages': msg.List,
     'DialogFlow': nlp.DialogFlow,
     'OAuth': providers.OAuth,

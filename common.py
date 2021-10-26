@@ -115,11 +115,3 @@ def add_child(child_id, parent_id, relation_type, db):
     db.collection(COLLECTIONS[parent_id['type']]).document(parent_id['value']) \
         .collection(COLLECTIONS[relation_type]).document(child_id['type'] + ':' + child_id['value']).set(data)
     return data
-
-
-def is_valid_session(person):
-    now = datetime.datetime.utcnow().astimezone(pytz.utc)
-    return 'session' in person and 'start' in person['session'] and 'id' in person['session']\
-           and ((now - person['session']['start']).total_seconds() < config.SESSION_SECONDS
-                or ('last_message_time' in person['session']
-                    and (now - person['session']['last_message_time']).total_seconds() < config.GAP_SECONDS))
