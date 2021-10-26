@@ -93,6 +93,8 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
     if 'session' not in person:
         person['session'] = {'start': now, 'id': common.generate_id()}
+    elif not is_valid_session(person) and 'lead' in person['session']:
+        del person['session']['lead']
 
     knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID,
                                                                               config.SYSTEM_KNOWLEDGE_ID)
@@ -182,3 +184,10 @@ def publish_data(person_id, params, tags=(), duration=None):
         elif type(value) == str:
             row['data'].append({'name': name, 'value': value})
     publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
+
+
+def is_valid_session(person):
+    now = datetime.datetime.utcnow().astimezone(pytz.utc)
+    return 'session' in person and 'last_message_time' in person['session']\
+           and (now - person['session']['last_message_time']).total_seconds() < config.GAP_SECONDS
+

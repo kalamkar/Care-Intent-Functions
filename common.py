@@ -1,9 +1,7 @@
 import base64
 import config
-import datetime
 import json
 import logging
-import pytz
 import uuid
 
 COLLECTIONS = {'person': 'persons', 'group': 'groups', 'message': 'messages', 'member': 'members', 'admin': 'admins',
