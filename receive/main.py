@@ -47,8 +47,7 @@ def main(request):
         receiver_id = common.get_child_id(person['id'], receiver_id, db)
         if not receiver_id:
             logging.error(f'Missing child id for {sender} {receiver}'.format(sender=sender, receiver=receiver))
-            if tokens[1] == 'voice':
-                return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
+            return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
 
     if len(tokens) >= 2 and tokens[1] == 'text':
         return process_text(sender_id, receiver_id, request.form.get('Body'), tags, person, db)
