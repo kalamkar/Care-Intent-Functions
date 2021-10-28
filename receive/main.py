@@ -92,7 +92,7 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
         return '', 204
     person_id = person['id']['value']
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
-    if 'session' not in person:
+    if 'session' not in person or 'id' not in person['session']:
         person['session'] = {'start': now, 'id': common.generate_id()}
     elif not is_valid_session(person) and 'lead' in person['session']:
         del person['session']['lead']
