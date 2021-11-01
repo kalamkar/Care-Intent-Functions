@@ -133,10 +133,10 @@ class UpdateData(Action):
 
 
 class QueryData(Action):
-    def process(self, name=None, source=None, tag=None, duration=3600):
+    def process(self, name=None, source=None, tag=None, period=3600):
         if not name and not source and not tag:
             return []
-        start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=common.get_duration_secs(duration))
+        start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=common.get_duration_secs(period))
         start_time = start_time.isoformat()
         bq = bigquery.Client()
         q = 'SELECT name, number, value FROM {project}.live.tsdata, UNNEST(data) ' +\
