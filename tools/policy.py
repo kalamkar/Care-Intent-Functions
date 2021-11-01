@@ -77,7 +77,7 @@ def main(argv):
 
             collection.document(action['id']).set(action)
             print('Added action %s' % action['id'])
-    elif args.delete_prefix:
+    elif args.delete_prefix and args.group:
         for action in db.collection('groups').document(args.group).collection('actions').stream():
             if not action.id.startswith(args.delete_prefix):
                 continue
