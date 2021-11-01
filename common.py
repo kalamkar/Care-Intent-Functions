@@ -16,6 +16,8 @@ DURATIONS = {
 
 
 def get_duration_secs(duration):
+    if type(duration) != str:
+        return duration
     if duration[-1] not in DURATIONS:
         return 0
     return DURATIONS[duration[-1]] * int(duration[:-1])

@@ -1,5 +1,3 @@
-import common
-import config
 import datetime
 import jinja2
 import json
@@ -9,14 +7,12 @@ import pytz
 import re
 
 from inspect import getmembers, isfunction
-from google.cloud import bigquery
 
 
 class Context(object):
     def __init__(self):
         self.data = {'from_member': False, 'to_member': False, 'from_coach': False, 'to_coach': False}
         self.env = jinja2.Environment(loader=jinja2.BaseLoader(), undefined=SilentUndefined)
-        self.env.filters['history'] = self.history
         self.env.filters['np'] = self.numpy
         self.env.filters['timediff'] = self.timediff
 
@@ -25,27 +21,6 @@ class Context(object):
         if not function or function not in functions:
             return value
         return functions[function](value)
-
-    def history(self, resource, var, duration='1w'):
-        if not var or not resource or type(resource) != dict:
-            return []
-        if 'id' in resource and 'value' in resource['id']:
-            source = resource['id']['value']
-        elif 'value' in resource:
-            source = resource['value']
-        else:
-            return []
-        start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=common.get_duration_secs(duration))
-        start_time = start_time.isoformat()
-        bq = bigquery.Client()
-        q = 'SELECT number FROM {project}.live.tsdata, UNNEST(data) ' \
-            'WHERE source.value = "{source}" AND name = "{name}" AND time > TIMESTAMP("{start}") ' \
-            'AND number IS NOT NULL ' \
-            'ORDER BY time'.format(project=config.PROJECT_ID, name=var, start=start_time, source=source)
-        logging.info(q)
-        data = [row['number'] for row in bq.query(q)]
-        logging.info(data)
-        return data
 
     def timediff(self, start, end):
         end = end if end else datetime.datetime.utcnow().astimezone(pytz.utc)

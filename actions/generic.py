@@ -10,6 +10,7 @@ import pytz
 import random
 import requests
 
+from google.cloud import bigquery
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.cloud import tasks_v2
@@ -129,6 +130,32 @@ class UpdateData(Action):
             elif type(value) == str:
                 row['data'].append({'name': name, 'value': value})
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
+
+
+class QueryData(Action):
+    def process(self, name=None, source=None, tag=None, duration=3600):
+        if not name and not source and not tag:
+            return []
+        start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=common.get_duration_secs(duration))
+        start_time = start_time.isoformat()
+        bq = bigquery.Client()
+        q = 'SELECT name, number, value FROM {project}.live.tsdata, UNNEST(data) ' +\
+            'WHERE time > TIMESTAMP("{start}") ' + \
+            ('AND name = "{name}" ' if name else '') +\
+            ('AND source.value = "{source}" ' if source else '') +\
+            ('AND "{tag}" IN UNNEST(tags) ' if tag else '') +\
+            'ORDER BY time'
+        q = q.format(project=config.PROJECT_ID, name=name, start=start_time, source=source, tag=tag)
+        logging.info(q)
+        results = {}
+        for row in bq.query(q):
+            if row['name'] not in results:
+                results[row['name']] = []
+            if row['number']:
+                results[row['name']].append(row['number'])
+            if row['value']:
+                results[row['name']].append(row['value'])
+        self.context_update = {'query': {'results': results, 'names': list(results.keys())}}
 
 
 class Webhook(Action):
