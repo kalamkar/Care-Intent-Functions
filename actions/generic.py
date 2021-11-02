@@ -133,7 +133,7 @@ class UpdateData(Action):
 
 
 class QueryData(Action):
-    def process(self, name=None, source=None, tag=None, period=3600):
+    def process(self, name=None, source=None, tag=None, period=3600, output='query'):
         if not name and not source and not tag:
             return []
         start_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=common.get_duration_secs(period))
@@ -155,7 +155,7 @@ class QueryData(Action):
                 results[row['name']].append(row['number'])
             if row['value']:
                 results[row['name']].append(row['value'])
-        self.context_update = {'query': {'results': results, 'names': list(results.keys())}}
+        self.context_update = {output: {'results': results, 'names': list(results.keys())}}
 
 
 class Webhook(Action):
