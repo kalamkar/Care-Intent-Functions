@@ -224,6 +224,9 @@ class ListGroup(Action):
             logging.error('Missing parent or incorrect child type.')
             return
 
+        if type(parent_id) == str:
+            parent_id = json.loads(parent_id)
+
         db = firestore.Client()
         children = []
         child_ids = []
