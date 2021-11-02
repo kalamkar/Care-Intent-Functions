@@ -21,49 +21,49 @@ class Send(Action):
         else:
             tags = ['source:action']
 
-        db = firestore.Client()
-        if sender and type(sender) == dict and 'type' in sender and sender['type'] == 'person' and\
-                receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
-            sender = common.get_proxy_id(receiver, sender, db)
-            tags.append('proxy')
-        if receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
-            person_doc = db.collection(common.COLLECTIONS[receiver['type']]).document(receiver['value']).get()
-            person = person_doc.to_dict()
-            if 'stopped' in person:
-                logging.error('Skipping message to person who has unsubscribed messages.')
-                return
-            now = datetime.datetime.utcnow().astimezone(pytz.utc)
-            if 'session' in person and 'id' in person['session']:
-                tags.append('session:' + person['session']['id'])
-                person_doc.reference.update({'session.last_message_time': now})
-            else:
-                session_id = common.generate_id()
-                tags.append('session:' + session_id)
-                person_doc.reference.update({'session.start': now, 'session.id': session_id,
-                                             'session.last_message_time': now})
-        sender = common.get_identifier(sender, 'phone', db,
-                                       {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
-        receiver = common.get_identifier(receiver, 'phone', db)
-        if not receiver:
-            logging.warning('Missing receiver for message action')
-            return
-        if sender == receiver or receiver['value'] in [config.PHONE_NUMBER] + config.PROXY_PHONE_NUMBERS:
-            logging.error('Sending message to system phone numbers to {r} from {s}'.format(r=receiver, s=sender))
-            return
-
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+        db = firestore.Client()
+        for receiver in receiver if type(receiver) == list else [receiver]:
+            if sender and type(sender) == dict and 'type' in sender and sender['type'] == 'person' and\
+                    receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
+                sender = common.get_proxy_id(receiver, sender, db)
+                tags.append('proxy')
+            if receiver and type(receiver) == dict and 'type' in receiver and receiver['type'] == 'person':
+                person_doc = db.collection(common.COLLECTIONS[receiver['type']]).document(receiver['value']).get()
+                person = person_doc.to_dict()
+                if 'stopped' in person:
+                    logging.error('Skipping message to person who has unsubscribed messages.')
+                    return
+                now = datetime.datetime.utcnow().astimezone(pytz.utc)
+                if 'session' in person and 'id' in person['session']:
+                    tags.append('session:' + person['session']['id'])
+                    person_doc.reference.update({'session.last_message_time': now})
+                else:
+                    session_id = common.generate_id()
+                    tags.append('session:' + session_id)
+                    person_doc.reference.update({'session.start': now, 'session.id': session_id,
+                                                 'session.last_message_time': now})
+            sender = common.get_identifier(sender, 'phone', db,
+                                           {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
+            receiver = common.get_identifier(receiver, 'phone', db)
+            if not receiver:
+                logging.warning('Missing receiver for message action')
+                return
+            if sender == receiver or receiver['value'] in [config.PHONE_NUMBER] + config.PROXY_PHONE_NUMBERS:
+                logging.error('Sending message to system phone numbers to {r} from {s}'.format(r=receiver, s=sender))
+                return
 
-        data = {
-            'time': datetime.datetime.utcnow().isoformat(),
-            'sender': sender,
-            'receiver': receiver,
-            'status': 'sent',
-            'tags': tags,
-            'content_type': 'text/plain',
-            'content': content
-        }
-        publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
+            data = {
+                'time': datetime.datetime.utcnow().isoformat(),
+                'sender': sender,
+                'receiver': receiver,
+                'status': 'sent',
+                'tags': tags,
+                'content_type': 'text/plain',
+                'content': content
+            }
+            publisher.publish(topic_path, json.dumps(data).encode('utf-8'), send='true')
 
 
 class List(Action):
