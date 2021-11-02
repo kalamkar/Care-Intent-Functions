@@ -34,7 +34,7 @@ class Send(Action):
                 person = person_doc.to_dict()
                 if 'stopped' in person:
                     logging.error('Skipping message to person who has unsubscribed messages.')
-                    return
+                    continue
                 now = datetime.datetime.utcnow().astimezone(pytz.utc)
                 if 'session' in person and 'id' in person['session']:
                     tags.append('session:' + person['session']['id'])
@@ -49,10 +49,10 @@ class Send(Action):
             receiver = common.get_identifier(receiver, 'phone', db)
             if not receiver:
                 logging.warning('Missing receiver for message action')
-                return
+                continue
             if sender == receiver or receiver['value'] in [config.PHONE_NUMBER] + config.PROXY_PHONE_NUMBERS:
                 logging.error('Sending message to system phone numbers to {r} from {s}'.format(r=receiver, s=sender))
-                return
+                continue
 
             data = {
                 'time': datetime.datetime.utcnow().isoformat(),
