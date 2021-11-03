@@ -39,15 +39,17 @@ class List(Action):
 
     @staticmethod
     def get_tickets_from_top_persons(open_tickets):
-        person_scores = {person: np.median([t['priority'] for t in tickets.values()]) if len(tickets) else 0
-                         for person, tickets in open_tickets.items()}
-        persons = [person for person, score in sorted(person_scores.items(), key=lambda kv: kv[1], reverse=True)]
-        top_tickets = []
-        for person in persons:
-            tickets = sorted(open_tickets[person].values(), key=lambda t: t['priority'], reverse=True)
-            if tickets:
-                top_tickets.append(tickets[0])
-        return top_tickets
+        person_data = []
+        max_priority = 0
+        for person, tickets in open_tickets.items():
+            if not tickets:
+                continue
+            person_data.append({'max': np.max([t['priority'] for t in tickets.values()]),
+                                'sum': np.sum([t['priority'] for t in tickets.values()]),
+                                'ticket': sorted(tickets.values(), key=lambda t: t['priority'], reverse=True)[0]})
+            max_priority = max(person_data[-1]['max'], max_priority)
+        return map(lambda p: p['ticket'], sorted(filter(lambda p: p['max'] >= max_priority, person_data),
+                                                 key=lambda p: p['sum'], reverse=True))
 
     @staticmethod
     def get_open_tickets(sources):
