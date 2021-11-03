@@ -48,8 +48,8 @@ class List(Action):
                                 'sum': np.sum([t['priority'] for t in tickets.values()]),
                                 'ticket': sorted(tickets.values(), key=lambda t: t['priority'], reverse=True)[0]})
             max_priority = max(person_data[-1]['max'], max_priority)
-        return map(lambda p: p['ticket'], sorted(filter(lambda p: p['max'] >= max_priority, person_data),
-                                                 key=lambda p: p['sum'], reverse=True))
+        return list(map(lambda p: p['ticket'], sorted(filter(lambda p: p['max'] >= max_priority, person_data),
+                                                      key=lambda p: p['sum'], reverse=True)))
 
     @staticmethod
     def get_open_tickets(sources):
