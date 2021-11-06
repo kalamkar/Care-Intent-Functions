@@ -141,7 +141,7 @@ def list_resources(resource_name, resource_id, sub_resource_name, sub_resource_i
             .collection(COLLECTIONS[sub_resource_name])
         for doc in relation_query.stream():
             relative = db.collection(COLLECTIONS[doc.get('id.type')]).document(doc.get('id.value')).get()
-            results.append(get_document_json(relative))
+            results.append(get_document_json(doc) | get_document_json(relative))
     return {'results': results}
 
 
