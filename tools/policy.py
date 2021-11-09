@@ -50,18 +50,14 @@ def main(argv):
     if args.save:
         json.dump({'actions': actions}, args.save, indent=2)
 
-    len_scheduled = len(list(filter(lambda a: 'schedule' in a, actions)))
-    if 0 < len_scheduled < len(actions):
-        # Either none or all should be schedule actions
-        logging.error('Mixed scheduled and reactive actions')
-        return
-
+    scheduled = list(filter(lambda a: 'schedule' in a, actions))
+    reactive = list(filter(lambda a: 'schedule' not in a, actions))
     db = firestore.Client()
-    if len_scheduled == 0 and args.policy:
-        db.collection('policies').document(args.policy).set({action['id']: action for action in actions})
-    elif len_scheduled != 0 and args.group:
+    if reactive and args.policy:
+        db.collection('policies').document(args.policy).set({action['id']: action for action in reactive})
+    elif scheduled and args.group:
         collection = db.collection('groups').document(args.group).collection('actions')
-        for action in actions:
+        for action in scheduled:
             action_doc = collection.document(action['id']).get()
             if action_doc.exists and 'task_id' in action_doc.to_dict():
                 delete_task(action_doc.get('task_id'))
