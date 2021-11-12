@@ -74,6 +74,9 @@ def main(event, metadata):
         context.set('coach', coach.to_dict() | {'id': {'type': 'person', 'value': coach.id}})
     parents.extend(common.get_parents(context.get('receiver.id'), 'member', db))
 
+    parents.extend(common.get_parents(context.get('sender.id'), 'admin', db))
+    parents.extend(common.get_parents(context.get('receiver.id'), 'admin', db))
+
     actions = []
     exclude_actions = []
     if channel_name == 'message' and message['status'] == 'internal':
