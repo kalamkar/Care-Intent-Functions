@@ -2,9 +2,9 @@
 # package>=version
 PyCryptodome
 croniter~=1.0.15
-dialogflow
 flask~=2.0.1
 google-cloud-bigquery
+google-cloud-dialogflow
 google-cloud-firestore
 google-cloud-language
 google-cloud-logging

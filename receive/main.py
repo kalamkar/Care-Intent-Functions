@@ -5,7 +5,7 @@ import json
 import logging
 import pytz
 
-import dialogflow_v2beta1 as dialogflow
+from google.cloud import dialogflow_v2beta1 as dialogflow
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict

@@ -1,9 +1,9 @@
 import config
-import dialogflow_v2beta1 as dialogflow
 import uuid
 
 from generic import Action
 from google.protobuf.json_format import MessageToDict
+from google.cloud import dialogflow_v2beta1 as dialogflow
 
 
 class DialogFlow(Action):
