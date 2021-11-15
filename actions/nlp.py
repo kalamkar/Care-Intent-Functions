@@ -35,7 +35,7 @@ class DialogFlow(Action):
                 'sentiment_score': sentiment_score,
                 'reply': df.query_result.fulfillment_text,
                 'confidence': int(df.query_result.intent_detection_confidence * 100),
-                'params': MessageToDict(df.query_result.parameters)
+                'params': {k: v for k, v in df.query_result.parameters.items()}
             }
         }
 
