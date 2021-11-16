@@ -135,9 +135,9 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
         data['tags'].append(df.query_result.action)
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
-    context = get_context_dict(df.query_result.output_contexts)
-    if context:
-        person['session']['context'] = context
+    # context = get_context_dict(df.query_result.output_contexts)
+    # if context:
+    #     person['session']['context'] = context
     person['session']['last_message_time'] = now
     # Update only session part
     db.collection('persons').document(person_id).update({'session': person['session']})
