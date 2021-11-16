@@ -5,7 +5,7 @@ import json
 import logging
 import pytz
 
-from google.cloud import dialogflow_v2beta1 as dialogflow
+import dialogflow_v2beta1 as dialogflow
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict
@@ -97,16 +97,16 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
     elif not is_valid_session(person) and 'lead' in person['session']:
         del person['session']['lead']
 
-    # knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID,
-    #                                                                           config.SYSTEM_KNOWLEDGE_ID)
-    # query_params = dialogflow.types.QueryParameters(knowledge_base_names=[knowledge_base_path])
-    # if 'context' in person['session']:
-    #     query_params.contexts = \
-    #         [build_df_context(person_id, name, value) for name, value in person['session']['context'].items()]
+    knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID,
+                                                                              config.SYSTEM_KNOWLEDGE_ID)
+    query_params = dialogflow.types.QueryParameters(knowledge_base_names=[knowledge_base_path])
+    if 'context' in person['session']:
+        query_params.contexts = \
+            [build_df_context(person_id, name, value) for name, value in person['session']['context'].items()]
     df_client = dialogflow.SessionsClient()
-    text_input = dialogflow.TextInput(text=content[:255], language_code='en-US')
-    df = df_client.detect_intent(request={'session': df_client.session_path(config.PROJECT_ID, person_id),
-                                 'query_input': dialogflow.QueryInput(text=text_input)})
+    text_input = dialogflow.types.TextInput(text=content[:255], language_code='en-US')
+    df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
+                                 query_input=dialogflow.types.QueryInput(text=text_input), query_params=query_params)
     sentiment_score = df.query_result.sentiment_analysis_result.query_text_sentiment.score
 
     data = {
@@ -124,7 +124,7 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
             'sentiment_score': sentiment_score,
             'reply': df.query_result.fulfillment_text,
             'confidence': int(df.query_result.intent_detection_confidence * 100),
-            'params': {k: v for k, v in df.query_result.parameters.items()}
+            'params': MessageToDict(df.query_result.parameters)
         }
     }
 
@@ -135,9 +135,9 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
         data['tags'].append(df.query_result.action)
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
-    # context = get_context_dict(df.query_result.output_contexts)
-    # if context:
-    #     person['session']['context'] = context
+    context = get_context_dict(df.query_result.output_contexts)
+    if context:
+        person['session']['context'] = context
     person['session']['last_message_time'] = now
     # Update only session part
     db.collection('persons').document(person_id).update({'session': person['session']})

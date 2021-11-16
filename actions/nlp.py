@@ -3,29 +3,30 @@ import uuid
 
 from generic import Action
 from google.protobuf.json_format import MessageToDict
-from google.cloud import dialogflow_v2beta1 as dialogflow
+import dialogflow_v2beta1 as dialogflow
 
 
 class DialogFlow(Action):
     def process(self, content='', session_id=None, person=None, kb=None, language='en-US'):
-        # query_params = dialogflow.types.QueryParameters()
-        # if kb:
-        #     knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID, kb)
-        #     query_params = dialogflow.types.QueryParameters(knowledge_base_names=[knowledge_base_path])
+        query_params = dialogflow.types.QueryParameters()
+        if kb:
+            knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID, kb)
+            query_params = dialogflow.types.QueryParameters(knowledge_base_names=[knowledge_base_path])
 
-        # if person and 'session' in person and 'context' in person['session']:
-        #     query_params.contexts = [build_df_context(person['id']['value'], name, value)
-        #                              for name, value in person['session']['context'].items()]
+        if person and 'session' in person and 'context' in person['session']:
+            query_params.contexts = [build_df_context(person['id']['value'], name, value)
+                                     for name, value in person['session']['context'].items()]
         df_client = dialogflow.SessionsClient()
         if type(content) == list:
             content = ' '.join(content)
-        text_input = dialogflow.TextInput(text=content[:255], language_code=language)
+        text_input = dialogflow.types.TextInput(text=content[:255], language_code=language)
         if not session_id and person:
             session_id = person['id']['value']
         elif not session_id and not person:
             session_id = str(uuid.uuid4())
-        df = df_client.detect_intent(request={'session': df_client.session_path(config.PROJECT_ID, session_id),
-                                              'query_input': dialogflow.QueryInput(text=text_input)})
+        df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, session_id),
+                                     query_input=dialogflow.types.QueryInput(text=text_input),
+                                     query_params=query_params)
         sentiment_score = df.query_result.sentiment_analysis_result.query_text_sentiment.score
 
         self.context_update = {
@@ -35,7 +36,7 @@ class DialogFlow(Action):
                 'sentiment_score': sentiment_score,
                 'reply': df.query_result.fulfillment_text,
                 'confidence': int(df.query_result.intent_detection_confidence * 100),
-                'params': {k: v for k, v in df.query_result.parameters.items()}
+                'params': MessageToDict(df.query_result.parameters.items())
             }
         }
 
