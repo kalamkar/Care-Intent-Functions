@@ -10,14 +10,14 @@ import dialogflow_v2beta1 as dialogflow
 
 
 class OpenAI(Action):
-    def process(self, engine='davinci-instruct-beta-v3', content=None, temperature=1, tokens=20):
+    def process(self, engine='davinci-instruct-beta-v3', content=None, temperature=None, tokens=None):
         openai.api_key = config.OPENAI_KEY
         logging.info('%d %d %s' % (tokens, temperature, content))
         response = openai.Completion.create(
             engine=engine,
             prompt=content,
-            temperature=temperature,
-            max_tokens=tokens,
+            temperature=temperature or 1,
+            max_tokens=tokens or 20,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0
