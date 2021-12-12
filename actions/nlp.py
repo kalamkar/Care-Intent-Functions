@@ -1,9 +1,31 @@
 import config
+import openai
 import uuid
 
 from generic import Action
 from google.protobuf.json_format import MessageToDict
 import dialogflow_v2beta1 as dialogflow
+
+
+class OpenAI(Action):
+    def process(self, engine='davinci-instruct-beta-v3', content=None, temperature=1, tokens=20,
+                stop=('\\n', '.', '\\r')):
+        openai.api_key = config.OPENAI_KEY
+        response = openai.Completion.create(
+            engine=engine,
+            prompt=content,
+            temperature=temperature,
+            max_tokens=tokens,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+            stop=stop
+        )
+        self.context_update = {
+            'nlp': {
+                'reply': response.choices[0].text if response.choices else ''
+            }
+        }
 
 
 class DialogFlow(Action):

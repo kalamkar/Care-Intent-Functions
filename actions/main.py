@@ -29,6 +29,7 @@ ACTIONS = {
     'Message': msg.Send,
     'ListMessages': msg.List,
     'DialogFlow': nlp.DialogFlow,
+    'OpenAI': nlp.OpenAI,
     'OAuth': providers.OAuth,
     'UpdateContext': generic.UpdateContext,
     'UpdateData': generic.UpdateData,

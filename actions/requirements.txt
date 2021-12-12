@@ -7,6 +7,7 @@ google-cloud-firestore
 google-cloud-logging
 google-cloud-pubsub
 google-cloud-tasks
+openai
 numpy
 python-dateutil
 pytz

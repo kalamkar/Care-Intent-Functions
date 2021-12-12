@@ -11,6 +11,7 @@ google-cloud-logging
 google-cloud-pubsub
 google-cloud-tasks
 jinja2~=3.0.1
+openai
 numpy~=1.21.1
 python-dateutil~=2.8.2
 pytz
