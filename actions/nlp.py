@@ -10,23 +10,22 @@ import dialogflow_v2beta1 as dialogflow
 
 
 class OpenAI(Action):
-    def process(self, engine='davinci-instruct-beta-v3', content=None, temperature=1, tokens=32):
+    def process(self, engine='davinci-instruct-beta-v3', content=None, prompts='', temperature=1, tokens=32):
         openai.api_key = config.OPENAI_KEY
-        logging.info('%d %d %s' % (tokens, temperature, content))
-        response = openai.Completion.create(
-            engine=engine,
-            prompt=content,
-            temperature=temperature,
-            max_tokens=tokens,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0
-        )
-        self.context_update = {
-            'nlp': {
-                'reply': response.choices[0].text if response.choices else ''
-            }
-        }
+        logging.info('%d %d %s %s' % (tokens, temperature, content, prompts))
+        replies = []
+        for prompt in prompts.split(','):
+            response = openai.Completion.create(
+                engine=engine,
+                prompt=content + '\n' + prompt,
+                temperature=temperature,
+                max_tokens=tokens,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0
+            )
+            replies.append(response.choices[0].text)
+        self.context_update = {'nlp': {'prompt': replies}}
 
 
 class DialogFlow(Action):
