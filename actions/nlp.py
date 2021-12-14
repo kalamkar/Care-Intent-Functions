@@ -10,7 +10,8 @@ import dialogflow_v2beta1 as dialogflow
 
 
 class OpenAI(Action):
-    def process(self, engine='davinci-instruct-beta-v3', content=None, reply='reply', temperature=1, tokens=32):
+    def process(self, engine='davinci-instruct-beta-v3', content=None, reply='reply', temperature=1, tokens=32,
+                stop=''):
         openai.api_key = config.OPENAI_KEY
         logging.info('%d %d %s' % (tokens, temperature, content))
         response = openai.Completion.create(
@@ -20,7 +21,8 @@ class OpenAI(Action):
             max_tokens=tokens,
             top_p=1,
             frequency_penalty=0,
-            presence_penalty=0
+            presence_penalty=0,
+            stop=stop.split(',')
         )
         self.context_update = {
             'nlp': {
