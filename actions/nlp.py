@@ -24,11 +24,7 @@ class OpenAI(Action):
             presence_penalty=0,
             stop=stop.split(',')
         )
-        self.context_update = {
-            'nlp': {
-                reply: response.choices[0].text if response.choices else ''
-            }
-        }
+        self.context_update = {reply: response.choices[0].text if response.choices else ''}
 
 
 class DialogFlow(Action):
