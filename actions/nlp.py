@@ -10,7 +10,7 @@ import dialogflow_v2beta1 as dialogflow
 
 
 class OpenAI(Action):
-    def process(self, engine='davinci-instruct-beta-v3', content=None, temperature=1, tokens=32):
+    def process(self, engine='davinci-instruct-beta-v3', content=None, reply='reply', temperature=1, tokens=32):
         openai.api_key = config.OPENAI_KEY
         logging.info('%d %d %s' % (tokens, temperature, content))
         response = openai.Completion.create(
@@ -24,7 +24,7 @@ class OpenAI(Action):
         )
         self.context_update = {
             'nlp': {
-                'reply': response.choices[0].text if response.choices else ''
+                reply: response.choices[0].text if response.choices else ''
             }
         }
 
