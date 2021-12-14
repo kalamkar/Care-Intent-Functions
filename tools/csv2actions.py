@@ -65,7 +65,7 @@ def create_action(params):
         elif name == 'tokens':
             action['params']['tokens'] = int(value)
         elif name == 'temperature':
-            action['params']['temperature'] = int(value)
+            action['params']['temperature'] = float(value)
         else:
             action['params'][name] = value
     return action
