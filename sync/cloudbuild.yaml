@@ -1,0 +1,8 @@
+steps:
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  args: [
+      'gcloud', 'beta', 'functions', 'deploy', 'sync', '--source', 'sync', '--entry-point', 'main',
+      '--runtime', 'python39', '--env-vars-file', 'env.yaml',
+      '--security-level', 'secure-always', '--allow-unauthenticated',
+  ]
+  timeout: '600s'
