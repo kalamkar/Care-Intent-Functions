@@ -62,10 +62,10 @@ def main(request):
     # ('CallStatus', 'ringing' or 'in-progress'), ('Direction', 'inbound'), ('DialCallStatus', 'completed')
     response = VoiceResponse()
     gather = Gather(input='speech', timeout=3)
-    if request.form.get('CallStatus') == 'in-progress':
+    if request.form.get('CallStatus') == 'ringing':
         gather.say(question)
         response.append(gather)
-    elif request.form.get('CallStatus') == 'something':
+    elif request.form.get('CallStatus') == 'in-progress':
         openai.api_key = config.OPENAI_KEY
         logging.info('%d %f %s' % (tokens, temperature, content))
         response = openai.Completion.create(
@@ -82,4 +82,5 @@ def main(request):
         gather.say(reply)
         response.append(gather)
 
+    logging.info(str(response))
     return str(response)
