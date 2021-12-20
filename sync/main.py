@@ -1,16 +1,13 @@
-import common
-import config
-import datetime
-import json
 import logging
-import openai
-
-from google.cloud import firestore
-from google.cloud import pubsub_v1
-
-from twilio.twiml.voice_response import Gather, VoiceResponse, Say
 
 import google.cloud.logging as logger
+import openai
+from google.cloud import firestore
+from twilio.twiml.voice_response import Gather, VoiceResponse
+
+import common
+import config
+
 logger.handlers.setup_logging(logger.Client().get_default_handler())
 
 engine = 'davinci-instruct-beta-v3'
@@ -30,7 +27,6 @@ question = 'We want to help you manage your diabetes. ' \
 
 
 def main(request):
-    tokens = request.path.split('/')
     logging.info(request.form)
 
     sender, receiver = request.form.get('From'), request.form.get('To')
@@ -67,7 +63,7 @@ def main(request):
         response.append(gather)
     elif request.form.get('CallStatus') == 'in-progress':
         openai.api_key = config.OPENAI_KEY
-        logging.info('%s %f %s' % (tokens, temperature, content))
+        logging.info('%d %f %s' % (tokens, temperature, content))
         response = openai.Completion.create(
             engine=engine,
             prompt=content,
