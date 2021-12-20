@@ -6,3 +6,4 @@ google-cloud-logging
 google-cloud-pubsub
 openai
 pytz
+twilio
