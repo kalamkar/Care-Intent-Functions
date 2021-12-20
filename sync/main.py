@@ -65,7 +65,7 @@ def main(request):
         openai.api_key = config.OPENAI_KEY
         content = '%s\nNurse: %s\nPatient: %s' % (context, question, request.form.get('SpeechResult'))
         logging.info('%d %f %s' % (tokens, temperature, content))
-        response = openai.Completion.create(
+        airesponse = openai.Completion.create(
             engine=engine,
             prompt=content,
             temperature=temperature,
@@ -75,7 +75,7 @@ def main(request):
             presence_penalty=0,
             stop=stop.split(',')
         )
-        reply = response.choices[0].text if response.choices else ''
+        reply = airesponse.choices[0].text if airesponse.choices else ''
         gather.say(reply)
         response.append(gather)
 
