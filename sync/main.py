@@ -57,7 +57,7 @@ def main(request):
 
     # ('CallStatus', 'ringing' or 'in-progress'), ('Direction', 'inbound'), ('DialCallStatus', 'completed')
     response = VoiceResponse()
-    gather = Gather(input='speech', timeout=3)
+    gather = Gather(input='speech', timeout=8)
     if request.form.get('CallStatus') == 'ringing':
         gather.say(question)
         response.append(gather)
