@@ -67,7 +67,7 @@ def main(request):
         response.append(gather)
     elif request.form.get('CallStatus') == 'in-progress':
         openai.api_key = config.OPENAI_KEY
-        logging.info('%d %f %s' % (tokens, temperature, content))
+        logging.info('%s %f %s' % (tokens, temperature, content))
         response = openai.Completion.create(
             engine=engine,
             prompt=content,
