@@ -13,7 +13,7 @@ logger.handlers.setup_logging(logger.Client().get_default_handler())
 engine = 'davinci-instruct-beta-v3'
 temperature = 1
 tokens = 32
-stop = ''
+stop = 'Patient'
 context = '''
 Next meeting is Saturday, December, 18 at 3pm at the church 
 (the following meeting will be on Saturday, January, 1 at 3pm). In this second session of the program, 
@@ -63,7 +63,7 @@ def main(request):
         response.append(gather)
     elif request.form.get('CallStatus') == 'in-progress':
         openai.api_key = config.OPENAI_KEY
-        content = '%s\nNurse: %s\nPatient: %s' % (context, question, request.form.get('SpeechResult'))
+        content = '%s\nNurse: %s\nPatient: %s\n\nNurse:' % (context, question, request.form.get('SpeechResult'))
         logging.info('%d %f %s' % (tokens, temperature, content))
         airesponse = openai.Completion.create(
             engine=engine,
@@ -76,8 +76,8 @@ def main(request):
             stop=stop.split(',')
         )
         reply = airesponse.choices[0].text if airesponse.choices else ''
+        logging.info(str(reply))
         gather.say(reply)
         response.append(gather)
 
-    logging.info(str(response))
     return str(response)
