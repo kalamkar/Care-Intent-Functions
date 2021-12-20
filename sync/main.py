@@ -14,7 +14,7 @@ engine = 'davinci-instruct-beta-v3'
 temperature = 1
 tokens = 32
 stop = ''
-content = '''
+context = '''
 Next meeting is Saturday, December, 18 at 3pm at the church 
 (the following meeting will be on Saturday, January, 1 at 3pm). In this second session of the program, 
 we will learn about self-monitoring our weight, calculating the amount of fat and calories we eat, 
@@ -63,6 +63,7 @@ def main(request):
         response.append(gather)
     elif request.form.get('CallStatus') == 'in-progress':
         openai.api_key = config.OPENAI_KEY
+        content = '%s\nNurse: %s\nPatient: %s' % (context, question, request.form.get('SpeechResult'))
         logging.info('%d %f %s' % (tokens, temperature, content))
         response = openai.Completion.create(
             engine=engine,
