@@ -68,9 +68,10 @@ def main(request):
         for msg in person['session']['history']:
             content += '\n'
             if 'out' in msg:
-                content += '\nNurse: %s' % msg['out']
+                content += '\n%s: %s' % ('Nurse', msg['out'])
             if 'in' in msg:
                 content += '\nPatient: %s' % msg['in']
+        content += '\n\nNurse: '
         logging.info('%d %f %s' % (tokens, temperature, content))
         airesponse = openai.Completion.create(
             engine=engine,
