@@ -61,9 +61,16 @@ def main(request):
     if request.form.get('CallStatus') == 'ringing':
         gather.say(question)
         response.append(gather)
+        person_docs[0].reference.update({'session.history': firestore.ArrayUnion([{'out': question}])})
     elif request.form.get('CallStatus') == 'in-progress':
         openai.api_key = config.OPENAI_KEY
-        content = '%s\nNurse: %s\nPatient: %s\n\nNurse:' % (context, question, request.form.get('SpeechResult'))
+        content = context
+        for msg in person['session']['history']:
+            content += '\n'
+            if 'out' in msg:
+                content += '\nNurse: %s' % msg['out']
+            if 'in' in msg:
+                content += '\nPatient: %s' % msg['in']
         logging.info('%d %f %s' % (tokens, temperature, content))
         airesponse = openai.Completion.create(
             engine=engine,
@@ -79,5 +86,7 @@ def main(request):
         logging.info(str(reply))
         gather.say(reply)
         response.append(gather)
+        person_docs[0].reference.update({'session.history': firestore.ArrayUnion(
+            [{'in': request.form.get('SpeechResult'), 'out': reply}])})
 
     return str(response)
