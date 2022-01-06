@@ -3,7 +3,7 @@ import logging
 import google.cloud.logging as logger
 import openai
 from google.cloud import firestore
-from twilio.twiml.voice_response import Gather, VoiceResponse
+from twilio.twiml.voice_response import Gather, VoiceResponse, Start
 
 import common
 import config
@@ -57,37 +57,41 @@ def main(request):
 
     # ('CallStatus', 'ringing' or 'in-progress'), ('Direction', 'inbound'), ('DialCallStatus', 'completed')
     response = VoiceResponse()
-    gather = Gather(input='speech', timeout=3)
-    if request.form.get('CallStatus') == 'ringing':
-        gather.say(question)
-        response.append(gather)
-        person_docs[0].reference.update({'session.history': firestore.ArrayUnion([{'out': question}])})
-    elif request.form.get('CallStatus') == 'in-progress':
-        openai.api_key = config.OPENAI_KEY
-        content = context
-        for msg in person['session']['history']:
-            content += '\n'
-            if 'out' in msg:
-                content += '\n%s: %s' % ('Nurse', msg['out'])
-            if 'in' in msg:
-                content += '\nPatient: %s' % msg['in']
-        content += '\n\nNurse: '
-        logging.info('%d %f %s' % (tokens, temperature, content))
-        airesponse = openai.Completion.create(
-            engine=engine,
-            prompt=content,
-            temperature=temperature,
-            max_tokens=tokens,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            stop=stop.split(',')
-        )
-        reply = airesponse.choices[0].text if airesponse.choices else ''
-        logging.info(str(reply))
-        gather.say(reply)
-        response.append(gather)
-        person_docs[0].reference.update({'session.history': firestore.ArrayUnion(
-            [{'in': request.form.get('SpeechResult'), 'out': reply}])})
+    start = Start()
+    start.stream(name='Audio Stream', url='wss://websockets-dot-careintent.uc.r.appspot.com/twilio')
+    response.append(start)
+
+    # gather = Gather(input='speech', timeout=3)
+    # if request.form.get('CallStatus') == 'ringing':
+    #     gather.say(question)
+    #     response.append(gather)
+    #     person_docs[0].reference.update({'session.history': firestore.ArrayUnion([{'out': question}])})
+    # elif request.form.get('CallStatus') == 'in-progress':
+    #     openai.api_key = config.OPENAI_KEY
+    #     content = context
+    #     for msg in person['session']['history']:
+    #         content += '\n'
+    #         if 'out' in msg:
+    #             content += '\n%s: %s' % ('Nurse', msg['out'])
+    #         if 'in' in msg:
+    #             content += '\nPatient: %s' % msg['in']
+    #     content += '\n\nNurse: '
+    #     logging.info('%d %f %s' % (tokens, temperature, content))
+    #     airesponse = openai.Completion.create(
+    #         engine=engine,
+    #         prompt=content,
+    #         temperature=temperature,
+    #         max_tokens=tokens,
+    #         top_p=1,
+    #         frequency_penalty=0,
+    #         presence_penalty=0,
+    #         stop=stop.split(',')
+    #     )
+    #     reply = airesponse.choices[0].text if airesponse.choices else ''
+    #     logging.info(str(reply))
+    #     gather.say(reply)
+    #     response.append(gather)
+    #     person_docs[0].reference.update({'session.history': firestore.ArrayUnion(
+    #         [{'in': request.form.get('SpeechResult'), 'out': reply}])})
 
     return str(response)
