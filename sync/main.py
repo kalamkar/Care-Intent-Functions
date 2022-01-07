@@ -3,7 +3,7 @@ import logging
 import google.cloud.logging as logger
 import openai
 from google.cloud import firestore
-from twilio.twiml.voice_response import Gather, VoiceResponse, Connect
+from twilio.twiml.voice_response import Gather, VoiceResponse, Connect, Parameter
 
 import common
 import config
@@ -58,7 +58,8 @@ def main(request):
     # ('CallStatus', 'ringing' or 'in-progress'), ('Direction', 'inbound'), ('DialCallStatus', 'completed')
     response = VoiceResponse()
     connect = Connect()
-    connect.stream(url='wss://websockets-dot-careintent.uc.r.appspot.com/twilio')
+    stream = connect.stream(url='wss://websockets-dot-careintent.uc.r.appspot.com/twilio')
+    stream.append(Parameter(name='person_id', value=person['id']['value']))
     response.append(connect)
 
     # gather = Gather(input='speech', timeout=3)
