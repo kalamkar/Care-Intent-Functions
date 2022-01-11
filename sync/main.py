@@ -77,6 +77,8 @@ def main(request):
         offset += int(call.duration) * 8000
         db.collection('persons').document(person['id']['value']).update({'audio.offset': offset})
         logging.info('Updated offset to %d for %s' % (offset, person['id']['value']))
+    elif request.form.get('StreamEvent') == 'stream-started':
+        pass
     else:
         response.append(Hangup())
 
