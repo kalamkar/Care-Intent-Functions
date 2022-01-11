@@ -34,6 +34,11 @@ def main(request):
     logging.info(request.form)
 
     sender, receiver = request.form.get('From'), request.form.get('To')
+    call = None
+    if not sender and request.form.get('CallSid'):
+        client = twilio.rest.Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        call = client.calls.get(request.form.get('CallSid')).fetch()
+        sender = call.from_
 
     if receiver in config.PROXY_PHONE_NUMBERS:
         # This is spam, we are not serving any sync calls on proxy number
@@ -71,8 +76,6 @@ def main(request):
         logging.info('Starting from offset %d for %s' % (offset, person['id']['value']))
         response.append(connect)
     elif request.form.get('StreamEvent') == 'stream-stopped':
-        client = twilio.rest.Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        call = client.calls.get(request.form.get('CallSid')).fetch()
         offset = person['audio']['offset'] if 'audio' in person and 'offset' in person['audio'] else 0
         offset += int(call.duration) * 8000
         db.collection('persons').document(person['id']['value']).update({'audio.offset': offset})
