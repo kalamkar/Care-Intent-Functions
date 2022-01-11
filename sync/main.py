@@ -1,4 +1,5 @@
 import logging
+import twilio.rest
 
 import google.cloud.logging as logger
 import openai
@@ -7,6 +8,9 @@ from twilio.twiml.voice_response import Gather, VoiceResponse, Connect, Paramete
 
 import common
 import config
+
+TWILIO_ACCOUNT_SID = 'ACd3f03d1554da132e550d541480419d42'
+TWILIO_AUTH_TOKEN = 'c05ceb45e0fc570aa45643e3ddbb0308'
 
 logger.handlers.setup_logging(logger.Client().get_default_handler())
 
@@ -61,8 +65,14 @@ def main(request):
         connect = Connect()
         stream = connect.stream(url='wss://websockets-dot-careintent.uc.r.appspot.com/twilio',
                                 status_callback='https://us-central1-careintent.cloudfunctions.net/sync')
-        stream.append(Parameter(name='person_id', value=person['id']['value']))
+        stream.append(Parameter(name='object', value='audio/open-source-insulin-part-2-full-show.wav'))
+        offset = person['audio']['offset'] if 'audio' in person and 'offset' in person['audio'] else 0
+        stream.append(Parameter(name='offset', value=offset))
         response.append(connect)
+    elif request.form.get('StreamEvent') == 'stream-stopped':
+        client = twilio.rest.Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        call = client.calls.get(request.form.get('CallSid')).fetch()
+        db.collection('persons').document(person['id']['value']).update({'audio.offset': int(call.duration * 8000)})
     else:
         response.append(Hangup())
 
