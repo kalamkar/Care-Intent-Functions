@@ -72,7 +72,10 @@ def main(request):
     elif request.form.get('StreamEvent') == 'stream-stopped':
         client = twilio.rest.Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         call = client.calls.get(request.form.get('CallSid')).fetch()
-        db.collection('persons').document(person['id']['value']).update({'audio.offset': int(call.duration) * 8000})
+        offset = person['audio']['offset'] if 'audio' in person and 'offset' in person['audio'] else 0
+        offset += int(call.duration) * 8000
+        db.collection('persons').document(person['id']['value']).update({'audio.offset': offset})
+        logging.info('Updated offset to %d' % offset)
     else:
         response.append(Hangup())
 
