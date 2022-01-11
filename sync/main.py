@@ -60,7 +60,7 @@ def main(request):
     if request.form.get('CallStatus') == 'ringing':
         connect = Connect()
         stream = connect.stream(url='wss://websockets-dot-careintent.uc.r.appspot.com/twilio',
-                                status_callback=request.full_path)
+                                status_callback=request.url)
         stream.append(Parameter(name='person_id', value=person['id']['value']))
         response.append(connect)
     else:
