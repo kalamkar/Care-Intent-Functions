@@ -68,6 +68,7 @@ def main(request):
         stream.append(Parameter(name='object', value='audio/open-source-insulin-part-2-full-show.wav'))
         offset = person['audio']['offset'] if 'audio' in person and 'offset' in person['audio'] else 0
         stream.append(Parameter(name='offset', value=offset))
+        logging.info('Starting from offset %d for %s' % (offset, person['id']['value']))
         response.append(connect)
     elif request.form.get('StreamEvent') == 'stream-stopped':
         client = twilio.rest.Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -75,7 +76,7 @@ def main(request):
         offset = person['audio']['offset'] if 'audio' in person and 'offset' in person['audio'] else 0
         offset += int(call.duration) * 8000
         db.collection('persons').document(person['id']['value']).update({'audio.offset': offset})
-        logging.info('Updated offset to %d' % offset)
+        logging.info('Updated offset to %d for %s' % (offset, person['id']['value']))
     else:
         response.append(Hangup())
 
