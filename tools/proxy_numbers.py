@@ -18,6 +18,17 @@ def update_webhooks(number_pattern):
             number.update(sms_url=SMS, voice_url=VOICE)
 
 
+def in_use_phones():
+    phones = set()
+    from google.cloud import firestore
+    db = firestore.Client()
+    for member_doc in db.collection_group('members').stream():
+        member = member_doc.to_dict()
+        if 'proxy' in member:
+            phones.add(member['proxy']['value'])
+    return phones
+
+
 def main():
     numbers = client.available_phone_numbers('US').local.list('316', '613002*')
     for number in numbers:
