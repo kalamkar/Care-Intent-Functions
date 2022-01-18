@@ -1,0 +1,7 @@
+# Function dependencies, for example:
+# package>=version
+dialogflow~=1.1.1
+google-cloud-firestore
+google-cloud-logging
+google-cloud-pubsub
+pytz
