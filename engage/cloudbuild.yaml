@@ -2,6 +2,6 @@ steps:
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   args: [
       'gcloud', 'functions', 'deploy', 'engage', '--source', 'engage', '--entry-point', 'main',
-      '--runtime', 'python39', '--env-vars-file', 'env.yaml'
+      '--runtime', 'python39', '--env-vars-file', 'env.yaml', '--trigger-http'
   ]
   timeout: '600s'
