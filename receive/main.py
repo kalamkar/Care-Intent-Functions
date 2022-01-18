@@ -4,11 +4,17 @@ import datetime
 import json
 import logging
 import pytz
+import twilio.rest
 
 import dialogflow_v2beta1 as dialogflow
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict
+from twilio.twiml.voice_response import VoiceResponse, Connect, Parameter, Hangup
+
+
+TWILIO_ACCOUNT_SID = 'ACd3f03d1554da132e550d541480419d42'
+TWILIO_AUTH_TOKEN = 'c05ceb45e0fc570aa45643e3ddbb0308'
 
 import google.cloud.logging as logger
 logger.handlers.setup_logging(logger.Client().get_default_handler())
@@ -19,6 +25,11 @@ def main(request):
     logging.info(request.form)
 
     sender, receiver = request.form.get('From'), request.form.get('To')
+    call = None
+    if not sender and request.form.get('CallSid'):
+        client = twilio.rest.Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        call = client.calls.get(request.form.get('CallSid')).fetch()
+        sender = call.from_
 
     db = firestore.Client()
     contact = {'type': 'phone', 'value': sender}
@@ -70,7 +81,7 @@ def main(request):
                                  common.get_parents(person['id'], 'member', db)))
         if not coach_docs:
             logging.warning('Coach not assigned to {}'.format(sender))
-            return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
+            return play_audio_recording(person)
         receiver_phone_id = common.filter_identifier(coach_docs[0], 'phone')
         caller_phone_id = common.get_proxy_id({'type': 'person', 'value': coach_docs[0].id}, person['id'], db)
         if tokens[-1] == 'status' and caller_phone_id and receiver_phone_id \
@@ -83,7 +94,30 @@ def main(request):
                 .format(receiver=receiver_phone_id['value'], caller=caller_phone_id['value'],
                         status_url='https://%s-%s.cloudfunctions.net/receive/voice/status'
                                    % (config.LOCATION_ID, config.PROJECT_ID))
+    elif len(tokens) >= 2 and tokens[1] == 'status':
+        if request.form.get('StreamEvent') == 'stream-stopped':
+            offset = person['audio']['offset'] if 'audio' in person and 'offset' in person['audio'] else 0
+            offset += int(call.duration) * 8000
+            db.collection('persons').document(person['id']['value']).update({'audio.offset': offset})
+            logging.info('Updated offset to %d for %s' % (offset, person['id']['value']))
+            return '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
+        elif request.form.get('StreamEvent') == 'stream-started':
+            return '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
+
     return '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
+
+
+def play_audio_recording(person):
+    response = VoiceResponse()
+    connect = Connect()
+    stream = connect.stream(url='wss://websockets-dot-careintent.uc.r.appspot.com/twilio',
+                            status_callback='https://us-central1-careintent.cloudfunctions.net/receive/status')
+    stream.append(Parameter(name='object', value='audio/open-source-insulin-part-2-full-show.wav'))
+    offset = person['audio']['offset'] if 'audio' in person and 'offset' in person['audio'] else 0
+    stream.append(Parameter(name='offset', value=offset))
+    logging.info('Starting from offset %d for %s' % (offset, person['id']['value']))
+    response.append(connect)
+    return str(response)
 
 
 def process_text(sender_id, receiver_id, content, tags, person, db):
