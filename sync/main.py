@@ -1,10 +1,9 @@
 import logging
-import twilio.rest
 
 import google.cloud.logging as logger
 import openai
 from google.cloud import firestore
-from twilio.twiml.voice_response import Gather, VoiceResponse, Connect, Parameter, Hangup
+from twilio.twiml.voice_response import Gather, VoiceResponse
 
 import common
 import config
@@ -34,11 +33,6 @@ def main(request):
     logging.info(request.form)
 
     sender, receiver = request.form.get('From'), request.form.get('To')
-    call = None
-    if not sender and request.form.get('CallSid'):
-        client = twilio.rest.Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        call = client.calls.get(request.form.get('CallSid')).fetch()
-        sender = call.from_
 
     if receiver in config.PROXY_PHONE_NUMBERS:
         # This is spam, we are not serving any sync calls on proxy number
@@ -66,56 +60,37 @@ def main(request):
 
     # ('CallStatus', 'ringing' or 'in-progress'), ('Direction', 'inbound'), ('DialCallStatus', 'completed')
     response = VoiceResponse()
+    gather = Gather(input='speech', timeout=3)
     if request.form.get('CallStatus') == 'ringing':
-        connect = Connect()
-        stream = connect.stream(url='wss://websockets-dot-careintent.uc.r.appspot.com/twilio',
-                                status_callback='https://us-central1-careintent.cloudfunctions.net/sync')
-        stream.append(Parameter(name='object', value='audio/open-source-insulin-part-2-full-show.wav'))
-        offset = person['audio']['offset'] if 'audio' in person and 'offset' in person['audio'] else 0
-        stream.append(Parameter(name='offset', value=offset))
-        logging.info('Starting from offset %d for %s' % (offset, person['id']['value']))
-        response.append(connect)
-    elif request.form.get('StreamEvent') == 'stream-stopped':
-        offset = person['audio']['offset'] if 'audio' in person and 'offset' in person['audio'] else 0
-        offset += int(call.duration) * 8000
-        db.collection('persons').document(person['id']['value']).update({'audio.offset': offset})
-        logging.info('Updated offset to %d for %s' % (offset, person['id']['value']))
-    elif request.form.get('StreamEvent') == 'stream-started':
-        pass
-    else:
-        response.append(Hangup())
-
-    # gather = Gather(input='speech', timeout=3)
-    # if request.form.get('CallStatus') == 'ringing':
-    #     gather.say(question)
-    #     response.append(gather)
-    #     person_docs[0].reference.update({'session.history': firestore.ArrayUnion([{'out': question}])})
-    # elif request.form.get('CallStatus') == 'in-progress':
-    #     openai.api_key = config.OPENAI_KEY
-    #     content = context
-    #     for msg in person['session']['history']:
-    #         content += '\n'
-    #         if 'out' in msg:
-    #             content += '\n%s: %s' % ('Nurse', msg['out'])
-    #         if 'in' in msg:
-    #             content += '\nPatient: %s' % msg['in']
-    #     content += '\n\nNurse: '
-    #     logging.info('%d %f %s' % (tokens, temperature, content))
-    #     airesponse = openai.Completion.create(
-    #         engine=engine,
-    #         prompt=content,
-    #         temperature=temperature,
-    #         max_tokens=tokens,
-    #         top_p=1,
-    #         frequency_penalty=0,
-    #         presence_penalty=0,
-    #         stop=stop.split(',')
-    #     )
-    #     reply = airesponse.choices[0].text if airesponse.choices else ''
-    #     logging.info(str(reply))
-    #     gather.say(reply)
-    #     response.append(gather)
-    #     person_docs[0].reference.update({'session.history': firestore.ArrayUnion(
-    #         [{'in': request.form.get('SpeechResult'), 'out': reply}])})
+        gather.say(question)
+        response.append(gather)
+        person_docs[0].reference.update({'session.history': firestore.ArrayUnion([{'out': question}])})
+    elif request.form.get('CallStatus') == 'in-progress':
+        openai.api_key = config.OPENAI_KEY
+        content = context
+        for msg in person['session']['history']:
+            content += '\n'
+            if 'out' in msg:
+                content += '\n%s: %s' % ('Nurse', msg['out'])
+            if 'in' in msg:
+                content += '\nPatient: %s' % msg['in']
+        content += '\n\nNurse: '
+        logging.info('%d %f %s' % (tokens, temperature, content))
+        airesponse = openai.Completion.create(
+            engine=engine,
+            prompt=content,
+            temperature=temperature,
+            max_tokens=tokens,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+            stop=stop.split(',')
+        )
+        reply = airesponse.choices[0].text if airesponse.choices else ''
+        logging.info(str(reply))
+        gather.say(reply)
+        response.append(gather)
+        person_docs[0].reference.update({'session.history': firestore.ArrayUnion(
+            [{'in': request.form.get('SpeechResult'), 'out': reply}])})
 
     return str(response)
