@@ -74,6 +74,8 @@ def main(request):
                 content += '\n%s: %s' % ('Nurse', msg['out'])
             if 'in' in msg:
                 content += '\nPatient: %s' % msg['in']
+        if request.form.get('SpeechResult'):
+            content += '\nPatient: %s' % request.form.get('SpeechResult')
         content += '\n\nNurse: '
         logging.info('%d %f %s' % (tokens, temperature, content))
         airesponse = openai.Completion.create(
