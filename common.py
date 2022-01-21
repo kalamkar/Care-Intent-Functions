@@ -115,3 +115,19 @@ def add_child(child_id, parent_id, relation_type, db):
     db.collection(COLLECTIONS[parent_id['type']]).document(parent_id['value']) \
         .collection(COLLECTIONS[relation_type]).document(child_id['type'] + ':' + child_id['value']).set(data)
     return data
+
+
+def get_resource(resource, db):
+    if not resource or type(resource) != dict or 'value' not in resource or 'type' not in resource:
+        return None
+    elif resource['type'] == 'phone':
+        person_id = resource
+        persons = list(db.collection('persons').where('identifiers', 'array_contains', person_id).get())
+        if len(persons) > 0:
+            return persons[0].to_dict() | {'id': {'type': 'person', 'value': persons[0].id}}
+        else:
+            groups = list(db.collection('groups').where('identifiers', 'array_contains', resource).get())
+            return (groups[0].to_dict() | {'id': {'type': 'group', 'value': groups[0].id}}) if groups else None
+    elif resource['type'] in ['person', 'group']:
+        doc = db.collection(COLLECTIONS[resource['type']]).document(resource['value']).get()
+        return doc.to_dict() | {'id': resource}

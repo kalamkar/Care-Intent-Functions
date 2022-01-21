@@ -61,13 +61,13 @@ def main(event, metadata):
     context.set(channel_name, message)
     if channel_name == 'message':
         if 'sender' in message:
-            context.set('sender', get_resource(message['sender'], db))
+            context.set('sender', common.get_resource(message['sender'], db))
         if 'receiver' in message:
-            context.set('receiver', get_resource(message['receiver'], db))
+            context.set('receiver', common.get_resource(message['receiver'], db))
     elif channel_name == 'data':
         for data in message['data']:
             context.set('data', {data['name']: data['number'] if 'number' in data else data['value']})
-        context.set('sender', get_resource(message['source'], db))
+        context.set('sender', common.get_resource(message['source'], db))
 
     add_shorthands(context)
     parents = common.get_parents(context.get('sender.id'), 'member', db)
@@ -219,22 +219,6 @@ def get_actions(groups, db, exclude_actions):
                     ids.add(action_id)
     actions = sorted(actions, key=lambda action: action['priority'], reverse=True)
     return actions
-
-
-def get_resource(resource, db):
-    if not resource or type(resource) != dict or 'value' not in resource or 'type' not in resource:
-        return None
-    elif resource['type'] == 'phone':
-        person_id = resource
-        persons = list(db.collection('persons').where('identifiers', 'array_contains', person_id).get())
-        if len(persons) > 0:
-            return persons[0].to_dict() | {'id': {'type': 'person', 'value': persons[0].id}}
-        else:
-            groups = list(db.collection('groups').where('identifiers', 'array_contains', resource).get())
-            return (groups[0].to_dict() | {'id': {'type': 'group', 'value': groups[0].id}}) if groups else None
-    elif resource['type'] in ['person', 'group']:
-        doc = db.collection(common.COLLECTIONS[resource['type']]).document(resource['value']).get()
-        return doc.to_dict() | {'id': resource}
 
 
 def add_shorthands(context):
