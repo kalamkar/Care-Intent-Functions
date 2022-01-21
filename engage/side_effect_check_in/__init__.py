@@ -1,6 +1,6 @@
+from conversation import Conversation as BaseConversation
 
-ID = 'side_effect_check_in'
 
-
-def handle(context):
-    pass
+class Conversation(BaseConversation):
+    def process(self):
+        pass

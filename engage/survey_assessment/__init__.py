@@ -1,6 +1,6 @@
+from conversation import Conversation as BaseConversation
 
-ID = 'survey_assessment'
 
-
-def handle(context):
-    pass
+class Conversation(BaseConversation):
+    def process(self):
+        pass

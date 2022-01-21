@@ -1,6 +1,6 @@
+from conversation import Conversation as BaseConversation
 
-ID = 'generic_form_filling'
 
-
-def handle(context):
-    pass
+class Conversation(BaseConversation):
+    def process(self):
+        pass
