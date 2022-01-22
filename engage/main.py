@@ -79,7 +79,7 @@ def main(event, metadata):
                 replies.append(conversation.reply)
 
     if replies:
-        send_message(context.get('person'), ' '.join(replies))
+        send_message(message['receiver'], message['sender'], ' '.join(replies))
     else:
         logging.warning('No reply generated')
 
@@ -91,12 +91,12 @@ def get_conversation_module(conversation_type):
     return None
 
 
-def send_message(receiver, content, tags=()):
+def send_message(sender, receiver, content, tags=()):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
-        'sender': None,
+        'sender': sender,
         'receiver': receiver,
         'status': 'sent',
         'tags': tags,
