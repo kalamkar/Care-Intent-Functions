@@ -34,7 +34,6 @@ CONVERSATIONS = [reminder, device_data_logging, activity_logging, outcome_report
 def main(event, metadata):
     channel_name = metadata.resource['name'].split('/')[-1]
     message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
-    logging.info(message)
 
     db = firestore.Client()
     context = Context()
@@ -52,32 +51,32 @@ def main(event, metadata):
         logging.info('Engage conversations not enabled for this sender.')
         return
 
-    replies = []
-    for _ in range(3):
-        sender = context.get('sender')
-        conversations = [(get_conversation_module(conv['id']['type']), conv) for conv in sender['conversations']]
-        if 'current_conversation_id' in sender:
-            conversations = filter(lambda conv: conv[1]['id'] == sender['current_conversation_id'], conversations)
+    logging.info(message)
 
-        for conversation_module, conversation_config in conversations:
-            if not conversation_module:
-                continue
+    replies = []
+    person = context.get('person')
+    conversations = [(get_conversation_module(conv['id']['type']), conv) for conv in person['conversations']]
+    conversation = smalltalk.Conversation({}, context)
+    for conversation_module, conversation_config in conversations:
+        if not conversation_module:
+            continue
+        conversation = conversation_module.Conversation(conversation_config, context)
+        if conversation.can_start():
+            break
+
+    logging.info('Processing %s conversation' % conversation.config['id'])
+    conversation.process()
+    replies.append(conversation.reply)
+
+    transfers = list(filter(lambda conv: conv['id']['type'] == conversation.transfer_type, person['conversations']))
+    if transfers:
+        convs = list(filter(lambda conv: conv[1]['id'] == transfers[0]['id'], conversations))
+        if convs:
+            conversation_module, conversation_config = convs[0]
             conversation = conversation_module.Conversation(conversation_config, context)
             conversation.process()
-
             if conversation.reply:
                 replies.append(conversation.reply)
-                if 'current_conversation_id' not in sender:
-                    context.set('sender', {'current_conversation_id': conversation_config['id']})
-
-            if not conversation.transfer_type:
-                continue
-            transfers = list(filter(lambda conv: conv['id']['type'] == conversation.transfer_type,
-                                    sender['conversations']))
-            if not transfers:
-                continue
-            context.set('sender', {'current_conversation_id': transfers[0]['id']})
-            break
 
     if replies:
         send_message(context.get('receiver'), context.get('sender'), ' '.join(replies))

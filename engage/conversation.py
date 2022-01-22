@@ -9,5 +9,9 @@ class Conversation(abc.ABC):
         self.context = context
 
     @abc.abstractmethod
+    def can_start(self):
+        return False
+
+    @abc.abstractmethod
     def process(self):
         pass
