@@ -46,6 +46,8 @@ def main(event, metadata):
         for data in message['data']:
             context.set('data', {data['name']: data['number'] if 'number' in data else data['value']})
         context.set('person', common.get_resource(message['source'], db))
+    else:
+        return
 
     if 'conversations' not in context.get('person'):
         logging.info('Engage conversations not enabled for this person.')
