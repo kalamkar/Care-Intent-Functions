@@ -9,7 +9,7 @@ class Conversation(abc.ABC):
         self.context = context
 
     @abc.abstractmethod
-    def can_start(self):
+    def can_process(self):
         return False
 
     @abc.abstractmethod

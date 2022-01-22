@@ -63,7 +63,7 @@ def main(event, metadata):
         if not conversation_module:
             continue
         conversation = conversation_module.Conversation(conversation_config, context)
-        if conversation.can_start():
+        if conversation.can_process():
             break
 
     logging.info('Processing %s conversation' % conversation.config['id'])

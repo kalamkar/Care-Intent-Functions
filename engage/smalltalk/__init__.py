@@ -5,7 +5,7 @@ from conversation import Conversation as BaseConversation
 
 
 class Conversation(BaseConversation):
-    def can_start(self):
+    def can_process(self):
         return True
 
     def process(self):
