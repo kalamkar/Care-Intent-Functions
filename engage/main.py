@@ -47,8 +47,8 @@ def main(event, metadata):
             context.set('data', {data['name']: data['number'] if 'number' in data else data['value']})
         context.set('person', common.get_resource(message['source'], db))
 
-    if 'conversations' not in context.get('sender'):
-        logging.info('Engage conversations not enabled for this sender.')
+    if 'conversations' not in context.get('person'):
+        logging.info('Engage conversations not enabled for this person.')
         return
 
     logging.info(message)
@@ -79,7 +79,7 @@ def main(event, metadata):
                 replies.append(conversation.reply)
 
     if replies:
-        send_message(context.get('receiver'), context.get('sender'), ' '.join(replies))
+        send_message(context.get('person'), ' '.join(replies))
     else:
         logging.warning('No reply generated')
 
@@ -91,12 +91,12 @@ def get_conversation_module(conversation_type):
     return None
 
 
-def send_message(sender, receiver, content, tags=()):
+def send_message(receiver, content, tags=()):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
-        'sender': sender,
+        'sender': None,
         'receiver': receiver,
         'status': 'sent',
         'tags': tags,
