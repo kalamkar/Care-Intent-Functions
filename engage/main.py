@@ -58,17 +58,25 @@ def main(event, metadata):
     replies = []
     person = context.get('person')
     conversations = [(get_conversation_module(conv['id']['type']), conv) for conv in person['conversations']]
-    conversation = smalltalk.Conversation({}, context)
-    for conversation_module, conversation_config in conversations:
-        if not conversation_module:
-            continue
-        conversation = conversation_module.Conversation(conversation_config, context)
-        if conversation.can_process():
-            break
+    conversation = None
+    selected_index = -1
+    if 'current_conversation_id' in person:
+        for selected_index, conversation_module, conversation_config in enumerate(conversations):
+            if person['current_conversation_id'] == conversation_config['id']:
+                conversation = conversation_module.Conversation(conversation_config, context)
+                break
+    if not conversation:
+        for selected_index, conversation_module, conversation_config in enumerate(conversations):
+            conversation = conversation_module.Conversation(conversation_config, context)
+            if conversation.can_process():
+                break
 
     logging.info('Processing %s conversation' % conversation.config['id'])
     conversation.process()
     replies.append(conversation.reply)
+    if 0 <= selected_index < len(person['conversations']):
+        person['conversations'][selected_index]['last_run_time'] = datetime.datetime.utcnow()
+        person['conversations'][selected_index]['last_message_type'] = conversation.last_message_type
 
     transfers = list(filter(lambda conv: conv['id']['type'] == conversation.transfer_type, person['conversations']))
     if transfers:
@@ -77,11 +85,15 @@ def main(event, metadata):
             conversation_module, conversation_config = convs[0]
             conversation = conversation_module.Conversation(conversation_config, context)
             conversation.process()
-            if conversation.reply:
-                replies.append(conversation.reply)
+            replies.append(conversation.reply)
+
+    person_update = {'conversations': person['conversations']}
+    if 'id' in conversation.config:
+        person_update['current_conversation_id'] = conversation.config['id']
+    db.collection('persons').document(person['id']['value']).update(person_update)
 
     if replies:
-        send_message(message['receiver'], message['sender'], ' '.join(replies))
+        send_message(message['receiver'], message['sender'], ' '.join(filter(lambda r: r.strip(), replies)))
     else:
         logging.warning('No reply generated')
 
@@ -90,7 +102,7 @@ def get_conversation_module(conversation_type):
     for conv in CONVERSATIONS:
         if conv.__name__ == conversation_type:
             return conv
-    return None
+    return smalltalk
 
 
 def send_message(sender, receiver, content, tags=()):

@@ -1,8 +1,10 @@
 # Function dependencies, for example:
 # package>=version
+croniter
 dialogflow~=1.1.1
 google-cloud-firestore
 google-cloud-logging
 google-cloud-pubsub
 numpy
 pytz
+python-dateutil
