@@ -56,6 +56,10 @@ def main(event, metadata):
     message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
     logging.info('Got message {}'.format(message))
 
+    if channel_name == 'message' and message['status'] == 'engage':
+        logging.info('Skipping engage schedule')
+        return
+
     db = firestore.Client()
     context = Context()
     context.set(channel_name, message)

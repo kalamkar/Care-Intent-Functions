@@ -20,6 +20,14 @@ def main(request):
     logging.info(body)
     # expected {'action_id': action_id, 'policy': policy, 'target_id': target_id}
     # or {'action_id': action_id, 'target_id': target_id}
+    # or {'status': 'engage', 'time': , 'sender': person['id'], 'content_type': 'application/json', 'content': {}}
+
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
+
+    if 'action_id' not in body:
+        publisher.publish(topic_path, json.dumps(body, default=str).encode('utf-8'))
+        return
 
     db = firestore.Client()
     target_id = body['target_id']
@@ -52,9 +60,6 @@ def main(request):
     if not action:
         logging.error('Missing action for %s' % json.dumps(body))
         return
-
-    publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
 
     person_ids = []
     if target_id['type'] == 'group':
