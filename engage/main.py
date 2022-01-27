@@ -1,34 +1,29 @@
 import base64
 import common
 import config
+import croniter
 import datetime
 import json
 import logging
+import pytz
 
-import reminder
-import activity_logging
-import device_data_logging
-import outcome_reporting
-import knowledge_base
-import side_effect_check_in
-import soft_data_check_in
-import content_delivery
-import barrier_identification
-import survey_assessment
-import positive_reinforcement
-import generic_form_filling
-import smalltalk
+import assessment
+import barriers
+import diary
+import education
+import feedback
+import chitchat
 
 from context import Context
 from google.cloud import pubsub_v1
 from google.cloud import firestore
+from google.cloud import tasks_v2
+from google.protobuf import timestamp_pb2
 
 import google.cloud.logging as logger
 logger.handlers.setup_logging(logger.Client().get_default_handler())
 
-CONVERSATIONS = [reminder, device_data_logging, activity_logging, outcome_reporting, knowledge_base,
-                 side_effect_check_in, soft_data_check_in, content_delivery, barrier_identification, survey_assessment,
-                 generic_form_filling, positive_reinforcement, smalltalk]
+CONVERSATIONS = [feedback, diary, education, barriers, assessment, chitchat]
 
 
 def main(event, metadata):
@@ -40,6 +35,7 @@ def main(event, metadata):
     context.set(channel_name, message)
     status = context.get('message.status')
     tags = context.get('message.tags') or []
+    person_update = {}
     if channel_name == 'message' and 'sender' in message and status == 'received' and 'proxy' not in tags:
         context.set('person', common.get_resource(message['sender'], db))
     elif channel_name == 'data':
@@ -49,60 +45,75 @@ def main(event, metadata):
     else:
         return
 
-    if 'conversations' not in context.get('person'):
-        logging.info('Engage conversations not enabled for this person.')
+    if 'conversations' not in context.get('person') or 'tasks' not in context.get('person'):
+        logging.info('Task based conversations not enabled for this person.')
         return
 
     logging.info(message)
 
-    replies = []
     person = context.get('person')
-    conversations = [(get_conversation_module(conv['id']['type']), conv) for conv in person['conversations']]
-    conversation = None
-    selected_index = -1
-    if 'current_conversation_id' in person:
-        for selected_index, conversation_module, conversation_config in enumerate(conversations):
-            if person['current_conversation_id'] == conversation_config['id']:
-                conversation = conversation_module.Conversation(conversation_config, context)
-                break
-    if not conversation:
-        for selected_index, conversation_module, conversation_config in enumerate(conversations):
-            conversation = conversation_module.Conversation(conversation_config, context)
-            if conversation.can_process():
-                break
+    if message['status'] == 'engage' or 'task_id' not in person:
+        person_update['task_id'] = schedule_next_task(person)
 
-    logging.info('Processing %s conversation' % conversation.config['id'])
+    replies = []
+    conversations = [(get_conversation_module(conv['type']), conv) for conv in person['conversations']]
+    selected_index = -1
+    conversation = chitchat.Conversation({}, context)
+    for selected_index, conversation_module, conversation_config in enumerate(conversations):
+        conversation = conversation_module.Conversation(conversation_config, context)
+        if conversation.can_process():
+            break
+
+    logging.info('%s conversation about %s' %
+                 (conversation.__module__, conversation.config['task_id'] if 'task_id' in conversation.config else ''))
     conversation.process()
     replies.append(conversation.reply)
     if 0 <= selected_index < len(person['conversations']):
         person['conversations'][selected_index]['last_run_time'] = datetime.datetime.utcnow()
         person['conversations'][selected_index]['last_message_type'] = conversation.last_message_type
 
-    transfers = list(filter(lambda conv: conv['id']['type'] == conversation.transfer_type, person['conversations']))
+    transfers = list(filter(lambda conv: conv[1]['type'] == conversation.transfer_type, conversations))
     if transfers:
-        convs = list(filter(lambda conv: conv[1]['id'] == transfers[0]['id'], conversations))
-        if convs:
-            conversation_module, conversation_config = convs[0]
-            conversation = conversation_module.Conversation(conversation_config, context)
-            conversation.process()
-            replies.append(conversation.reply)
-
-    person_update = {'conversations': person['conversations']}
-    if 'id' in conversation.config:
-        person_update['current_conversation_id'] = conversation.config['id']
-    db.collection('persons').document(person['id']['value']).update(person_update)
+        conversation_module, conversation_config = transfers[0]
+        conversation = conversation_module.Conversation(conversation_config, context)
+        conversation.process()
+        replies.append(conversation.reply)
+        conversation.config['last_run_time'] = datetime.datetime.utcnow()
+        conversation.config['last_message_type'] = conversation.last_message_type
 
     if replies:
         send_message(message['receiver'], message['sender'], ' '.join(filter(lambda r: r.strip(), replies)))
     else:
         logging.warning('No reply generated')
 
+    person_update['conversations'] = person['conversations']
+    db.collection('persons').document(person['id']['value']).update(person_update)
+
+
+def schedule_next_task(person):
+    now = datetime.datetime.utcnow()
+    now = now.astimezone(pytz.timezone(person['timezone'])) if 'timezone' in person else now
+    timings = [croniter.croniter(task['schedule'], now).get_next(datetime.datetime)
+               for identifier, task in person['tasks'].items()]
+    timings.sort()
+    next_run_time = timestamp_pb2.Timestamp()
+    next_run_time.FromDatetime(timings[0])
+    data = {
+        'time': datetime.datetime.utcnow().isoformat(),
+        'sender': person['id'],
+        'status': 'engage',
+        'tags': ['source:schedule'],
+        'content_type': 'application/json',
+        'content': {}
+    }
+    return common.schedule_task(data, tasks_v2.CloudTasksClient(), timestamp=next_run_time)
+
 
 def get_conversation_module(conversation_type):
     for conv in CONVERSATIONS:
         if conv.__name__ == conversation_type:
             return conv
-    return smalltalk
+    return chitchat
 
 
 def send_message(sender, receiver, content, tags=()):
