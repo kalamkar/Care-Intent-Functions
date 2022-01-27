@@ -93,11 +93,14 @@ def main(event, metadata):
 def schedule_next_task(person):
     now = datetime.datetime.utcnow()
     now = now.astimezone(pytz.timezone(person['timezone'])) if 'timezone' in person else now
-    timings = [croniter.croniter(task['schedule'], now).get_next(datetime.datetime)
-               for identifier, task in person['tasks'].items()]
+    timings = []
+    for identifier, task in person['tasks'].items():
+        if 'system' in task and task['system']:
+            timings.append(croniter.croniter(task['schedule'], now).get_next(datetime.datetime))
+
     timings.sort()
     next_run_time = timestamp_pb2.Timestamp()
-    next_run_time.FromDatetime(timings[0])
+    next_run_time.FromDatetime(timings[0] if timings else (now + datetime.timedelta(hours=24)))
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': person['id'],
