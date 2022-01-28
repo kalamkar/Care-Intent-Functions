@@ -27,7 +27,7 @@ def main(request):
 
     if 'action_id' not in body:
         publisher.publish(topic_path, json.dumps(body, default=str).encode('utf-8'))
-        return
+        return 'OK'
 
     db = firestore.Client()
     target_id = body['target_id']
@@ -59,7 +59,7 @@ def main(request):
 
     if not action:
         logging.error('Missing action for %s' % json.dumps(body))
-        return
+        return 'ERROR'
 
     person_ids = []
     if target_id['type'] == 'group':
