@@ -42,7 +42,7 @@ def get_id(doc):
     return {'type': doc.reference.path.split('/')[-2][:-1], 'value': doc.id}
 
 
-def schedule_task(payload, client, timestamp=None, queue_name='actions'):
+def schedule_task(payload, client, timestamp=None, queue_name='actions', name=None):
     queue = client.queue_path(config.PROJECT_ID, config.LOCATION_ID, queue_name)
     task = {
         'http_request': {  # Specify the type of request.
@@ -53,10 +53,19 @@ def schedule_task(payload, client, timestamp=None, queue_name='actions'):
             'body': json.dumps(payload).encode()
         }
     }
+    if name:
+        task['name'] = client.task_path(config.PROJECT_ID, config.LOCATION_ID, queue_name, name)
     if timestamp:
         task['schedule_time'] = timestamp
     response = client.create_task(request={'parent': queue, 'task': task})
     logging.info("Created task {}".format(response.name))
+    return response.name
+
+
+def cancel_task(task_id, client, queue_name='actions'):
+    queue = client.queue_path(config.PROJECT_ID, config.LOCATION_ID, queue_name)
+    response = client.delete_task(request={'parent': queue, 'task': {'name': task_id}})
+    logging.info("Deleted task {}".format(response.name))
     return response.name
 
 

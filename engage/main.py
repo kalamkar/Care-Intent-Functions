@@ -118,7 +118,10 @@ def schedule_next_task(person):
         'content_type': 'application/json',
         'content': {}
     }
-    return common.schedule_task(data, tasks_v2.CloudTasksClient(), timestamp=next_run_time)
+    client = tasks_v2.CloudTasksClient()
+    if 'task_id' in person:
+        common.cancel_task(person['task_id'], client)
+    return common.schedule_task(data, client, timestamp=next_run_time, name='person-' + person['id']['value'])
 
 
 def get_conversation_module(conversation_type):
