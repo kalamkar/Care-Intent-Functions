@@ -1,4 +1,8 @@
+import re
+
 from conversation import Conversation as BaseConversation
+
+INTENTS = [r'^biomarker', r'^medication\.report']
 
 DATA_CONFIG = {
     'hip': {'label': 'Hip\'s circumference', 'low': 0, 'high': 0},
@@ -14,7 +18,8 @@ DATA_CONFIG = {
 
 class Conversation(BaseConversation):
     def can_process(self):
-        return self.context.get('message.nlp.intent').startswith("biomarker")
+        intent = self.context.get('message.nlp.intent')
+        return intent is not None and re.search('|'.join(INTENTS), intent) is not None
 
     def process(self):
         params = self.context.get('message.nlp.params')
