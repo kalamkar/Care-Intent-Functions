@@ -1,20 +1,27 @@
-import croniter
-import datetime
-import pytz
-
 from conversation import Conversation as BaseConversation
+
+DATA_CONFIG = {
+    'hip': {'label': 'Hip\'s circumference', 'low': 0, 'high': 0},
+    'waist': {'label': 'Waist\'s circumference', 'low': 0, 'high': 0},
+    'weight': {'label': 'Weight', 'low': 0, 'high': 0},
+    'height': {'label': 'Height', 'low': 0, 'high': 0},
+    'temperature': {'label': 'Temperature', 'low': 0, 'high': 0},
+    'a1c': {'label': 'A1C (blood sugar level)', 'low': 0, 'high': 0},
+    'diastolic': {'label': 'Blood pressure', 'low': 0, 'high': 0},
+    'systolic': {'label': 'Blood pressure', 'low': 0, 'high': 0}
+}
 
 
 class Conversation(BaseConversation):
     def can_process(self):
-        if 'schedule' in self.config:
-            now = datetime.datetime.utcnow()
-            now = now.astimezone(pytz.timezone(self.config['timezone'])) if 'timezone' in self.config else now
-            cron = croniter.croniter(self.config['schedule'], now)
-            schedule_time = cron.get_prev(datetime.datetime)
-            return (now - schedule_time).total_seconds() <= 5  # If schedule time is within few seconds
-        return False
+        if self.context.get('last_conversation') == self.__module__:
+            return True
+        return self.context.get('message.nlp.intent').startswith("biomarker")
 
     def process(self):
-        self.reply = self.config['message'] if 'message' in self.config else 'Did you do it?'
-        self.config['last_message_type'] = 'q1'
+        params = self.context.get('message.nlp.params')
+        self.publish_data(source_id=self.context.get('person.id'), tags='biometrics', params=params)
+        param_name = list(params.keys())[0]
+        self.reply = 'Your {} has been recorded'.format(
+            DATA_CONFIG[param_name]['label'].lower() if param_name in DATA_CONFIG else 'data')
+        # self.config['last_message_type'] = 'q1'

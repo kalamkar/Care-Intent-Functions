@@ -71,6 +71,7 @@ def main(event, metadata):
     if 0 <= selected_index < len(person['conversations']):
         person['conversations'][selected_index]['last_run_time'] = datetime.datetime.utcnow()
         person['conversations'][selected_index]['last_message_type'] = conversation.last_message_type
+        person_update['last_conversation'] = conversation.__module__
 
     transfers = list(filter(lambda conv: conv[1]['type'] == conversation.transfer_type, conversations))
     if transfers:
@@ -80,6 +81,7 @@ def main(event, metadata):
         replies.append(conversation.reply)
         conversation.config['last_run_time'] = datetime.datetime.utcnow()
         conversation.config['last_message_type'] = conversation.last_message_type
+        person_update['last_conversation'] = conversation.__module__
 
     if replies:
         send_message(message['receiver'], message['sender'], ' '.join(filter(lambda r: r.strip(), replies)))

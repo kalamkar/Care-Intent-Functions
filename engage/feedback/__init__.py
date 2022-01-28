@@ -20,3 +20,6 @@ class Conversation(BaseConversation):
             self.reply = self.config['message']
             return
         self.reply = 'This is a reminder'
+#        self.reply = self.config['message'] if 'message' in self.config else 'Did you do it?'
+#        self.config['last_message_type'] = 'q1'
+
