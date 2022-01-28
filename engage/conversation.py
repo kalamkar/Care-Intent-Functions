@@ -1,7 +1,9 @@
 import abc
 import config
+import croniter
 import datetime
 import json
+import pytz
 
 from google.cloud import pubsub_v1
 
@@ -21,6 +23,16 @@ class Conversation(abc.ABC):
     @abc.abstractmethod
     def process(self):
         pass
+
+    def is_scheduled_time(self, tolerance_seconds=5):
+        if 'schedule' not in self.config:
+            return False
+        now = datetime.datetime.utcnow()
+        timezone = self.context.get('person.timezone')
+        now = now.astimezone(pytz.timezone(timezone)) if timezone else now
+        cron = croniter.croniter(self.config['schedule'], now)
+        reminder_time = cron.get_prev(datetime.datetime)
+        return (now - reminder_time).total_seconds() <= tolerance_seconds  # If reminder time is within few seconds
 
     def publish_data(self, source_id=None, params=None, content=None, tags=()):
         params = params if params else {}

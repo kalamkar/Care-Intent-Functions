@@ -84,8 +84,9 @@ def main(event, metadata):
         conversation.config['last_message_type'] = conversation.last_message_type
         person_update['last_conversation'] = conversation.__module__
 
-    if replies:
-        send_message(message['receiver'], message['sender'], ' '.join(filter(lambda r: r.strip(), replies)))
+    reply = ' '.join(filter(lambda r: r.strip(), replies)).strip()
+    if reply:
+        send_message(message['receiver'], message['sender'], reply)
     else:
         logging.warning('No reply generated')
 
@@ -97,9 +98,9 @@ def schedule_next_task(person):
     now = datetime.datetime.utcnow()
     now = now.astimezone(pytz.timezone(person['timezone'])) if 'timezone' in person else now
     timings = []
-    for identifier, task in person['tasks'].items():
-        if 'system' in task and task['system']:
-            timings.append(croniter.croniter(task['schedule'], now).get_next(datetime.datetime))
+    for conversation in person['conversations']:
+        if 'schedule' in conversation:
+            timings.append(croniter.croniter(conversation['schedule'], now).get_next(datetime.datetime))
 
     timings.sort()
     next_run_time = timestamp_pb2.Timestamp()
