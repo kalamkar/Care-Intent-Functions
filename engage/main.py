@@ -120,8 +120,8 @@ def schedule_next_task(person):
     }
     client = tasks_v2.CloudTasksClient()
     if 'task_id' in person:
-        common.cancel_task(person['task_id'], client)
-    return common.schedule_task(data, client, timestamp=next_run_time, name='person-' + person['id']['value'])
+        common.cancel_task(person['task_id'], client, queue_name='engage')
+    return common.schedule_task(data, client, timestamp=next_run_time, name=person['id']['value'], queue_name='engage')
 
 
 def get_conversation_module(conversation_type):
