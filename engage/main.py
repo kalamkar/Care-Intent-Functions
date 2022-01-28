@@ -36,7 +36,7 @@ def main(event, metadata):
     status = context.get('message.status')
     tags = context.get('message.tags') or []
     person_update = {}
-    if channel_name == 'message' and 'sender' in message and status == 'received' and 'proxy' not in tags:
+    if channel_name == 'message' and 'sender' in message and status in ['received', 'engage'] and 'proxy' not in tags:
         context.set('person', common.get_resource(message['sender'], db))
     elif channel_name == 'data':
         for data in message['data']:
