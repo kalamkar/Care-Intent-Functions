@@ -32,7 +32,7 @@ class Conversation(abc.ABC):
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
         cron = croniter.croniter(self.config['schedule'], now)
         reminder_time = cron.get_prev(datetime.datetime)
-        return (now - reminder_time).total_seconds() <= tolerance_seconds  # If reminder time is within few seconds
+        return abs((now - reminder_time).total_seconds()) <= tolerance_seconds  # If reminder time is within few seconds
 
     def publish_data(self, source_id=None, params=None, content=None, tags=()):
         params = params if params else {}

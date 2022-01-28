@@ -65,8 +65,7 @@ def main(event, metadata):
         if conversation.can_process():
             break
 
-    logging.info('%s conversation about %s' %
-                 (conversation.__module__, conversation.config['task_id'] if 'task_id' in conversation.config else ''))
+    logging.info('%s conversation' % conversation.__module__)
     conversation.process()
     replies.append(conversation.reply)
     if 0 <= selected_index < len(person['conversations']):
