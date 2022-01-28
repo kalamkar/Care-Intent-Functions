@@ -14,8 +14,6 @@ DATA_CONFIG = {
 
 class Conversation(BaseConversation):
     def can_process(self):
-        if self.context.get('last_conversation') == self.__module__:
-            return True
         return self.context.get('message.nlp.intent').startswith("biomarker")
 
     def process(self):
