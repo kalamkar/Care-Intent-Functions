@@ -58,12 +58,18 @@ def main(event, metadata):
     replies = []
     conversations = [(get_conversation_module(conv['type']), conv) for conv in person['conversations']]
     selected_index = -1
-    conversation = chitchat.Conversation({}, context)
+    conversation = None
     for selected_index, conv in enumerate(conversations):
         conversation_module, conversation_config = conv
-        conversation = conversation_module.Conversation(conversation_config, context)
-        if conversation.can_process():
+        enabled_conversation = conversation_module.Conversation(conversation_config, context)
+        if enabled_conversation.can_process():
+            conversation = enabled_conversation
             break
+
+    if not conversation:
+        db.collection('persons').document(person['id']['value']).update(person_update)
+        logging.warning('No conversation found to reply')
+        return
 
     logging.info('%s conversation' % conversation.__module__)
     conversation.process()
