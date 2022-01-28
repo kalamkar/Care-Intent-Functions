@@ -59,7 +59,8 @@ def main(event, metadata):
     conversations = [(get_conversation_module(conv['type']), conv) for conv in person['conversations']]
     selected_index = -1
     conversation = chitchat.Conversation({}, context)
-    for selected_index, conversation_module, conversation_config in enumerate(conversations):
+    for selected_index, conv in enumerate(conversations):
+        conversation_module, conversation_config = conv
         conversation = conversation_module.Conversation(conversation_config, context)
         if conversation.can_process():
             break
