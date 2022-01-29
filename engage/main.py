@@ -52,8 +52,7 @@ def main(event, metadata):
     logging.info(message)
 
     person = context.get('person')
-    if message['status'] == 'engage' or 'task_id' not in person:
-        person_update['task_id'] = schedule_next_task(person)
+    update_or_schedule_next_task(person)
 
     replies = []
     conversations = [(get_conversation_module(conv['type']), conv) for conv in person['conversations']]
@@ -99,7 +98,7 @@ def main(event, metadata):
     db.collection('persons').document(person['id']['value']).update(person_update)
 
 
-def schedule_next_task(person):
+def update_or_schedule_next_task(person):
     now = datetime.datetime.utcnow()
     now = now.astimezone(pytz.timezone(person['timezone'])) if 'timezone' in person else now
     timings = []
@@ -108,8 +107,9 @@ def schedule_next_task(person):
             timings.append(croniter.croniter(conversation['schedule'], now).get_next(datetime.datetime))
 
     timings.sort()
+    earliest_time = timings[0] if timings else (now + datetime.timedelta(hours=24))
     next_run_time = timestamp_pb2.Timestamp()
-    next_run_time.FromDatetime(timings[0] if timings else (now + datetime.timedelta(hours=24)))
+    next_run_time.FromDatetime(earliest_time)
     data = {
         'time': datetime.datetime.utcnow().isoformat(),
         'sender': person['id'],
@@ -119,8 +119,9 @@ def schedule_next_task(person):
         'content': {}
     }
     client = tasks_v2.CloudTasksClient()
-    if 'task_id' in person:
-        common.cancel_task(person['task_id'], client, queue_name='engage')
+    current_task = common.get_task(person['id']['value'], client, queue_name='engage')
+    if not current_task or current_task.schedule_time > earliest_time:
+        common.cancel_task(current_task.name, client, queue_name='engage')
     return common.schedule_task(data, client, timestamp=next_run_time, name=person['id']['value'], queue_name='engage')
 
 

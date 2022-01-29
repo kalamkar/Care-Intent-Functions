@@ -69,6 +69,15 @@ def cancel_task(task_id, client, queue_name='actions'):
     return response.name
 
 
+def get_task(name, client, queue_name='actions'):
+    queue = client.queue_path(config.PROJECT_ID, config.LOCATION_ID, queue_name)
+    task_id = client.task_path(config.PROJECT_ID, config.LOCATION_ID, queue_name, name)
+    try:
+        return client.get_task(request={'parent': queue, 'task': {'name': task_id}})
+    except:
+        return None
+
+
 def get_identifier(identifier, id_type, db, default=None, resource_types=('person', 'group')):
     if not identifier or type(identifier) != dict or 'value' not in identifier or 'type' not in identifier:
         return default

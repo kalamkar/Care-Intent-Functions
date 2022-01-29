@@ -30,13 +30,10 @@ class Conversation(BaseConversation):
         return len(self.missing_tasks) > 0
 
     def process(self):
-        if 'message' in self.config:
-            self.reply = self.config['message']
-            return
+        self.config['last_message_type'] = self.__module__ + '.task_confirm'
         messages = [DATA_MESSAGES[task['data']] if task['data'] in DATA_MESSAGES else 'Did you do it?'
                     for task in self.missing_tasks]
         self.reply = ' '.join(messages)
-        self.config['last_message_type'] = 'q1'
 
     def has_completed(self, task, now):
         cron = croniter.croniter(task['schedule'], now)
