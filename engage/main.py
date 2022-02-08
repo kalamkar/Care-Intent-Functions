@@ -91,9 +91,9 @@ def main(event, metadata):
     if not reply or 'sender' not in message:
         logging.warning('No reply generated')
     elif status == 'engage':
-        send_message(None, message['sender'], reply)
+        send_message(None, message['sender'], reply, db)
     elif 'receiver' in message:
-        send_message(message['receiver'], message['sender'], reply)
+        send_message(message['receiver'], message['sender'], reply, db)
     else:
         logging.warning('No reply generated')
 
@@ -138,7 +138,16 @@ def get_conversation_module(conversation_type):
     return chitchat
 
 
-def send_message(sender, receiver, content, tags=()):
+def send_message(sender, receiver, content, db, tags=()):
+    sender = common.get_identifier(sender, 'phone', db,
+                                   {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
+    receiver = common.get_identifier(receiver, 'phone', db)
+    if not receiver:
+        logging.warning('Missing receiver for to send message')
+        return
+    if sender == receiver or receiver['value'] in [config.PHONE_NUMBER] + config.PROXY_PHONE_NUMBERS:
+        logging.error('Sending message to system phone numbers to {r} from {s}'.format(r=receiver, s=sender))
+        return
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
     data = {
