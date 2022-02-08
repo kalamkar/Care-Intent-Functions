@@ -26,7 +26,7 @@ class Conversation(BaseConversation):
         tasks = self.context.get('person.tasks')
         if not tasks or type(tasks) != dict:
             return False
-        for name, task in tasks:
+        for name, task in tasks.items():
             if 'data' not in task:
                 continue
             if not self.has_completed(task, now):
