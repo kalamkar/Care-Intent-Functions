@@ -18,6 +18,7 @@ class Conversation(BaseConversation):
 
     def can_process(self):
         if not self.is_scheduled_time():
+            logging.info('Not scheduled time')
             return False
         now = datetime.datetime.utcnow()
         timezone = self.context.get('person.timezone')
@@ -25,6 +26,7 @@ class Conversation(BaseConversation):
 
         tasks = self.context.get('person.tasks')
         if not tasks or type(tasks) != dict:
+            logging.info('No tasks for the person')
             return False
         for name, task in tasks.items():
             if 'data' not in task:
@@ -32,6 +34,7 @@ class Conversation(BaseConversation):
             if not self.has_completed(task, now):
                 self.missing_tasks.append(task)
 
+        logging.info('{} tasks found'.format(len(self.missing_tasks)))
         return len(self.missing_tasks) > 0
 
     def process(self):
