@@ -119,7 +119,7 @@ def schedule_next_task(person):
         'status': 'engage',
         'tags': ['source:schedule'],
         'content_type': 'application/json',
-        'content': {}
+        'content': {'schedule': timings[0] if timings else ''}
     }
     client = tasks_v2.CloudTasksClient()
     current_task = common.get_task(person['task_id'], client, queue_name='engage') if 'task_id' in person else None
