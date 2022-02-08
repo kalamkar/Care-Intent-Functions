@@ -107,10 +107,10 @@ def schedule_next_task(person):
     timings = []
     for conversation in person['conversations']:
         if 'schedule' in conversation:
-            timings.append(croniter.croniter(conversation['schedule'], now).get_next(datetime.datetime))
+            timings.append((croniter.croniter(conversation['schedule'], now).get_next(datetime.datetime), conversation))
 
-    timings.sort()
-    earliest_time = timings[0] if timings else (now + datetime.timedelta(hours=24))
+    timings.sort(key=lambda t: t[0])
+    earliest_time = timings[0][0] if timings else (now + datetime.timedelta(hours=24))
     next_run_time = timestamp_pb2.Timestamp()
     next_run_time.FromDatetime(earliest_time)
     data = {
@@ -119,7 +119,7 @@ def schedule_next_task(person):
         'status': 'engage',
         'tags': ['source:schedule'],
         'content_type': 'application/json',
-        'content': {'schedule': timings[0] if timings else ''}
+        'content': {'conversation': timings[0][1] if timings else None}
     }
     client = tasks_v2.CloudTasksClient()
     current_task = common.get_task(person['task_id'], client, queue_name='engage') if 'task_id' in person else None
