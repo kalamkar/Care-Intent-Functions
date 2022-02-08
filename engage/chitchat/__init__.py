@@ -6,7 +6,8 @@ from conversation import Conversation as BaseConversation
 
 class Conversation(BaseConversation):
     def can_process(self):
-        return True
+
+        return type(self.context.get('message.content')) == str
 
     def process(self):
         person_id = self.context.get('person.id.value')

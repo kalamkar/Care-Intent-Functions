@@ -29,6 +29,7 @@ CONVERSATIONS = [feedback, diary, education, barriers, assessment, chitchat]
 def main(event, metadata):
     channel_name = metadata.resource['name'].split('/')[-1]
     message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
+    logging.info(message)
 
     db = firestore.Client()
     context = Context()
@@ -49,10 +50,8 @@ def main(event, metadata):
         logging.info('Task based conversations not enabled for this person.')
         return
 
-    logging.info(message)
-
     person = context.get('person')
-    person_update['task_id'] = update_or_schedule_next_task(person)
+    person_update['task_id'] = schedule_next_task(person)
 
     replies = []
     conversations = [(get_conversation_module(conv['type']), conv) for conv in person['conversations']]
@@ -98,7 +97,7 @@ def main(event, metadata):
     db.collection('persons').document(person['id']['value']).update(person_update)
 
 
-def update_or_schedule_next_task(person):
+def schedule_next_task(person):
     now = datetime.datetime.utcnow()
     now = now.astimezone(pytz.timezone(person['timezone'])) if 'timezone' in person else now
     timings = []
