@@ -29,7 +29,7 @@ CONVERSATIONS = [feedback, diary, education, barriers, assessment, chitchat]
 def main(event, metadata):
     channel_name = metadata.resource['name'].split('/')[-1]
     message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
-    logging.info(message)
+    logging.info('Got message {}'.format(message))
 
     db = firestore.Client()
     context = Context()

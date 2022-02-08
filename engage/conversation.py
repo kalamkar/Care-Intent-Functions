@@ -3,6 +3,7 @@ import config
 import croniter
 import datetime
 import json
+import logging
 import pytz
 
 from google.cloud import pubsub_v1
@@ -31,8 +32,9 @@ class Conversation(abc.ABC):
         timezone = self.context.get('person.timezone')
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
         cron = croniter.croniter(self.config['schedule'], now)
-        reminder_time = cron.get_prev(datetime.datetime)
-        return abs((now - reminder_time).total_seconds()) <= tolerance_seconds  # If reminder time is within few seconds
+        schedule_time = cron.get_prev(datetime.datetime)
+        logging.info('Now {} and schedule time is {}'.format(now, schedule_time))
+        return abs((now - schedule_time).total_seconds()) <= tolerance_seconds  # If reminder time is within few seconds
 
     def publish_data(self, source_id=None, params=None, content=None, tags=()):
         params = params if params else {}
