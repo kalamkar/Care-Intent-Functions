@@ -1,3 +1,4 @@
+import config
 import logging
 
 import croniter
@@ -5,6 +6,8 @@ import datetime
 import pytz
 
 from conversation import Conversation as BaseConversation
+
+from google.cloud import bigquery
 
 DATA_MESSAGES = {
     'medication': 'Did you take the medication?'
@@ -29,9 +32,9 @@ class Conversation(BaseConversation):
             logging.info('No tasks for the person')
             return False
         for name, task in tasks.items():
-            if 'data' not in task:
+            if 'data' not in task or 'schedule' not in task:
                 continue
-            if not self.has_completed(task, now):
+            if not self.has_completed(task['schedule'], task['data'], now):
                 self.missing_tasks.append(task)
 
         logging.info('{} tasks found'.format(len(self.missing_tasks)))
@@ -43,10 +46,12 @@ class Conversation(BaseConversation):
                     for task in self.missing_tasks]
         self.reply = ' '.join(messages)
 
-    def has_completed(self, task, now):
-        cron = croniter.croniter(task['schedule'], now)
+    def has_completed(self, schedule, data, now):
+        cron = croniter.croniter(schedule, now)
         schedule_time = cron.get_prev(datetime.datetime)
-        query_time = schedule_time - datetime.timedelta(seconds=60 * 60)
-        # TODO: Query bq for data report here
-        return False
-
+        start_time = (schedule_time - datetime.timedelta(seconds=60 * 60)).isoformat()
+        bq = bigquery.Client()
+        q = 'SELECT count(*) as num_rows FROM careintent.live.tsdata, UNNEST(data) ' \
+            'WHERE time > TIMESTAMP("{start}") AND name = "{name}"'
+        q = q.format(project=config.PROJECT_ID, name=data, start=start_time)
+        return list(bq.query(q))[0]['num_rows'] > 0
