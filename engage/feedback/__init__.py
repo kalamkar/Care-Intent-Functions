@@ -1,3 +1,5 @@
+import logging
+
 import croniter
 import datetime
 import pytz
@@ -21,7 +23,10 @@ class Conversation(BaseConversation):
         timezone = self.context.get('person.timezone')
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
 
-        for task in self.context.get('person.tasks'):
+        tasks = self.context.get('person.tasks')
+        if not tasks or type(tasks) != dict:
+            return False
+        for name, task in tasks:
             if 'data' not in task:
                 continue
             if not self.has_completed(task, now):
