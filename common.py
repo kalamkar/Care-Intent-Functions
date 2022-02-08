@@ -50,7 +50,7 @@ def schedule_task(payload, client, timestamp=None, queue_name='actions', name=No
             'url': 'https://%s-%s.cloudfunctions.net/process-task' % (config.LOCATION_ID, config.PROJECT_ID),
             'oidc_token': {'service_account_email': '%s@appspot.gserviceaccount.com' % config.PROJECT_ID},
             'headers': {"Content-type": "application/json"},
-            'body': json.dumps(payload).encode()
+            'body': json.dumps(payload, default=str).encode()
         }
     }
     if name:
