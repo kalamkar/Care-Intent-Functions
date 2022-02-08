@@ -121,11 +121,11 @@ def update_or_schedule_next_task(person):
     client = tasks_v2.CloudTasksClient()
     current_task = common.get_task(person['task_id'], client, queue_name='engage') if 'task_id' in person else None
     if not current_task:
-        return common.schedule_task(data, client, timestamp=next_run_time, name=person['task_id'], queue_name='engage')
+        return common.schedule_task(data, client, timestamp=next_run_time, queue_name='engage')
     if current_task.schedule_time <= earliest_time:
         return current_task.name
     common.cancel_task(current_task.name, client, queue_name='engage')
-    return common.schedule_task(data, client, timestamp=next_run_time, name=person['task_id'], queue_name='engage')
+    return common.schedule_task(data, client, timestamp=next_run_time, queue_name='engage')
 
 
 def get_conversation_module(conversation_type):
