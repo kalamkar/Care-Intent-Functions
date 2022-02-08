@@ -25,7 +25,7 @@ class Conversation(abc.ABC):
     def process(self):
         pass
 
-    def is_scheduled_time(self, tolerance_seconds=5):
+    def is_scheduled_time(self, tolerance_seconds=5*60):
         if 'schedule' not in self.config:
             return False
         now = datetime.datetime.utcnow()
