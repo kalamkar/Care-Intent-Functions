@@ -88,7 +88,11 @@ def main(event, metadata):
         person_update['last_conversation'] = conversation.__module__
 
     reply = ' '.join(filter(lambda r: r.strip(), replies)).strip()
-    if reply:
+    if not reply or 'sender' not in message:
+        logging.warning('No reply generated')
+    elif status == 'engage':
+        send_message(None, message['sender'], reply)
+    elif 'receiver' in message:
         send_message(message['receiver'], message['sender'], reply)
     else:
         logging.warning('No reply generated')
