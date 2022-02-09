@@ -1,5 +1,6 @@
 import base64
 import config
+import datetime
 import json
 import logging
 import uuid
@@ -58,7 +59,8 @@ def schedule_task(payload, client, timestamp=None, queue_name='actions', name=No
     if timestamp:
         task['schedule_time'] = timestamp
     response = client.create_task(request={'parent': queue, 'task': task})
-    logging.info("Created task {}".format(response.name))
+    timestamp = datetime.datetime.fromtimestamp(timestamp.seconds) if timestamp else 'now'
+    logging.info("Scheduled for {} task {}".format(timestamp, response.name))
     return response.name
 
 

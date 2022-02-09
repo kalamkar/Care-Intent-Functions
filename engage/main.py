@@ -29,7 +29,6 @@ CONVERSATIONS = [feedback, diary, education, barriers, assessment, chitchat]
 def main(event, metadata):
     channel_name = metadata.resource['name'].split('/')[-1]
     message = json.loads(base64.b64decode(event['data']).decode('utf-8'))
-    logging.info('Got message {}'.format(message))
 
     db = firestore.Client()
     context = Context()
@@ -49,6 +48,8 @@ def main(event, metadata):
     if 'conversations' not in context.get('person') or 'tasks' not in context.get('person'):
         logging.info('Task based conversations not enabled for this person.')
         return
+
+    logging.info('Conversations for message {}'.format(message))
 
     person = context.get('person')
     person_update['task_id'] = schedule_next_task(person)
