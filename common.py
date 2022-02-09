@@ -72,10 +72,9 @@ def cancel_task(task_id, client, queue_name='actions'):
 
 
 def get_task(name, client, queue_name='actions'):
-    queue = client.queue_path(config.PROJECT_ID, config.LOCATION_ID, queue_name)
-    task_id = client.task_path(config.PROJECT_ID, config.LOCATION_ID, queue_name, name)
     try:
-        return client.get_task(request={'parent': queue, 'task': {'name': task_id}})
+        return client.get_task(name=name if '/' in name
+                else client.task_path(config.PROJECT_ID, config.LOCATION_ID, queue_name, name))
     except:
         return None
 
