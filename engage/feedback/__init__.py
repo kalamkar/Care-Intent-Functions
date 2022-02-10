@@ -9,10 +9,6 @@ from conversation import Conversation as BaseConversation
 
 from google.cloud import bigquery
 
-DATA_MESSAGES = {
-    'medication': 'Did you take the medication?'
-}
-
 
 class Conversation(BaseConversation):
     def __init__(self, config, context):
@@ -20,31 +16,34 @@ class Conversation(BaseConversation):
         self.missing_tasks = []
 
     def can_process(self):
-        if not self.is_scheduled_time():
-            logging.info('Not scheduled time')
-            return False
         now = datetime.datetime.utcnow()
         timezone = self.context.get('person.timezone')
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
+        if self.is_scheduled_time(now):
+            tasks = self.context.get('person.tasks')
+            if not tasks or type(tasks) != dict:
+                logging.info('No tasks for the person')
+                return False
+            for name, task in tasks.items():
+                if 'data' not in task or 'schedule' not in task:
+                    continue
+                if not self.has_completed(task['schedule'], task['data'], now):
+                    self.missing_tasks.append(task)
+            return len(self.missing_tasks) > 0
 
-        tasks = self.context.get('person.tasks')
-        if not tasks or type(tasks) != dict:
-            logging.info('No tasks for the person')
-            return False
-        for name, task in tasks.items():
-            if 'data' not in task or 'schedule' not in task:
-                continue
-            if not self.has_completed(task['schedule'], task['data'], now):
-                self.missing_tasks.append(task)
-
-        logging.info('{} tasks found'.format(len(self.missing_tasks)))
-        return len(self.missing_tasks) > 0
+        return self.context.get('person.last_conversation') == self.__module__ and self.config['last_message_type'] and\
+               self.config['last_message_type'].startswith(self.__module__)
 
     def process(self):
-        self.config['last_message_type'] = self.__module__ + '.task_confirm'
-        messages = [DATA_MESSAGES[task['data']] if task['data'] in DATA_MESSAGES else 'Did you do it?'
-                    for task in self.missing_tasks]
-        self.reply = ' '.join(messages)
+        last_message_id = self.context.get('person.last_message_id')
+        if self.missing_tasks:
+            task_type = self.missing_tasks[0]['data'] if self.missing_tasks else 'generic'
+            self.message_id = ['task_confirm', task_type]
+        elif last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm'):
+            if self.context.get('message.nlp.intent') == 'generic.yes':
+                self.message_id = ['task_confirm_yes', last_message_id.split('.')[-1]]
+            elif self.context.get('message.nlp.intent') == 'generic.no':
+                self.message_id = ['task_confirm_no', last_message_id.split('.')[-1]]
 
     def has_completed(self, schedule, data, now):
         cron = croniter.croniter(schedule, now)

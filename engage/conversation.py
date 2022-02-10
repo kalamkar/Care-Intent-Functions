@@ -4,14 +4,16 @@ import croniter
 import datetime
 import json
 import logging
-import pytz
 
 from google.cloud import pubsub_v1
+
+from messages import DATA as messages
 
 
 class Conversation(abc.ABC):
     def __init__(self, config, context):
         self.transfer_type = None
+        self.message_id = []
         self.reply = None
         self.config = config
         self.context = context
@@ -24,12 +26,9 @@ class Conversation(abc.ABC):
     def process(self):
         pass
 
-    def is_scheduled_time(self, tolerance_seconds=5*60):
+    def is_scheduled_time(self, now, tolerance_seconds=5*60):
         if 'schedule' not in self.config:
             return False
-        now = datetime.datetime.utcnow()
-        timezone = self.context.get('person.timezone')
-        now = now.astimezone(pytz.timezone(timezone)) if timezone else now
         cron = croniter.croniter(self.config['schedule'], now)
         schedule_time = cron.get_prev(datetime.datetime)
         logging.info('Now {} and schedule time for {} is {}'.format(now, self.config['type'], schedule_time))
@@ -60,3 +59,11 @@ class Conversation(abc.ABC):
             elif type(value) == str:
                 row['data'].append({'name': name, 'value': value})
         publisher.publish(topic_path, json.dumps(row).encode('utf-8'))
+
+    def get_reply(self):
+        if self.reply:
+            return self.reply
+        for name in [self.__module__ + '.' + '.'.join(self.message_id[:n]) for n in range(len(self.message_id), 0, -1)]:
+            if name in messages:
+                return messages[name]
+        return self.__module__
