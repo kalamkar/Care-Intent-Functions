@@ -84,7 +84,9 @@ class Conversation(abc.ABC):
             'query_input': dialogflow.types.QueryInput({'text': text_input}),
             'query_params': query_params
         }
-        return df_client.detect_intent(request)
+        response = df_client.detect_intent(request)
+        logging.info('DF request {} and response {}'.format(request, response))
+        return response
 
 
 def build_df_context(session_id, name, data):
