@@ -31,8 +31,8 @@ class Conversation(BaseConversation):
                     self.missing_tasks.append(task)
             return len(self.missing_tasks) > 0
 
-        return self.context.get('person.last_conversation') == self.__module__ and self.config['last_message_type'] and\
-               self.config['last_message_type'].startswith(self.__module__)
+        last_message_id = self.context.get('person.last_message_id')
+        return last_message_id and last_message_id.startswith(self.__module__)
 
     def process(self):
         last_message_id = self.context.get('person.last_message_id')

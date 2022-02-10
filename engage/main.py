@@ -82,7 +82,7 @@ def main(event, metadata):
         conversation_module, conversation_config = transfers[0]
         conversation = conversation_module.Conversation(conversation_config, context)
         conversation.process()
-        replies.append(conversation.reply)
+        replies.append(conversation.get_reply())
         conversation.config['last_run_time'] = datetime.datetime.utcnow()
         person_update['last_message_id'] = conversation.__module__ + '.' + '.'.join(conversation.message_id)
 
