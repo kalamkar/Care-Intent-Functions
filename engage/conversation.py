@@ -73,9 +73,9 @@ class Conversation(abc.ABC):
         if not content:
             content = self.context.get('message.content')
         session_id = self.context.get('person.id.value')
-        query_params = dialogflow.types.QueryParameters()
-        if contexts:
-            query_params.contexts = [build_df_context(session_id, name, data=value) for name, value in contexts.items()]
+        query_params = dialogflow.types.QueryParameters(
+            contexts=[build_df_context(session_id, name, data=value) for name, value in contexts.items()]
+            if contexts else None)
         df_client = dialogflow.SessionsClient()
         text_input = dialogflow.types.TextInput(text=content[:255], language_code='en-US')
         return df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, session_id),
