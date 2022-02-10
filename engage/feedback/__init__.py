@@ -44,10 +44,15 @@ class Conversation(BaseConversation):
             self.message_id = ['task_confirm', task_type]
         elif last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm'):
             df = self.detect_intent(contexts={'yes_no': {}})
+            logging.info(df.query_result)
             if df.query_result.intent.display_name == 'generic.yes':
                 self.message_id = ['task_confirm_yes', last_message_id.split('.')[-1]]
             elif df.query_result.intent.display_name == 'generic.no':
                 self.message_id = ['task_confirm_no', last_message_id.split('.')[-1]]
+            else:
+                logging.warning('Intent {} unexpected'.format(df.query_result.intent.display_name))
+                self.skip_message_id_update = True
+                self.message_id = ['confirm_yes']
 
     def has_completed(self, schedule, data, now):
         cron = croniter.croniter(schedule, now)

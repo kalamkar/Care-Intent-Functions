@@ -15,6 +15,7 @@ class Conversation(abc.ABC):
     def __init__(self, config, context):
         self.transfer_type = None
         self.message_id = []
+        self.skip_message_id_update = False
         self.reply = None
         self.config = config
         self.context = context
