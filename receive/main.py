@@ -151,10 +151,14 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
             'action': df.query_result.action,
             'sentiment_score': sentiment_score,
             'reply': df.query_result.fulfillment_text,
-            'confidence': int(df.query_result.intent_detection_confidence * 100),
-            'params': MessageToDict(df.query_result.parameters)
+            'confidence': int(df.query_result.intent_detection_confidence * 100)
         }
     }
+
+    try:
+        data['nlp']['params'] = MessageToDict(df.query_result.parameters)
+    except:
+        logging.error('Could not convert parameters')
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
