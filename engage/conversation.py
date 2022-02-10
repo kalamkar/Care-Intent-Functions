@@ -1,5 +1,6 @@
 import abc
 import config
+import dialogflow_v2beta1 as dialogflow
 import croniter
 import datetime
 import json
@@ -67,3 +68,26 @@ class Conversation(abc.ABC):
             if name in messages:
                 return messages[name]
         return messages[self.__module__]
+
+    def detect_intent(self, content=None, contexts=None):
+        if not content:
+            content = self.context.get('message.content')
+        session_id = self.context.get('person.id.value')
+        query_params = dialogflow.types.QueryParameters()
+        if contexts:
+            query_params.contexts = [build_df_context(session_id, name, data=value) for name, value in contexts.items()]
+        df_client = dialogflow.SessionsClient()
+        text_input = dialogflow.types.TextInput(text=content[:255], language_code='en-US')
+        return df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, session_id),
+                                       query_input=dialogflow.types.QueryInput(text=text_input),
+                                       query_params=query_params)
+
+
+def build_df_context(session_id, name, data):
+    df_context = dialogflow.types.Context(name='projects/{project}/agent/sessions/{session}/contexts/{name}'.format(
+        project=config.PROJECT_ID, session=session_id, name=name))
+    if 'lifespanCount' in data:
+        df_context.lifespan_count = data['lifespanCount']
+    if 'parameters' in data:
+        df_context.parameters.update(data['parameters'])
+    return df_context

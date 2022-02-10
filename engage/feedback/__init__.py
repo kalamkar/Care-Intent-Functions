@@ -43,9 +43,10 @@ class Conversation(BaseConversation):
             task_type = self.missing_tasks[0]['data'] if self.missing_tasks else 'generic'
             self.message_id = ['task_confirm', task_type]
         elif last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm'):
-            if self.context.get('message.nlp.intent') == 'generic.yes':
+            df = self.detect_intent(contexts={'yes_no': {}})
+            if df.query_result.intent.display_name == 'generic.yes':
                 self.message_id = ['task_confirm_yes', last_message_id.split('.')[-1]]
-            elif self.context.get('message.nlp.intent') == 'generic.no':
+            elif df.query_result.intent.display_name == 'generic.no':
                 self.message_id = ['task_confirm_no', last_message_id.split('.')[-1]]
 
     def has_completed(self, schedule, data, now):
