@@ -66,4 +66,4 @@ class Conversation(abc.ABC):
         for name in [self.__module__ + '.' + '.'.join(self.message_id[:n]) for n in range(len(self.message_id), 0, -1)]:
             if name in messages:
                 return messages[name]
-        return self.__module__
+        return messages[self.__module__]
