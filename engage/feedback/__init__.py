@@ -9,6 +9,8 @@ from conversation import Conversation as BaseConversation
 
 from google.cloud import bigquery
 
+ENDING_IDS = ['task_confirm_yes', 'task_confirm_no']
+
 
 class Conversation(BaseConversation):
     def __init__(self, config, context):
@@ -32,7 +34,8 @@ class Conversation(BaseConversation):
             return len(self.missing_tasks) > 0
 
         last_message_id = self.context.get('person.last_message_id')
-        return last_message_id and last_message_id.startswith(self.__module__)
+        return last_message_id and last_message_id.startswith(self.__module__)\
+               and last_message_id.split('.')[1] not in ENDING_IDS
 
     def process(self):
         last_message_id = self.context.get('person.last_message_id')
