@@ -6,7 +6,7 @@ import logging
 import pytz
 import twilio.rest
 
-import dialogflow_v2beta1 as dialogflow
+from google.cloud import dialogflow_v2beta1 as dialogflow
 from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google.protobuf.json_format import MessageToDict
@@ -131,16 +131,10 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
     elif not is_valid_session(person) and 'lead' in person['session']:
         del person['session']['lead']
 
-    knowledge_base_path = dialogflow.KnowledgeBasesClient.knowledge_base_path(config.PROJECT_ID,
-                                                                              config.SYSTEM_KNOWLEDGE_ID)
-    query_params = dialogflow.types.QueryParameters(knowledge_base_names=[knowledge_base_path])
-    if 'context' in person['session']:
-        query_params.contexts = \
-            [build_df_context(person_id, name, value) for name, value in person['session']['context'].items()]
     df_client = dialogflow.SessionsClient()
-    text_input = dialogflow.types.TextInput(text=content[:255], language_code='en-US')
-    df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
-                                 query_input=dialogflow.types.QueryInput(text=text_input), query_params=query_params)
+    text_input = dialogflow.types.TextInput({'text': content[:255], 'language_code': 'en-US'})
+    df = df_client.detect_intent({'session': df_client.session_path(config.PROJECT_ID, person_id),
+                                  'query_input': dialogflow.types.QueryInput({'text': text_input})})
     sentiment_score = df.query_result.sentiment_analysis_result.query_text_sentiment.score
 
     data = {
@@ -169,35 +163,10 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
         data['tags'].append(df.query_result.action)
     publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
 
-    context = get_context_dict(df.query_result.output_contexts)
-    if context:
-        person['session']['context'] = context
     person['session']['last_message_time'] = now
     # Update only session part
     db.collection('persons').document(person_id).update({'session': person['session']})
     return '', 204
-
-
-def build_df_context(session_id, name, data):
-    df_context = dialogflow.types.Context(name='projects/{project}/agent/sessions/{session}/contexts/{name}'.format(
-        project=config.PROJECT_ID, session=session_id, name=name))
-    if 'lifespanCount' in data:
-        df_context.lifespan_count = data['lifespanCount']
-    if 'parameters' in data:
-        df_context.parameters.update(data['parameters'])
-    return df_context
-
-
-def get_context_dict(contexts):
-    context = {}
-    for ctx in contexts:
-        data = MessageToDict(ctx)
-        name = data['name'].split('/')[-1]
-        if name.startswith('__'):
-            continue
-        context[name] = data
-        del data['name']
-    return context
 
 
 def publish_data(person_id, params, tags=(), duration=None):
