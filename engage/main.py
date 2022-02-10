@@ -75,7 +75,7 @@ def main(event, metadata):
     replies.append(conversation.get_reply())
     if 0 <= selected_index < len(person['conversations']):
         person['conversations'][selected_index]['last_run_time'] = datetime.datetime.utcnow()
-        person_update['last_message_id'] = conversation.__module__ + '.'.join(conversation.message_id)
+        person_update['last_message_id'] = conversation.__module__ + '.' + '.'.join(conversation.message_id)
 
     transfers = list(filter(lambda conv: conv[1]['type'] == conversation.transfer_type, conversations))
     if transfers:
@@ -84,7 +84,7 @@ def main(event, metadata):
         conversation.process()
         replies.append(conversation.reply)
         conversation.config['last_run_time'] = datetime.datetime.utcnow()
-        person_update['last_message_id'] = conversation.__module__ + '.'.join(conversation.message_id)
+        person_update['last_message_id'] = conversation.__module__ + '.' + '.'.join(conversation.message_id)
 
     reply = ' '.join(filter(lambda r: r.strip(), replies)).strip()
     if not reply or 'sender' not in message:
