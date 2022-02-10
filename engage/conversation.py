@@ -1,11 +1,11 @@
 import abc
 import config
-import dialogflow_v2beta1 as dialogflow
 import croniter
 import datetime
 import json
 import logging
 
+from google.cloud import dialogflow_v2beta1 as dialogflow
 from google.cloud import pubsub_v1
 
 from messages import DATA as messages
@@ -75,20 +75,24 @@ class Conversation(abc.ABC):
             content = self.context.get('message.content')
         session_id = self.context.get('person.id.value')
         query_params = dialogflow.types.QueryParameters(
-            contexts=[build_df_context(session_id, name, data=value) for name, value in contexts.items()]
-            if contexts else None)
+            {'contexts': [build_df_context(session_id, name, data=value) for name, value in contexts.items()]
+            if contexts else None})
         df_client = dialogflow.SessionsClient()
-        text_input = dialogflow.types.TextInput(text=content[:255], language_code='en-US')
-        return df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, session_id),
-                                       query_input=dialogflow.types.QueryInput(text=text_input),
-                                       query_params=query_params)
+        text_input = dialogflow.types.TextInput({'text': content[:255], 'language_code': 'en-US'})
+        request = {
+            'session': df_client.session_path(config.PROJECT_ID, session_id),
+            'query_input': dialogflow.types.QueryInput({'text': text_input}),
+            'query_params': query_params
+        }
+        return df_client.detect_intent(request)
 
 
 def build_df_context(session_id, name, data):
-    df_context = dialogflow.types.Context(name='projects/{project}/agent/sessions/{session}/contexts/{name}'.format(
-        project=config.PROJECT_ID, session=session_id, name=name))
-    if 'lifespanCount' in data:
-        df_context.lifespan_count = data['lifespanCount']
+    df_context = dialogflow.types.Context({
+        'name': 'projects/{project}/agent/sessions/{session}/contexts/{name}'
+            .format(project=config.PROJECT_ID, session=session_id, name=name),
+        'lifespan_count': data['lifespanCount'] if 'lifespanCount' in data else 1
+    })
     if 'parameters' in data:
         df_context.parameters.update(data['parameters'])
     return df_context

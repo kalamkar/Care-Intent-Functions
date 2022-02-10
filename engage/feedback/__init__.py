@@ -43,13 +43,13 @@ class Conversation(BaseConversation):
             task_type = self.missing_tasks[0]['data'] if self.missing_tasks else 'generic'
             self.message_id = ['task_confirm', task_type]
         elif last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm'):
-            df = self.detect_intent()
-            if df.query_result.action == 'smalltalk.confirmation.yes':
+            df = self.detect_intent(contexts={'yes_no': {}})
+            if df.query_result.intent.display_name == 'generic.yes':
                 self.message_id = ['task_confirm_yes', last_message_id.split('.')[-1]]
-            elif df.query_result.action == 'smalltalk.confirmation.no':
+            elif df.query_result.intent.display_name == 'generic.no':
                 self.message_id = ['task_confirm_no', last_message_id.split('.')[-1]]
             else:
-                logging.warning('Intent {} unexpected'.format(df.query_result.intent.display_name))
+                logging.warning('Unexpected result {}'.format(df.query_result))
                 self.skip_message_id_update = True
                 self.message_id = ['confirm_yes']
 

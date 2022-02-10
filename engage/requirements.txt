@@ -1,8 +1,8 @@
 # Function dependencies, for example:
 # package>=version
 croniter
-dialogflow~=1.1.1
 google-cloud-bigquery
+google-cloud-dialogflow
 google-cloud-firestore
 google-cloud-logging
 google-cloud-pubsub
