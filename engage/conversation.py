@@ -64,11 +64,11 @@ class Conversation(abc.ABC):
 
     def get_reply(self):
         if self.reply:
-            return self.reply
+            return self.context.render(self.reply)
         for name in [self.__module__ + '.' + '.'.join(self.message_id[:n]) for n in range(len(self.message_id), 0, -1)]:
             if name in messages:
-                return messages[name]
-        return messages[self.__module__]
+                return self.context.render(messages[name])
+        return self.context.render(messages[self.__module__])
 
     def detect_intent(self, content=None, contexts=None):
         if not content:
