@@ -4,6 +4,7 @@ import croniter
 import datetime
 import json
 import logging
+import random
 
 from google.cloud import dialogflow_v2beta1 as dialogflow
 from google.cloud import pubsub_v1
@@ -67,7 +68,9 @@ class Conversation(abc.ABC):
             return self.context.render(self.reply)
         for name in [self.__module__ + '.' + '.'.join(self.message_id[:n]) for n in range(len(self.message_id), 0, -1)]:
             if name in messages:
-                return self.context.render(messages[name])
+                message = messages[name] if type(messages[name]) == str\
+                    else messages[name][random.randint(0, len(messages[name])-1)]
+                return self.context.render(message)
         return self.context.render(messages[self.__module__])
 
     def detect_intent(self, content=None, contexts=None):

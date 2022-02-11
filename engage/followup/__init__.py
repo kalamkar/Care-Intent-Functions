@@ -1,9 +1,9 @@
 import config
-import logging
-
 import croniter
 import datetime
+import logging
 import pytz
+import random
 
 from conversation import Conversation as BaseConversation
 
@@ -58,8 +58,12 @@ class Conversation(BaseConversation):
                 logging.warning('Unexpected result {}'.format(df.query_result))
                 self.skip_message_id_update = True
                 self.message_id = ['confirm_yes']
-        else:
+        elif 'message_id' in self.config:
             self.message_id = [self.config['message_id']]
+            self.config['ended'] = True
+        elif 'message_ids' in self.config:
+            messages = self.config['message_ids']
+            self.message_id = [messages[random.randint(0, len(messages)-1)]]
             self.config['ended'] = True
 
     def has_completed(self, schedule, data, now):

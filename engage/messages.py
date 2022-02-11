@@ -15,6 +15,7 @@ DATA = {
     'followup.task_confirm_yes.medication': 'Nice, next time text X whenever you take your medication.',
     'followup.task_confirm_no': 'Ok',
     'followup.confirm_yes': 'Is that a yes?',
+    'followup.nudge': ['nudge1', 'nudge2'],
     
     'assessment': 'How are you?',
     'barrier': 'Why?',
