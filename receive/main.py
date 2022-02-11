@@ -3,13 +3,13 @@ import config
 import datetime
 import json
 import logging
+import proto.marshal.collections.maps
 import pytz
 import twilio.rest
 
-import dialogflow_v2beta1 as dialogflow
+from google.cloud import dialogflow_v2beta1 as dialogflow
 from google.cloud import firestore
 from google.cloud import pubsub_v1
-from google.protobuf.json_format import MessageToDict
 from twilio.twiml.voice_response import VoiceResponse, Connect, Parameter, Hangup
 
 
@@ -132,9 +132,9 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
         del person['session']['lead']
 
     df_client = dialogflow.SessionsClient()
-    text_input = dialogflow.types.TextInput(text=content[:255], language_code='en-US')
-    df = df_client.detect_intent(session=df_client.session_path(config.PROJECT_ID, person_id),
-                                 query_input=dialogflow.types.QueryInput(text=text_input))
+    text_input = dialogflow.types.TextInput({'text': content[:255], 'language_code': 'en-US'})
+    df = df_client.detect_intent({'session': df_client.session_path(config.PROJECT_ID, person_id),
+                                  'query_input': dialogflow.types.QueryInput({'text': text_input})})
     sentiment_score = df.query_result.sentiment_analysis_result.query_text_sentiment.score
 
     data = {
@@ -152,10 +152,9 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
             'sentiment_score': sentiment_score,
             'reply': df.query_result.fulfillment_text,
             'confidence': int(df.query_result.intent_detection_confidence * 100),
-            'params': MessageToDict(df.query_result.parameters)
+            'params': map_to_dict(df.query_result.parameters)
         }
     }
-    # TODO: Find alternative for MessageToDict, it does not work once updated to google-cloud-dialogflow
 
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, 'message')
@@ -195,3 +194,11 @@ def is_valid_session(person):
     return 'session' in person and 'last_message_time' in person['session']\
            and (now - person['session']['last_message_time']).total_seconds() < config.GAP_SECONDS
 
+
+def map_to_dict(idata):
+    odata = {}
+    if type(idata) != proto.marshal.collections.maps.MapComposite:
+        return odata
+    for name, value in idata.items():
+        odata[name] = value if type(value) != proto.marshal.collections.maps.MapComposite else map_to_dict(value)
+    return odata
