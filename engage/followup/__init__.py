@@ -21,7 +21,8 @@ class Conversation(BaseConversation):
         now = datetime.datetime.utcnow()
         timezone = self.context.get('person.timezone')
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
-        if self.is_scheduled_time(now):
+        now_is_scheduled = self.is_scheduled_time(now)
+        if now_is_scheduled and self.config['check'] == 'tasks':
             tasks = self.context.get('person.tasks')
             if not tasks or type(tasks) != dict:
                 logging.info('No tasks for the person')
@@ -39,15 +40,17 @@ class Conversation(BaseConversation):
 
     def process(self):
         last_message_id = self.context.get('person.last_message_id')
-        if self.missing_tasks:
+        if self.config['check'] == 'tasks' and self.missing_tasks:
             task_type = self.missing_tasks[0]['data'] if self.missing_tasks else 'generic'
             self.message_id = ['task_confirm', task_type]
         elif last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm'):
             df = self.detect_intent(contexts={'yes_no': {}})
             if df.query_result.intent.display_name == 'generic.yes':
+                self.publish_data(source_id=self.context.get('person.id'), tags='biometrics',
+                                  params={'time': '', 'medication': ''})
                 self.message_id = ['task_confirm_yes', last_message_id.split('.')[-1]]
             elif df.query_result.intent.display_name == 'generic.no':
-                self.message_id = ['task_confirm_no', last_message_id.split('.')[-1]]
+                self.message_id = ['task_confirm_no']
             else:
                 logging.warning('Unexpected result {}'.format(df.query_result))
                 self.skip_message_id_update = True

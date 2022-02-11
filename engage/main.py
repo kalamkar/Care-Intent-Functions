@@ -11,7 +11,7 @@ import assessment
 import barriers
 import diary
 import education
-import feedback
+import followup
 import chitchat
 
 from context import Context
@@ -23,7 +23,7 @@ from google.protobuf import timestamp_pb2
 import google.cloud.logging as logger
 logger.handlers.setup_logging(logger.Client().get_default_handler())
 
-CONVERSATIONS = [feedback, diary, education, barriers, assessment, chitchat]
+CONVERSATIONS = [followup, diary, education, barriers, assessment, chitchat]
 
 
 def main(event, metadata):
