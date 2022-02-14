@@ -28,6 +28,8 @@ class Conversation(BaseConversation):
                 if 'data' not in task or 'schedule' not in task:
                     continue
                 last_completed_time = self.last_completed(self.context.get('person.id.value'), task['data'])
+                last_completed_time = last_completed_time.astimezone(pytz.timezone(timezone))\
+                    if timezone else last_completed_time
                 if last_completed_time < (now - datetime.timedelta(hours=14)):
                     self.context.set('missing_task', task | {'last_completed_time': last_completed_time})
                     is_missing_task = True
