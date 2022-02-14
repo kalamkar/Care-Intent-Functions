@@ -71,7 +71,7 @@ class Conversation(abc.ABC):
                 message = messages[name] if type(messages[name]) == str\
                     else messages[name][random.randint(0, len(messages[name])-1)]
                 return self.context.render(message)
-        return self.context.render(messages[self.__module__])
+        return self.context.render(messages[self.__module__]) if not self.transfer_type else ''
 
     def detect_intent(self, content=None, contexts=None):
         if not content:
