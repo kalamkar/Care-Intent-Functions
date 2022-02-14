@@ -81,6 +81,7 @@ def main(event, metadata):
     transfers = list(filter(lambda conv: conv[1]['type'] == conversation.transfer_type, conversations))
     if transfers:
         conversation_module, conversation_config = transfers[0]
+        logging.info('Trying to instantiate %s %s' % (conversation_module, conversation_config))
         conversation = conversation_module.Conversation(conversation_config, context)
         conversation.process()
         replies.append(conversation.get_reply())
