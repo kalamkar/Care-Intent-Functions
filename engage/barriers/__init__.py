@@ -6,4 +6,7 @@ class Conversation(BaseConversation):
         return False
 
     def process(self):
-        pass
+        missing_task = self.context.get('missing_task')
+        if missing_task:
+            task_type = missing_task['data'] if 'data' in missing_task else 'generic'
+            self.message_id = ['which', task_type]
