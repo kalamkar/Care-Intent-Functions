@@ -2,6 +2,8 @@
 DATA = {
     'barriers.which.generic': 'What challenges are you facing?',
     'barriers.which.medication': 'What challenges are you facing to take the medication?',
+    'barriers.explain': 'I didn\'t get that, please explain a bit more.',
+    'barriers.ok': 'Ok',
 
     'diary.recorded.hip': 'Your hip\'s circumference has been recorded.',
     'diary.recorded.waist': 'Your waist\'s circumference has been recorded.',
