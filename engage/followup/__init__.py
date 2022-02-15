@@ -68,11 +68,11 @@ class Conversation(BaseConversation):
                 self.skip_message_id_update = True
                 self.message_id = ['confirm_yes']
         elif 'message_id' in self.config:
-            self.message_id = [self.config['message_id']]
-            self.config['ended'] = True
-        elif 'message_ids' in self.config:
-            messages = self.config['message_ids']
-            self.message_id = [messages[random.randint(0, len(messages)-1)]]
+            if ',' in self.config['message_id']:
+                messages = self.config['message_id'].split(',')
+                self.message_id = [messages[random.randint(0, len(messages) - 1)]]
+            else:
+                self.message_id = [self.config['message_id']]
             self.config['ended'] = True
 
     def last_completed(self, source, data):
