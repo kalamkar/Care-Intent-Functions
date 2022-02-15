@@ -21,10 +21,10 @@ class Conversation(BaseConversation):
         if is_scheduled_now and 'check' in self.config and self.config['check'] == 'tasks':
             is_missing_task = False
             tasks = self.context.get('person.tasks')
-            if not tasks or type(tasks) != dict:
+            if not tasks or type(tasks) != list:
                 logging.info('No tasks for the person')
                 return False
-            for name, task in tasks.items():
+            for task in tasks:
                 if 'data' not in task or 'schedule' not in task:
                     continue
                 last_completed_time = self.last_completed(self.context.get('person.id.value'), task['data'])
