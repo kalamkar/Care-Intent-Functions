@@ -64,12 +64,6 @@ def schedule_task(payload, client, timestamp=None, queue_name='actions', name=No
     return response.name
 
 
-def cancel_task(task_id, client):
-    response = client.delete_task(name=task_id)
-    logging.info("Deleted task {}".format(response.name))
-    return response.name
-
-
 def get_task(name, client, queue_name='actions'):
     try:
         return client.get_task(name=name if '/' in name
