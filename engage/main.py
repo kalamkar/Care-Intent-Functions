@@ -54,6 +54,11 @@ def main(event, metadata):
     person = context.get('person')
     person_update['task_id'] = schedule_next_task(person)
 
+    if 'schedule_only' in tags:
+        db.collection('persons').document(person['id']['value']).update(person_update)
+        logging.info('Skipping reply for schedule only message')
+        return
+
     replies = []
     conversations = [(get_conversation_module(conv['type']), conv) for conv in person['conversations']]
     selected_index = -1
