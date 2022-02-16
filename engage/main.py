@@ -134,7 +134,7 @@ def schedule_next_task(person):
         return common.schedule_task(data, client, timestamp=next_run_time, queue_name='engage')
     if current_task.schedule_time <= earliest_time:
         return current_task.name
-    common.cancel_task(current_task.name, client, queue_name='engage')
+    common.cancel_task(current_task.name, client)
     return common.schedule_task(data, client, timestamp=next_run_time, queue_name='engage')
 
 

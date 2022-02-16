@@ -64,9 +64,8 @@ def schedule_task(payload, client, timestamp=None, queue_name='actions', name=No
     return response.name
 
 
-def cancel_task(task_id, client, queue_name='actions'):
-    queue = client.queue_path(config.PROJECT_ID, config.LOCATION_ID, queue_name)
-    response = client.delete_task(request={'parent': queue, 'task': {'name': task_id}})
+def cancel_task(task_id, client):
+    response = client.delete_task(name=task_id)
     logging.info("Deleted task {}".format(response.name))
     return response.name
 
