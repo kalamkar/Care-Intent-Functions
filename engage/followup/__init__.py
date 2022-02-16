@@ -82,4 +82,4 @@ class Conversation(BaseConversation):
             'ORDER BY time DESC LIMIT 1'
         q = q.format(project=config.PROJECT_ID, name=data, source=source)
         rows = list(bq.query(q))
-        return dateparser.parse(rows[0]['time']) if rows else datetime.datetime.utcfromtimestamp(0)
+        return rows[0]['time'] if rows else datetime.datetime.utcfromtimestamp(0)
