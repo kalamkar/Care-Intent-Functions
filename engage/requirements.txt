@@ -8,5 +8,4 @@ google-cloud-logging
 google-cloud-pubsub
 google-cloud-tasks
 numpy
-python-dateutil
 pytz

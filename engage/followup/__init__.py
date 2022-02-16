@@ -4,7 +4,6 @@ import logging
 import pytz
 import random
 
-from dateutil import parser as dateparser
 from conversation import Conversation as BaseConversation
 
 from google.cloud import bigquery
