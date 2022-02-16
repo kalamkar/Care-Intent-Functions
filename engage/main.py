@@ -49,7 +49,7 @@ def main(event, metadata):
         logging.info('Task based conversations not enabled for this person.')
         return
 
-    logging.info('Conversations for message {}'.format(message))
+    logging.info('Conversations for context {}'.format(json.dumps(context.data, default=str)))
 
     person = context.get('person')
     person_update['task_id'] = schedule_next_task(person)
