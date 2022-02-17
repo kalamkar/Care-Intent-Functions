@@ -23,7 +23,7 @@ DATA = {
     'followup.nudge': ['nudge1', 'nudge2'],
     
     'assessment': 'How are you?',
-    'barrier': 'Why?',
+    'barriers': 'Why?',
     'chitchat': 'Good to hear from you.',
     'diary': 'Got it!',
     'education': 'Hello',
