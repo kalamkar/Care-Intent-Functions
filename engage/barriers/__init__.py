@@ -7,19 +7,33 @@ class Conversation(BaseConversation):
         return last_message_id and last_message_id.startswith(self.__module__) and 'ended' not in self.config
 
     def process(self):
-        last_message_id = self.context.get('person.last_message_id')
         missing_task = self.context.get('missing_task')
         if missing_task:
             task_type = missing_task['data'] if 'data' in missing_task else 'generic'
             self.message_id = ['which', task_type]
-        elif last_message_id and '.which.' in last_message_id:
+        elif 'generic_input' in self.config and self.config['generic_input']:
+            self.config['ended'] = True
+            self.message_id = ['generic_input_reply']
+            self.add_barrier(self.config['barrier'])
+        else:
             df = self.detect_intent(contexts={'challenge-identification': {}})
-            if 'fallback' not in df.query_result.intent.display_name:
+            if 'fallback' in df.query_result.intent.display_name:
+                self.message_id = ['explain']
+            else:
                 self.config['barrier'] = df.query_result.intent.display_name
                 self.reply = df.query_result.fulfillment_text
                 self.message_id = ['barrier', df.query_result.intent.display_name]
-            else:
-                self.message_id = ['explain']
-        elif last_message_id and '.barrier.' in last_message_id:
-            self.config['ended'] = True
-            self.message_id = ['ok']
+                self.add_barrier(df.query_result.intent.display_name)
+
+            if df.query_result.action == 'end_conversation':
+                self.config['ended'] = True
+            elif df.query_result.action == 'generic_input':
+                self.config['generic_input'] = True
+
+    def add_barrier(self, name, value=None):
+        barriers = self.context.get('person.barriers')
+        if barriers is None:
+            barriers = []
+            self.context.set('person.barriers', barriers)
+
+        barriers.append({'type': name, 'content': value if value else self.context.get('message.content')})
