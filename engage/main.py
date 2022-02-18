@@ -37,7 +37,7 @@ def main(event, metadata):
     tags = context.get('message.tags') or []
     person_update = {}
     if channel_name == 'message' and 'sender' in message and status in ['received', 'engage'] and 'proxy' not in tags:
-        context.set('person', common.get_resource(message['sender'], db))
+        context.set('person', common.get_resource(message['receiver' if 'schedule_only' in tags else 'sender'], db))
     elif channel_name == 'data':
         for data in message['data']:
             context.set('data', {data['name']: data['number'] if 'number' in data else data['value']})
