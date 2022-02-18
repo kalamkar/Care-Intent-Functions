@@ -11,6 +11,7 @@ class Conversation(BaseConversation):
         if missing_task:
             task_type = missing_task['data'] if 'data' in missing_task else 'generic'
             self.message_id = ['which', task_type]
+            del self.config['ended']
         elif 'generic_input' in self.config and self.config['generic_input']:
             self.config['ended'] = True
             self.message_id = ['generic_input_reply']
