@@ -33,9 +33,7 @@ class Conversation(BaseConversation):
                 self.config['generic_input'] = True
 
     def add_barrier(self, name, value=None):
-        barriers = self.context.get('person.barriers')
-        if barriers is None:
-            barriers = []
-            self.context.set('person.barriers', barriers)
-
-        barriers.append({'type': name, 'content': value if value else self.context.get('message.content')})
+        if 'barriers' not in self.config:
+            self.config['barriers'] = []
+        self.config['barriers'].append({'type': name,
+                                        'content': value if value else self.context.get('message.content')})
