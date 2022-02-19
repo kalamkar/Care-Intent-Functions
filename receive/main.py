@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import proto.marshal.collections.maps
+import proto.marshal.collections.repeated
 import pytz
 import twilio.rest
 
@@ -197,9 +198,13 @@ def is_valid_session(person):
 
 
 def map_to_dict(idata):
-    odata = {}
-    if type(idata) != proto.marshal.collections.maps.MapComposite:
+    TYPES = [proto.marshal.collections.maps.MapComposite, proto.marshal.collections.repeated.RepeatedComposite]
+    if type(idata) == proto.marshal.collections.maps.MapComposite:
+        odata = {}
+        for name, value in idata.items():
+            odata[name] = value if type(value) not in TYPES else map_to_dict(value)
         return odata
-    for name, value in idata.items():
-        odata[name] = value if type(value) != proto.marshal.collections.maps.MapComposite else map_to_dict(value)
-    return odata
+    elif type(idata) == proto.marshal.collections.repeated.RepeatedComposite:
+        return list(idata)
+    else:
+        return idata
