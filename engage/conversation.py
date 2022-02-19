@@ -29,7 +29,7 @@ class Conversation(abc.ABC):
     def process(self):
         pass
 
-    def is_scheduled_time(self, now, tolerance_seconds=30):
+    def is_scheduled_time(self, now, tolerance_seconds=15):
         if 'schedule' not in self.config:
             return False
         cron = croniter.croniter(self.config['schedule'], now)
