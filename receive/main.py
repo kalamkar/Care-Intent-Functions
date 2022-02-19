@@ -135,6 +135,7 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
     text_input = dialogflow.types.TextInput({'text': content[:255], 'language_code': 'en-US'})
     df = df_client.detect_intent({'session': df_client.session_path(config.PROJECT_ID, person_id),
                                   'query_input': dialogflow.types.QueryInput({'text': text_input})})
+    logging.info(df)
     sentiment_score = df.query_result.sentiment_analysis_result.query_text_sentiment.score
 
     data = {
@@ -161,7 +162,7 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
 
     if df.query_result.action:
         data['tags'].append(df.query_result.action)
-    publisher.publish(topic_path, json.dumps(data).encode('utf-8'))
+    publisher.publish(topic_path, json.dumps(data, default=str).encode('utf-8'))
 
     person['session']['last_message_time'] = now
     # Update only session part
