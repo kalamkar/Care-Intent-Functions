@@ -32,7 +32,7 @@ class Conversation(BaseConversation):
                 last_completed_time = self.last_completed(self.context.get('person.id.value'), task['data'])
                 last_completed_time = last_completed_time.astimezone(pytz.timezone(timezone))\
                     if timezone else last_completed_time
-                last_expected_time = croniter.croniter(task['schedule'], now).get_prev()
+                last_expected_time = croniter.croniter(task['schedule'], now).get_prev(datetime.datetime)
                 tolerance = datetime.timedelta(seconds=(3600 if 'tolerance' not in task else
                                                         common.get_duration_secs(task['tolerance'])))
                 if last_completed_time < (last_expected_time - tolerance):
