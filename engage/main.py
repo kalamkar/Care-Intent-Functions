@@ -75,7 +75,7 @@ def main(event, metadata):
         logging.warning('No conversation found to reply')
         return
 
-    logging.info('%s conversation' % conversation.__module__)
+    logging.info('%s conversation with config %s' % (conversation.__module__, conversation.config))
     conversation.process()
     replies.append(conversation.get_reply())
     if 0 <= selected_index < len(person['conversations']):
