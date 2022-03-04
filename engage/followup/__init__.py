@@ -1,3 +1,6 @@
+import croniter
+
+import common
 import config
 import datetime
 import logging
@@ -29,7 +32,10 @@ class Conversation(BaseConversation):
                 last_completed_time = self.last_completed(self.context.get('person.id.value'), task['data'])
                 last_completed_time = last_completed_time.astimezone(pytz.timezone(timezone))\
                     if timezone else last_completed_time
-                if last_completed_time < (now - datetime.timedelta(hours=14)):
+                last_expected_time = croniter.croniter(task['schedule'], now).get_prev()
+                tolerance = datetime.timedelta(seconds=(3600 if 'tolerance' not in task else
+                                                        common.get_duration_secs(task['tolerance'])))
+                if last_completed_time < (last_expected_time - tolerance):
                     self.context.set('missing_task', task | {'last_completed_time': last_completed_time})
                     is_missing_task = True
             return is_missing_task
