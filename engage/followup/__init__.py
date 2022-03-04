@@ -55,10 +55,11 @@ class Conversation(BaseConversation):
         logging.info('Missing task {} last message id {}'.format(missing_task, last_message_id))
         if self.config['check'] == 'tasks' and missing_task:
             task_type = missing_task['data'] if 'data' in missing_task else 'generic'
-            if missing_task['last_completed_time'] < now - datetime.timedelta(hours=38):
+            if 'prev_message' in self.config and self.config['prev_message'] == 'task_confirm':
                 self.transfer_type = 'barriers'
             else:
                 self.message_id = ['task_confirm', task_type]
+                self.config['prev_message'] = 'task_confirm'
         elif last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm'):
             df = self.detect_intent(contexts={'yes_no': {}})
             if df.query_result.intent.display_name == 'generic.yes':
