@@ -46,10 +46,6 @@ class Conversation(BaseConversation):
         return last_message_id and last_message_id.startswith(self.__module__) and 'ended' not in self.config
 
     def process(self):
-        now = datetime.datetime.utcnow()
-        timezone = self.context.get('person.timezone')
-        now = now.astimezone(pytz.timezone(timezone)) if timezone else now
-
         last_message_id = self.context.get('person.last_message_id')
         missing_task = self.context.get('missing_task')
         logging.info('Missing task {} last message id {}'.format(missing_task, last_message_id))
