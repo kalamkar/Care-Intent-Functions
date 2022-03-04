@@ -48,7 +48,7 @@ class Conversation(BaseConversation):
     def process(self):
         last_message_id = self.context.get('person.last_message_id')
         missing_task = self.context.get('missing_task')
-        logging.info('Missing task {} last message id {} config {}'.format(missing_task, last_message_id, self.config))
+        logging.info('Missing task {} last message id {}'.format(missing_task, last_message_id))
         if self.config['check'] == 'tasks' and missing_task:
             task_type = missing_task['data'] if 'data' in missing_task else 'generic'
             if 'prev_message' in self.config and self.config['prev_message'] == 'task_confirm':
