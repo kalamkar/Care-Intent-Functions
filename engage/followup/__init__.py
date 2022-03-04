@@ -78,9 +78,11 @@ class Conversation(BaseConversation):
             else:
                 self.message_id = [self.config['message_id']]
             self.config['ended'] = True
-        elif self.config['check'] == 'repeat' and last_message_id and 'last_run_time' in self.config \
-                and self.config['last_run_time'] > self.context.get('person.session.last_receive_time'):
-            self.message_id = last_message_id.split('.')[1:]
+        elif self.config['check'] == 'repeat' and last_message_id:
+            last_receive_time = self.context.get('person.session.last_receive_time')\
+                                or datetime.datetime.utcfromtimestamp(0)
+            if 'last_run_time' in self.config and self.config['last_run_time'] > last_receive_time:
+                self.message_id = last_message_id.split('.')[1:]
 
     def last_completed(self, source, data):
         bq = bigquery.Client()
