@@ -80,8 +80,8 @@ class Conversation(BaseConversation):
             self.config['ended'] = True
         elif self.config['check'] == 'repeat' and last_message_id:
             last_receive_time = self.context.get('person.session.last_receive_time')\
-                                or datetime.datetime.utcfromtimestamp(0)
-            if 'last_run_time' in self.config and self.config['last_run_time'] > last_receive_time:
+                                or datetime.datetime.utcfromtimestamp(0).astimezone(pytz.UTC)
+            if self.context.get('person.session.last_message_time') > last_receive_time:
                 self.message_id = last_message_id.split('.')[1:]
 
     def last_completed(self, source, data):
