@@ -82,7 +82,7 @@ class Conversation(BaseConversation):
             last_receive_time = self.context.get('person.session.last_receive_time')\
                                 or datetime.datetime.utcfromtimestamp(0).astimezone(pytz.UTC)
             if self.context.get('person.session.last_message_time') > last_receive_time:
-                self.message_id = last_message_id.split('.')[1:]
+                self.message_id = list(last_message_id.split('.')[1:])
 
     def last_completed(self, source, data):
         bq = bigquery.Client()
