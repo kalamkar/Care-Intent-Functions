@@ -105,6 +105,7 @@ def main(event, metadata):
         logging.warning('No reply generated')
 
     person_update['conversations'] = person['conversations']
+    person_update['session.last_sent_time'] = datetime.datetime.utcnow().astimezone(pytz.utc)
     db.collection('persons').document(person['id']['value']).update(person_update)
 
 
