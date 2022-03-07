@@ -18,6 +18,12 @@ class Conversation(BaseConversation):
         timezone = self.context.get('person.timezone')
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
         is_scheduled_now = self.is_scheduled_time(now)
+        last_message_id = self.context.get('person.last_message_id')
+        last_receive_time = self.context.get('person.session.last_receive_time')\
+                            or datetime.datetime.utcfromtimestamp(0).astimezone(pytz.UTC)
+        last_sent_time = self.context.get('person.session.last_sent_time')\
+                            or datetime.datetime.utcfromtimestamp(0).astimezone(pytz.UTC)
+
         if is_scheduled_now and 'ended' in self.config:
             del self.config['ended']
         if is_scheduled_now and 'check' in self.config and self.config['check'] == 'tasks':
@@ -39,10 +45,12 @@ class Conversation(BaseConversation):
                     self.context.set('missing_task', task | {'last_completed_time': last_completed_time})
                     is_missing_task = True
             return is_missing_task
+        elif is_scheduled_now and 'check' in self.config and self.config['check'] == 'repeat' and last_message_id and\
+                last_sent_time > last_receive_time:
+            return True
         elif is_scheduled_now and 'check' in self.config:
             return self.context.render(self.config['check']) == 'True'
 
-        last_message_id = self.context.get('person.last_message_id')
         return last_message_id and last_message_id.startswith(self.__module__) and 'ended' not in self.config
 
     def process(self):
@@ -79,9 +87,6 @@ class Conversation(BaseConversation):
                 self.message_id = [self.config['message_id']]
             self.config['ended'] = True
         elif self.config['check'] == 'repeat' and last_message_id:
-            last_receive_time = self.context.get('person.session.last_receive_time')\
-                                or datetime.datetime.utcfromtimestamp(0).astimezone(pytz.UTC)
-            if self.context.get('person.session.last_message_time') > last_receive_time:
                 self.message_id = list(last_message_id.split('.')[1:])
 
     def last_completed(self, source, data):

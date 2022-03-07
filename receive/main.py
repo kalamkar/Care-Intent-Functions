@@ -165,7 +165,6 @@ def process_text(sender_id, receiver_id, content, tags, person, db):
         data['tags'].append(df.query_result.action)
     publisher.publish(topic_path, json.dumps(data, default=str).encode('utf-8'))
 
-    person['session']['last_message_time'] = now
     person['session']['last_receive_time'] = now
     # Update only session part
     db.collection('persons').document(person_id).update({'session': person['session']})
@@ -194,8 +193,8 @@ def publish_data(person_id, params, tags=(), duration=None):
 
 def is_valid_session(person):
     now = datetime.datetime.utcnow().astimezone(pytz.utc)
-    return 'session' in person and 'last_message_time' in person['session']\
-           and (now - person['session']['last_message_time']).total_seconds() < config.GAP_SECONDS
+    return 'session' in person and 'last_receive_time' in person['session']\
+           and (now - person['session']['last_receive_time']).total_seconds() < config.GAP_SECONDS
 
 
 def map_to_dict(idata):

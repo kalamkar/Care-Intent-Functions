@@ -38,12 +38,12 @@ class Send(Action):
                 now = datetime.datetime.utcnow().astimezone(pytz.utc)
                 if 'session' in person and 'id' in person['session']:
                     tags.append('session:' + person['session']['id'])
-                    person_doc.reference.update({'session.last_message_time': now})
+                    person_doc.reference.update({'session.last_sent_time': now})
                 else:
                     session_id = common.generate_id()
                     tags.append('session:' + session_id)
                     person_doc.reference.update({'session.start': now, 'session.id': session_id,
-                                                 'session.last_message_time': now})
+                                                 'session.last_sent_time': now})
             sender = common.get_identifier(sender, 'phone', db,
                                            {'type': 'phone', 'value': config.PHONE_NUMBER}, ['group'])
             receiver = common.get_identifier(receiver, 'phone', db)
