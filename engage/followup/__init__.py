@@ -5,7 +5,6 @@ import config
 import datetime
 import logging
 import pytz
-import random
 
 from conversation import Conversation as BaseConversation
 
@@ -17,7 +16,7 @@ class Conversation(BaseConversation):
         now = datetime.datetime.utcnow()
         timezone = self.context.get('person.timezone')
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
-        is_scheduled_now = self.is_scheduled_time(now)
+        is_scheduled_now = self.is_scheduled_time()
         last_message_id = self.context.get('person.last_message_id')
 
         if is_scheduled_now and 'ended' in self.config:
@@ -61,11 +60,12 @@ class Conversation(BaseConversation):
                 self.message_id = ['task_confirm', task_type]
                 self.config['prev_message'] = 'task_confirm'
                 self.update_repeat_condition('{{person.session.last_sent_time > person.session.last_receive_time}}')
-        elif self.context.get('message.content.conversation') and 'repeat_condition' in self.config:
+        elif self.is_scheduled_time() and 'repeat_condition' in self.config:
                 self.skip_message_id_update = True
                 self.message_id = list(last_message_id.split('.')[1:])
                 del self.config['repeat_condition']
-        elif last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm'):
+        elif not self.is_scheduled_time() and last_message_id and \
+                last_message_id.startswith(self.__module__ + '.task_confirm'):
             df = self.detect_intent(contexts={'yes_no': {}})
             if df.query_result.intent.display_name == 'generic.yes':
                 self.publish_data(source_id=self.context.get('person.id'), tags='biometrics',
@@ -79,7 +79,7 @@ class Conversation(BaseConversation):
                 logging.warning('Unexpected result {}'.format(df.query_result))
                 self.skip_message_id_update = True
                 self.message_id = ['confirm_yes']
-        elif 'message_id' in self.config:
+        elif self.is_scheduled_time() and 'message_id' in self.config:
             if ',' in self.config['message_id']:
                 messages = self.config['message_id'].split(',')
                 message_index = (self.config['message_index'] + 1) if 'message_index' in self.config else 0
@@ -103,3 +103,8 @@ class Conversation(BaseConversation):
         if 'repeat' not in self.config or not self.config['repeat']:
             return
         self.config['repeat_condition'] = condition
+
+    def is_scheduled_time(self):
+        conversation = self.context.get('message.content.conversation')
+        return 'schedule' in self.config and conversation and 'schedule' in conversation and \
+               conversation['schedule'] == self.config['schedule']

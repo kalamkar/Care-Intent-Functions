@@ -29,14 +29,6 @@ class Conversation(abc.ABC):
     def process(self):
         pass
 
-    def is_scheduled_time(self, now, tolerance_seconds=15):
-        if 'schedule' not in self.config:
-            return False
-        cron = croniter.croniter(self.config['schedule'], now)
-        schedule_time = cron.get_prev(datetime.datetime)
-        logging.info('Now {} and schedule time for {} is {}'.format(now, self.config['type'], schedule_time))
-        return abs((now - schedule_time).total_seconds()) <= tolerance_seconds  # If reminder time is within few seconds
-
     def publish_data(self, source_id=None, params=None, content=None, tags=()):
         params = params if params else {}
         publisher = pubsub_v1.PublisherClient()

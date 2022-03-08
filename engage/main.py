@@ -1,4 +1,6 @@
 import base64
+import sys
+
 import common
 import config
 import croniter
@@ -76,34 +78,37 @@ def main(event, metadata):
         logging.warning('No conversation found to reply')
         return
 
-    logging.info('%s conversation with config %s' % (conversation.__module__, conversation.config))
-    conversation.process()
-    replies.append(conversation.get_reply())
-    if 0 <= selected_index < len(person['conversations']):
-        person['conversations'][selected_index]['last_run_time'] = datetime.datetime.utcnow()
-        if not conversation.skip_message_id_update:
-            person_update['last_message_id'] = conversation.__module__ + '.' + '.'.join(conversation.message_id)
-
-    transfers = list(filter(lambda conv: conv[1]['type'] == conversation.transfer_type, conversations))
-    if transfers:
-        conversation_module, conversation_config = transfers[0]
-        logging.info('Transferred to %s' % conversation_module)
-        conversation = conversation_module.Conversation(conversation_config, context)
+    try:
+        logging.info('%s conversation with config %s' % (conversation.__module__, conversation.config))
         conversation.process()
         replies.append(conversation.get_reply())
-        conversation.config['last_run_time'] = datetime.datetime.utcnow()
-        if not conversation.skip_message_id_update:
-            person_update['last_message_id'] = conversation.__module__ + '.' + '.'.join(conversation.message_id)
+        if 0 <= selected_index < len(person['conversations']):
+            person['conversations'][selected_index]['last_run_time'] = datetime.datetime.utcnow()
+            if not conversation.skip_message_id_update:
+                person_update['last_message_id'] = conversation.__module__ + '.' + '.'.join(conversation.message_id)
 
-    reply = ' '.join(filter(lambda r: r.strip(), replies)).strip()
-    if not reply or 'sender' not in message:
-        logging.warning('No reply generated')
-    elif status == 'engage':
-        send_message(None, message['sender'], reply, db)
-    elif 'receiver' in message:
-        send_message(message['receiver'], message['sender'], reply, db)
-    else:
-        logging.warning('No reply generated')
+        transfers = list(filter(lambda conv: conv[1]['type'] == conversation.transfer_type, conversations))
+        if transfers:
+            conversation_module, conversation_config = transfers[0]
+            logging.info('Transferred to %s' % conversation_module)
+            conversation = conversation_module.Conversation(conversation_config, context)
+            conversation.process()
+            replies.append(conversation.get_reply())
+            conversation.config['last_run_time'] = datetime.datetime.utcnow()
+            if not conversation.skip_message_id_update:
+                person_update['last_message_id'] = conversation.__module__ + '.' + '.'.join(conversation.message_id)
+
+        reply = ' '.join(filter(lambda r: r.strip(), replies)).strip()
+        if not reply or 'sender' not in message:
+            logging.warning('No reply generated')
+        elif status == 'engage':
+            send_message(None, message['sender'], reply, db)
+        elif 'receiver' in message:
+            send_message(message['receiver'], message['sender'], reply, db)
+        else:
+            logging.warning('No reply generated')
+    except:
+        logging.error(sys.exc_info()[1])
 
     person_update['task_id'] = schedule_next_task(person)
     person_update['conversations'] = person['conversations']
