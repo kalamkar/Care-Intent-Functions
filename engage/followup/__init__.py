@@ -99,6 +99,6 @@ class Conversation(BaseConversation):
         return rows[0]['time'] if rows else datetime.datetime.utcfromtimestamp(0)
 
     def update_repeat_condition(self, condition):
-        if 'repeat' not in self.config:
+        if 'repeat' not in self.config or not self.config['repeat']:
             return
         self.config['repeat_condition'] = condition
