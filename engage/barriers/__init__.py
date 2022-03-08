@@ -17,6 +17,7 @@ class Conversation(BaseConversation):
             self.config['ended'] = True
             self.message_id = ['generic_input_reply']
             self.add_barrier(self.config['barrier'])
+            del self.config['generic_input']
         else:
             df = self.detect_intent(contexts={'challenge-identification': {}})
             if 'fallback' in df.query_result.intent.display_name:
