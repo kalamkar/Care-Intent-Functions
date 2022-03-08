@@ -1,4 +1,6 @@
 import datetime
+import sys
+
 import jinja2
 import json
 import logging
@@ -22,8 +24,9 @@ class Context(object):
             return value
         return functions[function](value)
 
-    def timediff(self, start, end):
+    def timediff(self, start, end=None):
         end = end if end else datetime.datetime.utcnow().astimezone(pytz.utc)
+        start = start if start else datetime.datetime.utcfromtimestamp(0).astimezone(pytz.utc)
         return (end - start).total_seconds()
 
     def evaluate(self, expression):
@@ -37,7 +40,7 @@ class Context(object):
             try:
                 return self.env.from_string(content).render(self.data)
             except:
-                logging.error('Failed rendering ' + content)
+                logging.error('Failed rendering {} {}'.format(content, sys.exc_info()))
         elif type(content) == list:
             return [self.render(item) for item in content]
         elif type(content) == dict:
