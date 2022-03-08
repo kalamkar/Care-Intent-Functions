@@ -52,9 +52,9 @@ def main(event, metadata):
     logging.info('Conversations for context {}'.format(json.dumps(context.data, default=str)))
 
     person = context.get('person')
-    person_update['task_id'] = schedule_next_task(person)
 
     if 'schedule_only' in tags:
+        person_update['task_id'] = schedule_next_task(person)
         db.collection('persons').document(person['id']['value']).update(person_update)
         logging.info('Skipping reply for schedule only message')
         return
@@ -71,6 +71,7 @@ def main(event, metadata):
             break
 
     if not conversation:
+        person_update['task_id'] = schedule_next_task(person)
         db.collection('persons').document(person['id']['value']).update(person_update)
         logging.warning('No conversation found to reply')
         return
@@ -104,6 +105,7 @@ def main(event, metadata):
     else:
         logging.warning('No reply generated')
 
+    person_update['task_id'] = schedule_next_task(person)
     person_update['conversations'] = person['conversations']
     person_update['session.last_sent_time'] = datetime.datetime.utcnow().astimezone(pytz.utc)
     db.collection('persons').document(person['id']['value']).update(person_update)
@@ -116,6 +118,9 @@ def schedule_next_task(person):
     for conversation in person['conversations']:
         if 'schedule' in conversation:
             timings.append((croniter.croniter(conversation['schedule'], now).get_next(datetime.datetime), conversation))
+        if 'repeat' in conversation and 'repeat_condition' in conversation:
+            repeat_secs = common.get_duration_secs(conversation['repeat'])
+            timings.append((now + datetime.timedelta(seconds=repeat_secs), conversation))
 
     timings.sort(key=lambda t: t[0])
     earliest_time = timings[0][0] if timings else (now + datetime.timedelta(hours=24))

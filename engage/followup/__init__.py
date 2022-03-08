@@ -19,10 +19,6 @@ class Conversation(BaseConversation):
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
         is_scheduled_now = self.is_scheduled_time(now)
         last_message_id = self.context.get('person.last_message_id')
-        last_receive_time = self.context.get('person.session.last_receive_time')\
-                            or datetime.datetime.utcfromtimestamp(0).astimezone(pytz.UTC)
-        last_sent_time = self.context.get('person.session.last_sent_time')\
-                            or datetime.datetime.utcfromtimestamp(0).astimezone(pytz.UTC)
 
         if is_scheduled_now and 'ended' in self.config:
             del self.config['ended']
@@ -45,9 +41,8 @@ class Conversation(BaseConversation):
                     self.context.set('missing_task', task | {'last_completed_time': last_completed_time})
                     is_missing_task = True
             return is_missing_task
-        elif is_scheduled_now and 'check' in self.config and self.config['check'] == 'repeat' and last_message_id and\
-                last_sent_time > last_receive_time:
-            return True
+        elif self.context.get('message.content.conversation') and 'repeat_condition' in self.config:
+            return self.context.render(self.config['repeat_condition']) == 'True'
         elif is_scheduled_now and 'check' in self.config:
             return self.context.render(self.config['check']) == 'True'
 
@@ -65,6 +60,7 @@ class Conversation(BaseConversation):
             else:
                 self.message_id = ['task_confirm', task_type]
                 self.config['prev_message'] = 'task_confirm'
+                self.update_repeat_condition('{{person.session.last_sent_time > person.session.last_receive_time}}')
         elif last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm'):
             df = self.detect_intent(contexts={'yes_no': {}})
             if df.query_result.intent.display_name == 'generic.yes':
@@ -86,8 +82,9 @@ class Conversation(BaseConversation):
             else:
                 self.message_id = [self.config['message_id']]
             self.config['ended'] = True
-        elif self.config['check'] == 'repeat' and last_message_id:
-                self.message_id = list(last_message_id.split('.')[1:])
+        elif self.context.get('message.content.conversation') and 'repeat_condition' in self.config:
+            self.skip_message_id_update = True
+            self.message_id = list(last_message_id.split('.')[1:])
 
     def last_completed(self, source, data):
         bq = bigquery.Client()
@@ -97,3 +94,8 @@ class Conversation(BaseConversation):
         q = q.format(project=config.PROJECT_ID, name=data, source=source)
         rows = list(bq.query(q))
         return rows[0]['time'] if rows else datetime.datetime.utcfromtimestamp(0)
+
+    def update_repeat_condition(self, condition):
+        if 'repeat' not in self.config:
+            return
+        self.config['repeat_condition'] = condition
