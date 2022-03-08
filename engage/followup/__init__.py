@@ -61,6 +61,9 @@ class Conversation(BaseConversation):
                 self.message_id = ['task_confirm', task_type]
                 self.config['prev_message'] = 'task_confirm'
                 self.update_repeat_condition('{{person.session.last_sent_time > person.session.last_receive_time}}')
+        elif self.context.get('message.content.conversation') and 'repeat_condition' in self.config:
+                self.skip_message_id_update = True
+                self.message_id = list(last_message_id.split('.')[1:])
         elif last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm'):
             df = self.detect_intent(contexts={'yes_no': {}})
             if df.query_result.intent.display_name == 'generic.yes':
@@ -85,9 +88,6 @@ class Conversation(BaseConversation):
             else:
                 self.message_id = [self.config['message_id']]
             self.config['ended'] = True
-        elif self.context.get('message.content.conversation') and 'repeat_condition' in self.config:
-            self.skip_message_id_update = True
-            self.message_id = list(last_message_id.split('.')[1:])
 
     def last_completed(self, source, data):
         bq = bigquery.Client()
