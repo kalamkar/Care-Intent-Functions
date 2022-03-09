@@ -4,7 +4,7 @@ DATA = {
     'barriers.which.medication': 'What challenges are you facing to take the medication?',
     'barriers.explain': 'I didn\'t get that, please explain a bit more.',
     'barriers.ok': 'Ok',
-    'barriers.generic_input_reply': 'I\'ll be happy to look into that. In the meantime, it\'s important that you '
+    'barriers.generic_input_reply': 'Ok, noted. In the meantime, it\'s important that you '
                                     'continue taking your medication as prescribed and we\'ll work together to find '
                                     'ways to make it easier for you to do that. Have a great day!',
 
@@ -18,7 +18,7 @@ DATA = {
     'diary.recorded.medication': 'Your medication has been recorded.',
 
     'followup.task_confirm.generic': 'Did you do it?',
-    'followup.task_confirm.medication': 'Did you take the medication?',
+    'followup.task_confirm.medication': 'Did you take the medication last night?',
     'followup.task_confirm_yes.generic': 'Nice, next time let us know.',
     'followup.task_confirm_yes.medication': 'Nice, next time text X whenever you take your medication.',
     'followup.task_confirm_no': 'Ok',
