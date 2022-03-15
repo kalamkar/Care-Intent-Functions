@@ -49,6 +49,7 @@ class Conversation(BaseConversation):
 
     def process(self):
         last_message_id = self.context.get('person.last_message_id')
+        content_type = self.context.get('message.content_type')
         missing_task = self.context.get('missing_task')
         logging.info('Missing task {} last message id {}'.format(missing_task, last_message_id))
         if self.is_scheduled_time() and 'repeat_condition' in self.config:
@@ -64,7 +65,7 @@ class Conversation(BaseConversation):
                 self.message_id = ['task_confirm', task_type]
                 self.config['prev_message'] = 'task_confirm'
                 self.update_repeat_condition('{{person.session.last_sent_time > person.session.last_receive_time}}')
-        elif not self.is_scheduled_time() and last_message_id and \
+        elif not self.is_scheduled_time() and last_message_id and content_type != 'application/json' and\
                 last_message_id.startswith(self.__module__ + '.task_confirm'):
             df = self.detect_intent(contexts={'yes_no': {}})
             if df.query_result.intent.display_name == 'generic.yes':

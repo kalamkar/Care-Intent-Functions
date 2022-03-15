@@ -109,6 +109,7 @@ def main(event, metadata):
             logging.warning('No reply generated')
     except:
         logging.error(sys.exc_info()[1])
+        logging.error(sys.exc_info()[2])
 
     person_update['task_id'] = schedule_next_task(person)
     person_update['conversations'] = person['conversations']
