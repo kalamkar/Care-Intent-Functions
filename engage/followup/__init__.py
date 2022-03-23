@@ -21,6 +21,9 @@ class Conversation(BaseConversation):
 
         if is_scheduled_now and 'ended' in self.config:
             del self.config['ended']
+        if is_scheduled_now and 'repeat_question' in self.config and not self.config['repeat_question']:
+            del self.config['repeat_question']
+
         if is_scheduled_now and 'repeat_question' in self.config:
             return self.config['repeat_question']
         elif is_scheduled_now and 'check' in self.config and self.config['check'] == 'tasks':
