@@ -45,7 +45,8 @@ class Conversation(BaseConversation):
         elif is_scheduled_now and 'check' in self.config:
             return self.context.render(self.config['check']) == 'True'
 
-        return last_message_id and last_message_id.startswith(self.__module__) and 'ended' not in self.config
+        return last_message_id and last_message_id.startswith(self.__module__) and 'ended' not in self.config and \
+               not is_scheduled_now
 
     def process(self):
         last_message_id = self.context.get('person.last_message_id')
