@@ -69,7 +69,8 @@ class Conversation(BaseConversation):
                     self.config['repeat_question'] = True
         elif not self.is_scheduled_now() and last_message_id and content_type != 'application/json' and\
                 last_message_id.startswith(self.__module__ + '.task_confirm'):
-            del self.config['repeat_question']
+            if 'repeat_question' in self.config:
+                del self.config['repeat_question']
             df = self.detect_intent(contexts={'yes_no': {}})
             if df.query_result.intent.display_name == 'generic.yes':
                 self.publish_data(source_id=self.context.get('person.id'), tags='biometrics',
