@@ -124,7 +124,7 @@ def schedule_next_task(person):
     for conversation in person['conversations']:
         if 'schedule' in conversation:
             timings.append((croniter.croniter(conversation['schedule'], now).get_next(datetime.datetime), conversation))
-        if 'repeat' in conversation and conversation['repeat'] and 'repeat_condition' in conversation:
+        if 'repeat' in conversation and conversation['repeat'] and 'repeat_question' in conversation:
             repeat_secs = common.get_duration_secs(conversation['repeat'])
             timings.append((now + datetime.timedelta(seconds=repeat_secs), conversation))
 
