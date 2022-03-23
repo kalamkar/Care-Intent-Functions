@@ -21,7 +21,9 @@ class Conversation(BaseConversation):
 
         if is_scheduled_now and 'ended' in self.config:
             del self.config['ended']
-        if is_scheduled_now and 'check' in self.config and self.config['check'] == 'tasks':
+        if is_scheduled_now and 'repeat_question' in self.config:
+            return self.config['repeat_question']
+        elif is_scheduled_now and 'check' in self.config and self.config['check'] == 'tasks':
             is_missing_task = False
             tasks = self.context.get('person.tasks')
             if not tasks or type(tasks) != list:
@@ -40,8 +42,6 @@ class Conversation(BaseConversation):
                     self.context.set('missing_task', task | {'last_completed_time': last_completed_time})
                     is_missing_task = True
             return is_missing_task
-        elif is_scheduled_now and 'repeat_question' in self.config:
-            return self.config['repeat_question']
         elif is_scheduled_now and 'check' in self.config:
             return self.context.render(self.config['check']) == 'True'
 
