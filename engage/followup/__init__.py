@@ -109,4 +109,4 @@ class Conversation(BaseConversation):
                conversation['schedule'] == self.config['schedule']
 
     def is_scheduled_run(self):
-        return self.context.get('message.content.conversation') is None
+        return self.context.get('message.content.conversation') is not None
