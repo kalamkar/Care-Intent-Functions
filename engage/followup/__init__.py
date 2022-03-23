@@ -16,7 +16,7 @@ class Conversation(BaseConversation):
         now = datetime.datetime.utcnow()
         timezone = self.context.get('person.timezone')
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
-        is_scheduled_now = self.is_scheduled_time()
+        is_scheduled_now = self.is_scheduled_now()
         last_message_id = self.context.get('person.last_message_id')
 
         if is_scheduled_now and 'ended' in self.config:
@@ -40,23 +40,23 @@ class Conversation(BaseConversation):
                     self.context.set('missing_task', task | {'last_completed_time': last_completed_time})
                     is_missing_task = True
             return is_missing_task
-        elif self.context.get('message.content.conversation') and 'repeat_condition' in self.config:
-            return self.context.render(self.config['repeat_condition']) == 'True'
+        elif is_scheduled_now and 'repeat_question' in self.config:
+            return self.config['repeat_question']
         elif is_scheduled_now and 'check' in self.config:
             return self.context.render(self.config['check']) == 'True'
 
         return last_message_id and last_message_id.startswith(self.__module__) and 'ended' not in self.config and \
-               not is_scheduled_now
+               not self.is_scheduled_run()
 
     def process(self):
         last_message_id = self.context.get('person.last_message_id')
         content_type = self.context.get('message.content_type')
         missing_task = self.context.get('missing_task')
         logging.info('Missing task {} last message id {}'.format(missing_task, last_message_id))
-        if self.is_scheduled_time() and 'repeat_condition' in self.config:
+        if self.is_scheduled_now() and 'repeat_question' in self.config:
             self.skip_message_id_update = True
             self.message_id = list(last_message_id.split('.')[1:])
-            del self.config['repeat_condition']
+            del self.config['repeat_question']
         elif self.config['check'] == 'tasks' and missing_task:
             task_type = missing_task['data'] if 'data' in missing_task else 'generic'
             if 'prev_message' in self.config and self.config['prev_message'] == 'task_confirm':
@@ -65,9 +65,11 @@ class Conversation(BaseConversation):
             else:
                 self.message_id = ['task_confirm', task_type]
                 self.config['prev_message'] = 'task_confirm'
-                self.update_repeat_condition('{{person.session.last_sent_time > person.session.last_receive_time}}')
-        elif not self.is_scheduled_time() and last_message_id and content_type != 'application/json' and\
+                if 'repeat' in self.config and self.config['repeat']:
+                    self.config['repeat_question'] = True
+        elif not self.is_scheduled_now() and last_message_id and content_type != 'application/json' and\
                 last_message_id.startswith(self.__module__ + '.task_confirm'):
+            del self.config['repeat_question']
             df = self.detect_intent(contexts={'yes_no': {}})
             if df.query_result.intent.display_name == 'generic.yes':
                 self.publish_data(source_id=self.context.get('person.id'), tags='biometrics',
@@ -81,7 +83,7 @@ class Conversation(BaseConversation):
                 logging.warning('Unexpected result {}'.format(df.query_result))
                 self.skip_message_id_update = True
                 self.message_id = ['confirm_yes']
-        elif self.is_scheduled_time() and 'message_id' in self.config:
+        elif self.is_scheduled_now() and 'message_id' in self.config:
             if ',' in self.config['message_id']:
                 messages = self.config['message_id'].split(',')
                 message_index = (self.config['message_index'] + 1) if 'message_index' in self.config else 0
@@ -101,12 +103,10 @@ class Conversation(BaseConversation):
         rows = list(bq.query(q))
         return rows[0]['time'] if rows else datetime.datetime.utcfromtimestamp(0)
 
-    def update_repeat_condition(self, condition):
-        if 'repeat' not in self.config or not self.config['repeat']:
-            return
-        self.config['repeat_condition'] = condition
-
-    def is_scheduled_time(self):
+    def is_scheduled_now(self):
         conversation = self.context.get('message.content.conversation')
         return 'schedule' in self.config and conversation and 'schedule' in conversation and \
                conversation['schedule'] == self.config['schedule']
+
+    def is_scheduled_run(self):
+        return self.context.get('message.content.conversation') is None
