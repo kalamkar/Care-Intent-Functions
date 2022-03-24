@@ -23,11 +23,7 @@ class Conversation(BaseConversation):
             del self.config['ended']
 
         if is_scheduled_now and 'repeat_question' in self.config:
-            if self.config['repeat_question']:
-                return True
-            else:
-                del self.config['repeat_question']
-                return False
+            return True
         elif is_scheduled_now and 'check' in self.config and self.config['check'] == 'tasks':
             is_missing_task = False
             tasks = self.context.get('person.tasks')
@@ -59,8 +55,9 @@ class Conversation(BaseConversation):
         missing_task = self.context.get('missing_task')
         logging.info('Missing task {} last message id {}'.format(missing_task, last_message_id))
         if self.is_scheduled_now() and 'repeat_question' in self.config:
-            self.skip_message_id_update = True
-            self.message_id = list(last_message_id.split('.')[1:])
+            if self.config['repeat_question']:
+                self.skip_message_id_update = True
+                self.message_id = list(last_message_id.split('.')[1:])
             del self.config['repeat_question']
         elif self.config['check'] == 'tasks' and missing_task:
             task_type = missing_task['data'] if 'data' in missing_task else 'generic'
