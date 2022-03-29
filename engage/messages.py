@@ -19,7 +19,7 @@ DATA = {
 
     'followup.task_confirm.generic': 'Did you do it?',
     'followup.task_confirm.medication': 'Did you take the medication last night?',
-    'followup.task_confirm_yes.generic': 'Nice! Remember to text "x" after taking your daily eye drop to let us know that you took your medication.',   
+    'followup.task_confirm_yes.generic': 'Nice! Remember to text "x" to let us know that you completed the activity.',   
     'followup.task_confirm_yes.medication': 'Nice! Remember to text "x" after taking your daily eye drop to let us know that you took your medication.',
     'followup.task_confirm_no': 'Ok',
     'followup.confirm_yes': 'Is that a yes?',
@@ -48,7 +48,7 @@ DATA = {
     'followup.utenn_gtk_11b': 'Managing your glaucoma may feel overwhelming. Remember your doctor is on your team and has the same goal as you—preventing vision loss.',
     'followup.utenn_gtk_12a': 'While you may not feel glaucoma, it’s important to take your drops as prescribed because uncontrolled glaucoma can lead to vision loss.',
     'followup.utenn_gtk_12b': 'Taking the right steps early on in your glaucoma can prevent vision loss. Make a commitment to take your drops every day to achieve this goal.',
-    'followup.utenn_gtk_13a': 'While you may be okay with some vision loss, how would you feel if you had vision    ',
+    'followup.utenn_gtk_13a': 'While you may be okay with some vision loss, how would you feel if you had vision loss.',
     'followup.utenn_gtk_14a': 'Glaucoma is known as the “sneak thief of sight.” Don’t depend on noticing symptoms alone to motivate you to be proactive about your eye health.',
     'followup.utenn_gtk_14b': 'At the beginning of having glaucoma, you may not notice any visual changes. However, vision changes or loss can develop with uncontrolled glaucoma.',
     'followup.utenn_gtk_15a': 'Focus on the now and avoid worrying about the future. Taking your drops to help your glaucoma is something you can do today to help your vision.',
