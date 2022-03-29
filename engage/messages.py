@@ -1,7 +1,7 @@
 
 DATA = {
     'barriers.which.generic': 'What challenges are you facing?',
-    'barriers.which.medication': '{% if person.name.first %}{{person.name.first}}, what{% else %}What{% endif %} challenges are you facing?',
+    'barriers.which.medication': '{% if person.name.first %}{{person.name.first}}, what{% else %}What{% endif %} challenges are you facing to take the eye drop medication?',
     'barriers.explain': 'I didn\'t get that, please explain a bit more.',
     'barriers.ok': 'Ok',
     'barriers.generic_input_reply': 'Ok, noted. In the meantime, it\'s important that you '
