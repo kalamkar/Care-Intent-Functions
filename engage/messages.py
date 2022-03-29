@@ -1,7 +1,7 @@
 
 DATA = {
     'barriers.which.generic': 'What challenges are you facing?',
-    'barriers.which.medication': 'What challenges are you facing to take the eye drop medication?',
+    'barriers.which.medication': '{% if person.name.first %}{{person.name.first}}, what{% else %}What{% endif %} challenges are you facing?',
     'barriers.explain': 'I didn\'t get that, please explain a bit more.',
     'barriers.ok': 'Ok',
     'barriers.generic_input_reply': 'Ok, noted. In the meantime, it\'s important that you '
@@ -154,12 +154,5 @@ DATA = {
     'followup.utenn_ses_15a': 'Applying your drops can be challenging. If you’re having trouble applying them, ask your pharmacist if there are different brands for your medication.',
     'followup.utenn_ses_15b': 'Drops can be difficult to apply by yourself. Ask a family member to help you apply them!',
     'followup.utenn_ses_16a': 'It’s important to avoid touching the bottle to your eyes when applying your drops to prevent infection.',
-    'followup.utenn_ses_16b': 'Applying your drops can be a challenge. Try resting your hand on your cheek or nose to avoid accidently touching your eye.',
-
-    'assessment': 'How are you?',
-    'barriers': '{% if person.name.first %}{{person.name.first}}, what{% else %}What{% endif %} challenges are you facing?',
-    'chitchat': 'Good to hear from you.',
-    'diary': 'Got it!',
-    'education': 'Hello',
-    'followup': 'Hi'
+    'followup.utenn_ses_16b': 'Applying your drops can be a challenge. Try resting your hand on your cheek or nose to avoid accidently touching your eye.'
 }
