@@ -82,6 +82,7 @@ class Conversation(BaseConversation):
                 self.message_id = ['task_confirm_yes', last_message_id.split('.')[-1]]
                 self.config['ended'] = True
             elif df.query_result.intent.display_name == 'generic.no' and last_completed_hours > 40:
+                self.is_missing_task()  # Set the missing task in the context for barrier module
                 self.transfer_type = 'barriers'
             elif df.query_result.intent.display_name == 'generic.no':
                 self.message_id = ['task_confirm_no']
