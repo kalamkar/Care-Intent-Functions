@@ -16,6 +16,8 @@ import education
 import followup
 import chitchat
 
+from messages import DATA as messages
+
 from context import Context
 from google.cloud import pubsub_v1
 from google.cloud import firestore
@@ -59,6 +61,16 @@ def main(event, metadata):
         person_update['task_id'] = schedule_next_task(person)
         db.collection('persons').document(person['id']['value']).update(person_update)
         logging.info('Skipping reply for schedule only message')
+        return
+
+    # In case of incoming message and person has not consented
+    if message['content_type'] != 'application/json' and not context.get('person.consent_time'):
+        if context.get('message.nlp.action') == 'smalltalk.confirmation.yes':
+            person_update['consent_time'] = datetime.datetime.utcnow()
+            db.collection('persons').document(person['id']['value']).update(person_update)
+            send_message(message['receiver'], message['sender'], context.render(messages['welcome']), db)
+        elif context.get('message.nlp.action') != 'smalltalk.confirmation.no':
+            send_message(message['receiver'], message['sender'], context.render(messages['consent']), db)
         return
 
     replies = []
