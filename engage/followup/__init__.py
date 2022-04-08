@@ -21,10 +21,10 @@ class Conversation(BaseConversation):
 
         if is_scheduled_now and 'repeat_question' in self.config:
             return True
-        elif is_scheduled_now and 'check' in self.config and self.config['check'] == 'tasks':
+        elif is_scheduled_now and 'check' in self.config and self.config['check'] != 'False':
             return self.is_missing_task()
         elif is_scheduled_now and 'check' in self.config:
-            return self.is_missing_task()
+            return True
 
         return last_message_id and last_message_id.startswith(self.__module__) and 'ended' not in self.config and \
                not self.is_scheduled_run()
@@ -52,7 +52,7 @@ class Conversation(BaseConversation):
             if last_completed_time < (last_expected_time - tolerance):
                 self.context.set('missing_task', task)
                 is_missing_task = True
-        return (is_missing_task and self.config['check'] != 'False') or self.config['check'] == 'False'
+        return is_missing_task
 
     def process(self):
         last_completed_hours = self.config['last_completed_hours'] if 'last_completed_hours' in self.config else 1000
