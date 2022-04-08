@@ -52,7 +52,7 @@ class Conversation(BaseConversation):
             if last_completed_time < (last_expected_time - tolerance):
                 self.context.set('missing_task', task)
                 is_missing_task = True
-        return is_missing_task
+        return (is_missing_task and self.config['check'] == 'tasks') or self.config['check'] == 'False'
 
     def process(self):
         last_completed_hours = self.config['last_completed_hours'] if 'last_completed_hours' in self.config else 1000
