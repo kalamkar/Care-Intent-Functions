@@ -26,8 +26,8 @@ class Conversation(BaseConversation):
         elif is_scheduled_now and 'check' in self.config:
             return True
 
-        return last_message_id and last_message_id.startswith(self.__module__) and 'ended' not in self.config and \
-               not self.is_scheduled_run()
+        return last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm')\
+               and 'ended' not in self.config and not self.is_scheduled_run()
 
     def is_missing_task(self):
         now = datetime.datetime.utcnow()
