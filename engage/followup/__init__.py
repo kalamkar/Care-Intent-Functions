@@ -47,7 +47,7 @@ class Conversation(BaseConversation):
                 if timezone else last_completed_time
             self.config['last_completed_hours'] = int((now - last_completed_time).total_seconds() / 3600)
             last_expected_time = croniter.croniter(task['schedule'], now).get_prev(datetime.datetime)
-            tolerance = datetime.timedelta(seconds=(4 * 3600 if 'tolerance' not in task else
+            tolerance = datetime.timedelta(seconds=((4 * 3600) if 'tolerance' not in task else
                                                     common.get_duration_secs(task['tolerance'])))
             if last_completed_time < (last_expected_time - tolerance):
                 self.context.set('missing_task', task)
