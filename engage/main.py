@@ -77,7 +77,7 @@ def main(event, metadata):
         # Incoming message and person said no
         elif message['content_type'] != 'application/json' and \
                 context.get('message.nlp.action') == 'smalltalk.confirmation.no':
-            person_update['person.opted_out'] = True
+            person_update['opted_out'] = True
             db.collection('persons').document(person['id']['value']).update(person_update)
         else:
             send_message(message['receiver'] if 'receiver' in message else None,
