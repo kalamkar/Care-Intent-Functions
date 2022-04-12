@@ -63,13 +63,23 @@ def main(event, metadata):
         logging.info('Skipping reply for schedule only message')
         return
 
-    # In case of incoming message and person has not consented
-    if message['content_type'] != 'application/json' and not context.get('person.consent_time'):
-        if context.get('message.nlp.action') == 'smalltalk.confirmation.yes':
+    # In case person has not consented
+    if not context.get('person.consent_time'):
+        # Outgoing message and opted out person
+        if message['content_type'] == 'application/json' and context.get('person.opted_out'):
+            logging.warning('Person has opted out, remove them from scheduled message.')
+        # Incoming message and person said yes
+        elif message['content_type'] != 'application/json' and \
+                context.get('message.nlp.action') == 'smalltalk.confirmation.yes':
             person_update['consent_time'] = datetime.datetime.utcnow()
             db.collection('persons').document(person['id']['value']).update(person_update)
             send_message(message['receiver'], message['sender'], context.render(messages['welcome']), db)
-        elif context.get('message.nlp.action') != 'smalltalk.confirmation.no':
+        # Incoming message and person said no
+        elif message['content_type'] != 'application/json' and \
+                context.get('message.nlp.action') == 'smalltalk.confirmation.no':
+            person_update['person.opted_out'] = True
+            db.collection('persons').document(person['id']['value']).update(person_update)
+        else:
             send_message(message['receiver'], message['sender'], context.render(messages['consent']), db)
         return
 
