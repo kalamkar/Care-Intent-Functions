@@ -72,6 +72,7 @@ def main(event, metadata):
         elif message['content_type'] != 'application/json' and \
                 context.get('message.nlp.action') == 'smalltalk.confirmation.yes':
             person_update['consent_time'] = datetime.datetime.utcnow()
+            person_update['opted_out'] = False
             db.collection('persons').document(person['id']['value']).update(person_update)
             send_message(message['receiver'], message['sender'], context.render(messages['welcome']), db)
         # Incoming message and person said no
