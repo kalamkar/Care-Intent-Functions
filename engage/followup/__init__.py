@@ -52,6 +52,8 @@ class Conversation(BaseConversation):
             if last_completed_time < (last_expected_time - tolerance):
                 self.context.set('missing_task', task)
                 is_missing_task = True
+            logging.info('Is Missing? %s, last completed %s, last expected %s, tolerance %s ',
+                         (is_missing_task, last_completed_time, last_expected_time, tolerance))
         return is_missing_task
 
     def process(self):
