@@ -53,7 +53,7 @@ class Conversation(BaseConversation):
                 self.context.set('missing_task', task)
                 is_missing_task = True
             logging.info('Is Missing? %s, last completed %s, last expected %s, tolerance %s ',
-                         (is_missing_task, last_completed_time, last_expected_time, tolerance))
+                         (is_missing_task, str(last_completed_time), str(last_expected_time), str(tolerance)))
         return is_missing_task
 
     def process(self):
