@@ -80,7 +80,8 @@ def main(event, metadata):
             person_update['person.opted_out'] = True
             db.collection('persons').document(person['id']['value']).update(person_update)
         else:
-            send_message(message['receiver'], message['sender'], context.render(messages['consent']), db)
+            send_message(message['receiver'] if 'receiver' in message else None,
+                         message['sender'], context.render(messages['consent']), db)
         return
 
     replies = []
