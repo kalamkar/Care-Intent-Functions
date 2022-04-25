@@ -73,6 +73,7 @@ def main(event, metadata):
                 context.get('message.nlp.action') == 'smalltalk.confirmation.yes':
             person_update['consent_time'] = datetime.datetime.utcnow()
             person_update['opted_out'] = False
+            person_update['session.last_sent_time'] = datetime.datetime.utcnow().astimezone(pytz.utc)
             db.collection('persons').document(person['id']['value']).update(person_update)
             send_message(message['receiver'], message['sender'], context.render(messages['welcome']), db)
         # Incoming message and person said no
@@ -125,8 +126,10 @@ def main(event, metadata):
         reply = ' '.join(filter(lambda r: r.strip(), replies)).strip()
         if status == 'engage' and reply and 'sender' in message:
             send_message(None, message['sender'], reply, db)
+            person_update['session.last_sent_time'] = datetime.datetime.utcnow().astimezone(pytz.utc)
         elif reply and 'receiver' in message and 'sender' in message:
             send_message(message['receiver'], message['sender'], reply, db)
+            person_update['session.last_sent_time'] = datetime.datetime.utcnow().astimezone(pytz.utc)
         else:
             logging.warning('No reply generated')
     except:
@@ -135,7 +138,6 @@ def main(event, metadata):
 
     person_update['task_id'] = schedule_next_task(person)
     person_update['conversations'] = person['conversations']
-    person_update['session.last_sent_time'] = datetime.datetime.utcnow().astimezone(pytz.utc)
     db.collection('persons').document(person['id']['value']).update(person_update)
 
 
