@@ -21,10 +21,8 @@ class Conversation(BaseConversation):
 
         if is_scheduled_now and 'repeat_question' in self.config:
             return True
-        elif is_scheduled_now and 'check' in self.config and self.config['check'] != 'False':
+        elif is_scheduled_now:
             return self.is_missing_task()
-        elif is_scheduled_now and 'check' in self.config:
-            return True
 
         return last_message_id and last_message_id.startswith(self.__module__ + '.task_confirm')\
                and 'ended' not in self.config and not self.is_scheduled_run()
