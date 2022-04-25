@@ -82,6 +82,14 @@ class Conversation(abc.ABC):
         logging.info('DF request {} and response {}'.format(request, response))
         return response
 
+    def is_scheduled_now(self):
+        conversation = self.context.get('message.content.conversation')
+        return 'schedule' in self.config and conversation and 'schedule' in conversation and \
+               conversation['schedule'] == self.config['schedule']
+
+    def is_scheduled_run(self):
+        return self.context.get('message.content.conversation') is not None
+
 
 def build_df_context(session_id, name, data):
     df_context = dialogflow.types.Context({

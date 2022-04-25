@@ -112,11 +112,3 @@ class Conversation(BaseConversation):
         q = q.format(project=config.PROJECT_ID, name=data, source=source)
         rows = list(bq.query(q))
         return rows[0]['time'] if rows else datetime.datetime.utcfromtimestamp(0)
-
-    def is_scheduled_now(self):
-        conversation = self.context.get('message.content.conversation')
-        return 'schedule' in self.config and conversation and 'schedule' in conversation and \
-               conversation['schedule'] == self.config['schedule']
-
-    def is_scheduled_run(self):
-        return self.context.get('message.content.conversation') is not None

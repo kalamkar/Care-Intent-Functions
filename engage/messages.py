@@ -2,6 +2,7 @@
 DATA = {
     'consent': 'Thank you{{(" " + person.name.first) or ""}}, for being part of this glaucoma study.\n\nMessage and Data rates may apply. You can always text STOP to cancel.\n\nReply YES to consent and continue receiving texts.',
     'welcome': 'Please save this number to your phone.\n\nThis is the phone number used to send messages.\n\nWe look forward to having you in the study and will be in contact soon.',
+    'education.reminder': 'This is a reminder to take your eyedrop medication.',
 
     'barriers.which.generic': 'What challenges are you facing?',
     'barriers.which.medication': '{% if person.name.first %}{{person.name.first}}, what{% else %}What{% endif %} challenges are you facing to take the eye drop medication?',
