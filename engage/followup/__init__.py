@@ -67,7 +67,8 @@ class Conversation(BaseConversation):
         for task in tasks:
             if 'data' not in task or 'schedule' not in task:
                 continue
-            last_expected_time = croniter.croniter(task['schedule'], now).get_prev(datetime.datetime)
+            last_expected_time = croniter.croniter(task['schedule'], now - datetime.timedelta(minutes=1))\
+                .get_prev(datetime.datetime)
             if last_expected_time > latest_expected_time:
                 latest_expected_time = last_expected_time
                 latest_task = task
