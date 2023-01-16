@@ -43,6 +43,7 @@ class Conversation(BaseConversation):
         last_expected_time = croniter.croniter(task['schedule'], now).get_prev(datetime.datetime)
         window_start_time = last_expected_time - datetime.timedelta(seconds=(4 * 3600))
         window_end_time = last_expected_time + datetime.timedelta(seconds=(6 * 3600))
+        logging.info('Is missing %s, expected %s, last completed %s' % (task, last_expected_time, last_completed_time))
         if window_start_time < last_completed_time < window_end_time:
             part_of_day = 'today'
             if last_expected_time.hour < 12:
