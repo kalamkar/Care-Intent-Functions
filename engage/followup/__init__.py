@@ -48,11 +48,10 @@ class Conversation(BaseConversation):
             part_of_day = 'today'
             if last_expected_time.hour < 12:
                 part_of_day = 'this morning'
-            elif  last_expected_time.hour >= 18:
+            elif last_expected_time.hour >= 18:
                 part_of_day = 'last night'
+            task['part_of_day'] = part_of_day
             self.context.set('missing_task', task)
-            self.context.set('missing_task.part_of_day', part_of_day)
-            logging.debug('Part of day %s, hour %d' % (part_of_day, last_expected_time.hour))
             return True
         return False
 
