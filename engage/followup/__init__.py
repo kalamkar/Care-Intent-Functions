@@ -59,7 +59,9 @@ class Conversation(BaseConversation):
         if not tasks or type(tasks) != list:
             logging.info('No tasks for the person')
             return None
-        latest_expected_time = datetime.datetime.utcfromtimestamp(0)
+        timezone = self.context.get('person.timezone')
+        latest_expected_time = datetime.datetime.utcfromtimestamp(0).astimezone(pytz.timezone(timezone)
+                                                                                if timezone else pytz.UTC)
         latest_task = None
         for task in tasks:
             if 'data' not in task or 'schedule' not in task:
