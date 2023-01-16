@@ -22,8 +22,8 @@ DATA = {
     'diary.recorded.medication': 'Your medication has been recorded.',
 
     'followup.task_confirm.generic': 'Did you do it?',
-    'followup.task_confirm.medication': 'Did you take the medication last night?',
-    'followup.task_confirm_yes.generic': 'Nice! Remember to text "x" to let us know that you completed the activity.',   
+    'followup.task_confirm.medication': 'Did you take the medication {{missing_task.part_of_day or "last night"}}?',
+    'followup.task_confirm_yes.generic': 'Nice! Remember to text "x" to let us know that you completed the activity.',
     'followup.task_confirm_yes.medication': 'Nice! Remember to text "x" after taking your daily eye drop to let us know that you took your medication.',
     'followup.task_confirm_no': 'Ok',
     'followup.confirm_yes': 'Is that a yes?',

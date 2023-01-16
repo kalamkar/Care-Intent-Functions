@@ -32,27 +32,45 @@ class Conversation(BaseConversation):
         timezone = self.context.get('person.timezone')
         now = now.astimezone(pytz.timezone(timezone)) if timezone else now
 
-        is_missing_task = False
+        task = self.get_recent_task(now)
+        if not task:
+            return False
+
+        last_completed_time = self.last_completed(self.context.get('person.id.value'), task['data'])
+        last_completed_time = last_completed_time.astimezone(pytz.timezone(timezone)) \
+            if timezone else last_completed_time
+        self.config['last_completed_hours'] = int((now - last_completed_time).total_seconds() / 3600)
+        last_expected_time = croniter.croniter(task['schedule'], now).get_prev(datetime.datetime)
+        tolerance = datetime.timedelta(seconds=((4 * 3600) if 'tolerance' not in task else
+                                                common.get_duration_secs(task['tolerance'])))
+        logging.info('Is Missing? %s, last completed %s, last expected %s, tolerance %s' %
+                     (task, str(last_completed_time), str(last_expected_time), str(tolerance)))
+        if last_completed_time < (last_expected_time - tolerance):
+            part_of_day = 'today'
+            if last_expected_time.hour < 12:
+                part_of_day = 'this morning'
+            elif  last_expected_time.hour >= 18:
+                part_of_day = 'last night'
+            self.context.set('missing_task', task)
+            self.context.set('missing_task.part_of_day', part_of_day)
+            return True
+        return False
+
+    def get_recent_task(self, now):
         tasks = self.context.get('person.tasks')
         if not tasks or type(tasks) != list:
             logging.info('No tasks for the person')
-            return False
+            return None
+        latest_expected_time = datetime.datetime.utcfromtimestamp(0)
+        latest_task = None
         for task in tasks:
             if 'data' not in task or 'schedule' not in task:
                 continue
-            last_completed_time = self.last_completed(self.context.get('person.id.value'), task['data'])
-            last_completed_time = last_completed_time.astimezone(pytz.timezone(timezone)) \
-                if timezone else last_completed_time
-            self.config['last_completed_hours'] = int((now - last_completed_time).total_seconds() / 3600)
             last_expected_time = croniter.croniter(task['schedule'], now).get_prev(datetime.datetime)
-            tolerance = datetime.timedelta(seconds=((4 * 3600) if 'tolerance' not in task else
-                                                    common.get_duration_secs(task['tolerance'])))
-            if last_completed_time < (last_expected_time - tolerance):
-                self.context.set('missing_task', task)
-                is_missing_task = True
-            logging.info('Is Missing? %s, last completed %s, last expected %s, tolerance %s' %
-                         (is_missing_task, str(last_completed_time), str(last_expected_time), str(tolerance)))
-        return is_missing_task
+            if last_expected_time > latest_expected_time:
+                latest_expected_time = last_expected_time
+                latest_task = task
+        return latest_task
 
     def process(self):
         last_completed_hours = self.config['last_completed_hours'] if 'last_completed_hours' in self.config else 1000
