@@ -52,6 +52,7 @@ class Conversation(BaseConversation):
                 part_of_day = 'last night'
             self.context.set('missing_task', task)
             self.context.set('missing_task.part_of_day', part_of_day)
+            logging.debug('Part of day %s, hour %d' % (part_of_day, last_expected_time.hour))
             return True
         return False
 
