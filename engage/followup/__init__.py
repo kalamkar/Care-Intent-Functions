@@ -41,11 +41,9 @@ class Conversation(BaseConversation):
             if timezone else last_completed_time
         self.config['last_completed_hours'] = int((now - last_completed_time).total_seconds() / 3600)
         last_expected_time = croniter.croniter(task['schedule'], now).get_prev(datetime.datetime)
-        tolerance = datetime.timedelta(seconds=((4 * 3600) if 'tolerance' not in task else
-                                                common.get_duration_secs(task['tolerance'])))
-        logging.info('Is Missing? %s, last completed %s, last expected %s, tolerance %s' %
-                     (task, str(last_completed_time), str(last_expected_time), str(tolerance)))
-        if last_completed_time < (last_expected_time - tolerance):
+        window_start_time = last_expected_time - datetime.timedelta(seconds=(4 * 3600))
+        window_end_time = last_expected_time + datetime.timedelta(seconds=(6 * 3600))
+        if window_start_time < last_completed_time < window_end_time:
             part_of_day = 'today'
             if last_expected_time.hour < 12:
                 part_of_day = 'this morning'
