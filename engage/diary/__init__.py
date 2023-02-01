@@ -15,3 +15,11 @@ class Conversation(BaseConversation):
         self.publish_data(source_id=self.context.get('person.id'), tags='biometrics', params=params)
         param_name = sorted(list(params.keys()))[0]
         self.message_id = ['recorded', param_name]
+        self.reply = self.get_reply()
+        if 'message_id' in self.config:
+            messages = self.config['message_id'].split(',')
+            message_index = (self.config['message_index'] + 1) if 'message_index' in self.config else 0
+            message_index = message_index if 0 <= message_index < len(messages) else 0
+            self.message_id = [messages[message_index]]
+            self.config['message_index'] = message_index
+            self.reply += ' ' + self.get_reply()
