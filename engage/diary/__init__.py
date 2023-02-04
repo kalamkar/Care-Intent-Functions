@@ -16,10 +16,10 @@ class Conversation(BaseConversation):
         param_name = sorted(list(params.keys()))[0]
         self.message_id = ['recorded', param_name]
         self.reply = self.get_reply()
-        if 'message_id' in self.config:
-            messages = self.config['message_id'].split(',')
-            message_index = (self.config['message_index'] + 1) if 'message_index' in self.config else 0
+        messages = self.context.get('person.message_id', default='').split(',')
+        if messages:
+            message_index = self.context.get('person.message_index', -1) + 1
             message_index = message_index if 0 <= message_index < len(messages) else 0
             self.message_id = [messages[message_index]]
-            self.config['message_index'] = message_index
+            self.context.set('person', {'message_index': message_index})
             self.reply += ' ' + self.get_reply()

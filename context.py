@@ -54,7 +54,7 @@ class Context(object):
         if name in self.data:
             del self.data[name]
 
-    def get(self, name):
+    def get(self, name, default=None):
         tokens = [int(token) if token.isnumeric() else token for token in name.split('.')] if name else []
         try:
             if len(tokens) == 1:
@@ -66,10 +66,10 @@ class Context(object):
             elif len(tokens) == 4:
                 return self.data[tokens[0]][tokens[1]][tokens[2]][tokens[3]]
         except KeyError:
-            return None
+            return default
         except TypeError:
-            return None
-        return None
+            return default
+        return default
 
     def update(self, patch):
         self.data.update(patch)

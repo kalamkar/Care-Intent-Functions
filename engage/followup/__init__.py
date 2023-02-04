@@ -106,11 +106,11 @@ class Conversation(BaseConversation):
                 self.transfer_type = 'barriers'
             elif df.query_result.intent.display_name == 'generic.no':
                 if 'message_id' in self.config:
-                    messages = self.config['message_id'].split(',')
-                    message_index = (self.config['message_index'] + 1) if 'message_index' in self.config else 0
+                    messages = self.context.get('person.message_id', default='').split(',')
+                    message_index = self.context.get('person.message_index', -1) + 1
                     message_index = message_index if 0 <= message_index < len(messages) else 0
                     self.message_id = [messages[message_index]]
-                    self.config['message_index'] = message_index
+                    self.context.set('person', {'message_index': message_index})
                 else:
                     self.message_id = ['task_confirm_no']
                 self.config['ended'] = True
@@ -119,14 +119,14 @@ class Conversation(BaseConversation):
                 self.skip_message_id_update = True
                 self.message_id = ['confirm_yes']
         elif self.is_scheduled_now() and 'message_id' in self.config:
-            if ',' in self.config['message_id']:
-                messages = self.config['message_id'].split(',')
-                message_index = (self.config['message_index'] + 1) if 'message_index' in self.config else 0
+            messages = self.context.get('person.message_id', default='').split(',')
+            if len(messages) > 1:
+                message_index = self.context.get('person.message_index', -1) + 1
                 message_index = message_index if 0 <= message_index < len(messages) else 0
                 self.message_id = [messages[message_index]]
-                self.config['message_index'] = message_index
-            else:
-                self.message_id = [self.config['message_id']]
+                self.context.set('person', {'message_index': message_index})
+            elif messages:
+                self.message_id = [messages[0]]
             self.config['ended'] = True
 
     def last_completed(self, source, data):
