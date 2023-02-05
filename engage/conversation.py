@@ -57,7 +57,8 @@ class Conversation(abc.ABC):
     def get_reply(self):
         if self.reply:
             return self.context.render(self.reply)
-        for name in [self.__module__ + '.' + '.'.join(self.message_id[:n]) for n in range(len(self.message_id), 0, -1)]:
+        for name in [self.__module__ + '.' + '.'.join(self.message_id[:n]) for n in range(len(self.message_id), 0, -1)]\
+                + ['.'.join(self.message_id[:n]) for n in range(len(self.message_id), 0, -1)]:
             if name in messages:
                 message = messages[name] if type(messages[name]) == str\
                     else messages[name][random.randint(0, len(messages[name])-1)]

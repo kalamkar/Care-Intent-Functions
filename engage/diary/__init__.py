@@ -18,11 +18,9 @@ class Conversation(BaseConversation):
         self.message_id = ['recorded', param_name]
         reply = self.get_reply()
         messages = self.context.get('person.message_id', default='').split(',')
-        logging.info('Messages %s' % messages)
         if messages:
             message_index = self.context.get('person.message_index', -1) + 1
             message_index = message_index if 0 <= message_index < len(messages) else 0
-            logging.info('Selected message %s' % messages[message_index])
             self.message_id = [messages[message_index]]
             self.context.set('person', {'message_index': message_index})
             self.reply = reply + ' ' + self.get_reply()
