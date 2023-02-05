@@ -105,8 +105,8 @@ class Conversation(BaseConversation):
                 self.is_missing_task()  # Set the missing task in the context for barrier module
                 self.transfer_type = 'barriers'
             elif df.query_result.intent.display_name == 'generic.no':
-                if 'message_id' in self.config:
-                    messages = self.context.get('person.message_id', default='').split(',')
+                messages = self.context.get('person.message_id', default='').split(',')
+                if messages:
                     message_index = self.context.get('person.message_index', -1) + 1
                     message_index = message_index if 0 <= message_index < len(messages) else 0
                     self.message_id = [messages[message_index]]
@@ -118,7 +118,7 @@ class Conversation(BaseConversation):
                 logging.warning('Unexpected result {}'.format(df.query_result))
                 self.skip_message_id_update = True
                 self.message_id = ['confirm_yes']
-        elif self.is_scheduled_now() and 'message_id' in self.config:
+        elif self.is_scheduled_now() and self.context.get('person.message_id'):
             messages = self.context.get('person.message_id', default='').split(',')
             if len(messages) > 1:
                 message_index = self.context.get('person.message_index', -1) + 1
