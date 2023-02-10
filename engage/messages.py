@@ -63,7 +63,7 @@ DATA = {
     'utenn_gtk_17b': 'Applying your drops is challenging to do correctly at first. As you take your drops regularly, each day will get easier.',
     'utenn_gtk_17c': 'Practice makes perfect. As you take your drops regularly, it will soon become as familiar as brushing your teeth!',
     'utenn_gtk_18ra': 'Most pharmacy related mobile apps can help with medication reminders! Set yourself up for success and ask your pharmacist today.',
-    'utenn_gtk_18ra': 'It’s easy to forget your drops. Stay committed to your treatment and you’ll see the results in the long run.',
+    'utenn_gtk_18rb': 'It’s easy to forget your drops. Stay committed to your treatment and you’ll see the results in the long run.',
     'utenn_gtk_19a': 'Remaining committed to taking your drops is the best thing for your sight. Keep up the good work!',
     'utenn_gtk_19b': 'It’s clear that you’re committed to your glaucoma treatment. Great job on taking your drops regularly!',
     'utenn_gtk_20ra': 'Try setting a daily alarm of when you should take your drops. Keep yourself on track with taking your drops every day.',
@@ -181,3 +181,4 @@ DATA = {
     'utenn_bb9': 'Drop in blood pressure, dizziness, or slow heart rate? This may mean the drops are affecting more than your eyes. Close your eyes or hold your finger over the tear duct after using your drops.',
     'utenn_bb10': 'You may have heard your drops can affect more than your eyes. If you notice your heart rate low, shortness of breath, or dizziness, let your doctor know right away.',
     'utenn_bb11': 'When getting ready to apply your drops, remember to wash your hands to help prevent infection.'
+}
