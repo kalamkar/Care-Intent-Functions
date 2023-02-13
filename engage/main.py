@@ -138,6 +138,7 @@ def main(event, metadata):
 
     person_update['task_id'] = schedule_next_task(person)
     person_update['conversations'] = person['conversations']
+    person_update['message_index'] = person['message_index']
     db.collection('persons').document(person['id']['value']).update(person_update)
 
 
