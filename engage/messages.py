@@ -52,7 +52,7 @@ DATA = {
     'utenn_gtk_11b': 'Managing your glaucoma may feel overwhelming. Remember your doctor is on your team and has the same goal as you—preventing vision loss.',
     'utenn_gtk_12a': 'While you may not feel glaucoma, it’s important to take your drops as prescribed. Uncontrolled glaucoma will slowly progress and lead to vision loss.',
     'utenn_gtk_12b': 'Taking the right steps early on in your glaucoma can prevent vision loss. Make a commitment to take your drops every day to achieve this goal.',
-    'utenn_gtk_13a': 'While you may be okay with some vision loss, how would you feel if you had vision loss that prohibited you from',
+    'utenn_gtk_13a': 'While you may be okay with some vision loss, how would you feel if you had vision loss that prohibited you from doing your favorite activities?',
     'utenn_gtk_14a': 'Glaucoma is known as the “sneak thief of sight.” Don’t depend on noticing symptoms alone to motivate you to be proactive about your eye health.',
     'utenn_gtk_14b': 'At the beginning of having glaucoma, you may not notice any visual changes. However, vision changes or loss develops slowly over years of uncontrolled glaucoma.',
     'utenn_gtk_15a': 'It may feel easy to worry about the future. Focus on the now: taking your drops to help your glaucoma is something you can do today and everyday to help your vision.',
